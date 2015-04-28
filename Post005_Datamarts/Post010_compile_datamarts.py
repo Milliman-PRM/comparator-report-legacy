@@ -2,10 +2,10 @@
 ### CODE OWNERS: Kyle Baird
 
 ### OBJECTIVE:
-  <What and WHY.>
+  Compile and do the code generation needed to utilize PRM data mart tool chain.
 
 ### DEVELOPER NOTES:
-  <What future developers need to know.>
+  Requires a standard PRM project to be set up and available
 """
 import sys
 import os
@@ -77,4 +77,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
