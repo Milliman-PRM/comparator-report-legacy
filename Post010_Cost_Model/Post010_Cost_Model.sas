@@ -81,7 +81,7 @@ run;
 	,IncEnd=&date_latestpaid.
 	,PaidThru=&date_latestpaid.
 	,Med_Rx=Med
-	,Ongoing_Util_Basis=Admit
+	,Ongoing_Util_Basis=Discharge
 	,Force_Util=N
 	,Dimensions=prm_line~elig_status_1~prv_net_aco_yn
 	,Time_Slice=
