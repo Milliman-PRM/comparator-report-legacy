@@ -133,7 +133,6 @@ data outputs.cost_util;
 	format &cost_util_codegen_format.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
-	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
 	if lowcase(prm_line) eq: "i" then prm_admits = admits;
 	else prm_admits = 0;
 	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
