@@ -10,13 +10,11 @@
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%GetParentFolder(0)supp010_shared_code.sas";
 %include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
-%let path_dir_outputs = &path_project_data.postboarding\Post010_Cost_Model\;
-%put path_dir_outputs = &path_dir_outputs.;
-%CreateFolder(&path_dir_outputs.)
 libname outputs "&path_dir_outputs.";
 
 %let assign_name_client = name_client = "&name_client.";
@@ -29,7 +27,7 @@ libname outputs "&path_dir_outputs.";
 
 /***** METADATA AND CODEGEN *****/
 %build_metadata_table(
-	cost_model
+	&name_datamart_target.
 	,name_dset_out=metadata_target
 	)
 
