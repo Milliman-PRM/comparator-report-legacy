@@ -1,5 +1,5 @@
 name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,require_label_ifnotallnull,notes_develop,notes_client
-name_client,,varchar,2048,N,,N,,Client Name
+name_client,,varchar,256,N,,N,,Client Name
 prm_line,,varchar,4,N,,N,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category; Refer to the [MR_Line] tab in the Code Sets workbook for a complete list.","Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
 elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
 prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,
