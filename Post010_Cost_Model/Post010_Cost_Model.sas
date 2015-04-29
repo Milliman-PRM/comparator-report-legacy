@@ -133,7 +133,7 @@ data outputs.cost_util;
 	format &cost_util_codegen_format.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
-	if lowcase(prm_line) eq: "i" then prm_admits = admits;
+	if lowcase(prm_line) eq: "i" then prm_admits = Discharges;
 	else prm_admits = 0;
 	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
 	else prm_days = 0;
