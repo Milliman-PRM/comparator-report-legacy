@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Validate our internal templates against those contained in mainline HealthBI
