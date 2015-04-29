@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
   Compile and do the code generation needed to utilize PRM data mart tool chain.
@@ -53,6 +53,7 @@ def main():
     for name_template in list_template_names:
         # pylint: disable=anomalous-backslash-in-string
         sas_infile_path_string = "&path_onboarding_code.\Post005_Datamarts\\" + name_template
+        # pylint: enable=anomalous-backslash-in-string
 
         print("Validating and code generating for template: {}".format(name_template))
 
