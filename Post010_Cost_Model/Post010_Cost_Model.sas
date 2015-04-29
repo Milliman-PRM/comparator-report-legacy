@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Use the PRM outputs to create a basic cost model.

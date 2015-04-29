@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Validate the outputs against the given data mart to ensure we are supplying
