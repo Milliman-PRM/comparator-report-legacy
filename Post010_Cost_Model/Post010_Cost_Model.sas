@@ -93,11 +93,49 @@ run;
 	,Suffix_Output=
 	)
 
+data agg_claims_med_coalesce;
+	set agg_claims_med;
+	elig_status_1 = coalescec(elig_status_1,"N");
+	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
+run;
+
+%GetVariableInfo(agg_claims_med_coalesce,meta_variables)
+
+proc sql noprint;
+	select
+		varname
+	into :agg_claims_measures separated by " "
+	from meta_variables
+	where upcase(vartype) eq "N"
+		and upcase(varname) net "DATE_"
+	;
+quit;
+%put agg_claims_measures = &agg_claims_measures.;
+
+proc means noprint
+	nway
+	missing
+	data = agg_claims_med_coalesce
+	;
+	class prm_line
+		elig_status_1
+		prv_net_aco_yn
+		;
+	var &agg_claims_measures.;
+	output out = agg_claims_med_reagg (drop =
+		_TYPE_
+		_FREQ_
+		)
+		sum =
+		;
+run;
+
 /***** CREATE FINAL OUTPUTS *****/
 data outputs.cost_util;
 	format &cost_util_codegen_format.;
-	set agg_claims_med;
+	set agg_claims_med_reagg;
 	&assign_name_client.;
+	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
 	if lowcase(prm_line) eq: "i" then prm_admits = admits;
 	else prm_admits = 0;
 	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
