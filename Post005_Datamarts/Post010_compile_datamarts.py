@@ -33,7 +33,7 @@ def main():
     # path_template_source = Path(r"C:\Users\Kyle.Baird\repos\Comparator_Report\Post005_Datamarts")
     path_dir_codegen_output = Path(healthbi_env.META[2, 'out'])
     list_template_names = [
-        path_.name for path_ in path_template_source.iterdir() if path_.is_dir()
+        path_.name.lower() for path_ in path_template_source.iterdir() if path_.is_dir()
         ]
 
     # Make a local copy of this reference file because the DataMart class
