@@ -137,16 +137,33 @@ data outputs.cost_util;
 	else prm_admits = 0;
 	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
 	else prm_days = 0;
-	prm_allowed = allowed;
+	prm_allowed = Allowed;
+	PRM_Coverage_Type = 'Medical';
 	keep &cost_util_fields_space.;
 run;
 %LabelDataSet(outputs.cost_util)
 
+
+proc sort data=agg_memmos out=agg_memmos_dimsort;
+	by _character_;
+run;
+
+proc transpose
+		data=agg_memmos_dimsort
+		out=agg_memmos_long
+		name=Coverage_Type_Raw
+		prefix=memmos
+		;
+	by _character_;
+	var memmos_:;
+run;
+
 data outputs.memmos;
 	format &memmos_codegen_format.;
-	set agg_memmos;
+	set agg_memmos_long;
 	&assign_name_client.;
-	prm_memmos = memmos_medical;
+	prm_memmos = memmos1;
+	prm_coverage_type = propcase(scan(Coverage_Type_Raw, 2 ,"_"));
 	keep &memmos_fields_space.;
 run;
 %LabelDataSet(outputs.memmos)

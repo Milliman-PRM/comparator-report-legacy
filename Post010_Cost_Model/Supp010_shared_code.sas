@@ -8,7 +8,7 @@
 ### DEVELOPER NOTES:
 	<none>
 */
-%let name_datamart_target = cost_model;
+%let name_datamart_target = comparator_cost_model;
 %let name_module = Post010_Cost_Model;
 
 %let path_dir_outputs = &path_project_data.postboarding\&name_module.\;
