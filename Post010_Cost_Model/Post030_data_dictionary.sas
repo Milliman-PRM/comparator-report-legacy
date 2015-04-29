@@ -17,6 +17,8 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %let path_file_output = &path_dir_outputs.Data Dictionary.xlsx;
 %put path_file_output = &path_file_output.;
 
+libname outputs "&path_dir_outputs." access = readonly;
+
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
@@ -44,6 +46,7 @@ data data_dictionary_recursive;
 	where lowcase(name_field) in (
 		"name_table"
 		,"name_field"
+		,"label"
 		,"key_table"
 		,"key_global"
 		,"field_position"
@@ -76,8 +79,39 @@ proc sql noprint;
 quit;
 %put meta_variables = &meta_variables.;
 
+proc sql;
+	create table labels as
+	select
+		lowcase(memname) as name_table
+		,lowcase(name) as name_field
+		,label as label_observed
+	from dictionary.columns
+	where upcase(libname) eq "OUTPUTS"
+		and label is not null
+		and upcase(name) ne upcase(label) /*Ignore any unhelpful labels*/
+	;
+quit;
+
 data data_dictionary_target;
 	set metadata_target (keep = &meta_variables.);
+	format label_observed $256.;
+	if _n_ eq 1 then do;
+		declare hash ht_labels (dataset: "labels", duplicate: "ERROR");
+		ht_labels.definekey("name_table"
+			,"name_field"
+			);
+		ht_labels.definedata("label_observed");
+		ht_labels.definedone();
+
+		call missing(label_observed);
+	end;
+	name_table = lowcase(name_table);
+	name_field = lowcase(name_field);
+	rc_labels = ht_labels.find();
+	if rc_labels eq 0 then label = label_observed;
+	drop rc_labels
+		label_observed
+		;
 run;
 
 proc export
