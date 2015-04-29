@@ -29,7 +29,7 @@ def main():
         Run the main procedure. Creates and generates data marts for each
         provided data mart.
     """
-    path_template_source = Path(healthbi_env.META["path_onboarding_code"]) / "Post005_Datamarts"
+    path_template_source = Path(os.path.realpath(__file__)).parent
     # path_template_source = Path(r"C:\Users\Kyle.Baird\repos\Comparator_Report\Post005_Datamarts")
     path_dir_codegen_output = Path(healthbi_env.META[2, 'out'])
     list_template_names = [
@@ -51,9 +51,10 @@ def main():
         )
 
     for name_template in list_template_names:
-        # pylint: disable=anomalous-backslash-in-string
-        sas_infile_path_string = "&path_onboarding_code.\Post005_Datamarts\\" + name_template
-        # pylint: enable=anomalous-backslash-in-string
+        sas_infile_path_string = "&path_onboarding_code.\\{}\\{}".format(
+            path_template_source.stem,
+            name_template,
+            )
 
         print("Validating and code generating for template: {}".format(name_template))
 
