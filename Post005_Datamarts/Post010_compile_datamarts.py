@@ -36,6 +36,12 @@ def main():
         path_.name.lower() for path_ in path_template_source.iterdir() if path_.is_dir()
         ]
 
+    mainline_template_names = {
+        path_.name.lower()
+        for path_ in Path(healthbi_env.META[2, 'code']).iterdir()
+        if path_.is_dir()
+        }
+
     # Make a local copy of this reference file because the DataMart class
     # requires it to be next to the source templates
     list_reference_files = ["Ref01_Data_Types.csv", "Ref02_sqlite_import_header.sql"]
@@ -51,6 +57,9 @@ def main():
         )
 
     for name_template in list_template_names:
+        assert name_template not in mainline_template_names, \
+            '{} is already defined in mainline PRM'.format(name_template)
+
         sas_infile_path_string = "&path_onboarding_code.\\{}\\{}".format(
             path_template_source.stem,
             name_template,
