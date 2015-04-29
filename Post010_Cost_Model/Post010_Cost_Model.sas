@@ -93,7 +93,7 @@ run;
 
 data agg_claims_med_coalesce;
 	set agg_claims_med;
-	elig_status_1 = coalescec(elig_status_1,"N");
+	elig_status_1 = coalescec(elig_status_1,"Unknown");
 	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
 run;
 
