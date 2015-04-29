@@ -38,12 +38,12 @@ def main():
 
     # Make a local copy of this reference file because the DataMart class
     # requires it to be next to the source templates
-    name_reference_file = "Ref01_Data_Types.csv"
-    path_local_ref = path_template_source / "Ref01_Data_Types.csv"
-    shutil.copyfile(
-        str(Path(healthbi_env.META[2, 'code']) / name_reference_file),
-        str(path_local_ref),
-        )
+    list_reference_files = ["Ref01_Data_Types.csv", "Ref02_sqlite_import_header.sql"]
+    for name in list_reference_files:
+        shutil.copyfile(
+            str(Path(healthbi_env.META[2, 'code']) / name),
+            str(path_template_source / name),
+            )
 
     datamart_recursive = DataMart(
         path_templates=healthbi_env.META[2, 'code'],
@@ -56,11 +56,14 @@ def main():
 
         print("Validating and code generating for template: {}".format(name_template))
 
-        # Make a throw away datamart object so we can utilize the embedded validation
-        # pylint: disable=unused-variable
-        datamart_validate = DataMart(
+        i_datamart = DataMart(
             path_templates=str(path_template_source),
             template_name=name_template,
+            )
+        i_datamart.generate_sqlite_cli_import(
+            filepath_out=str(
+                path_dir_codegen_output / "{}.sql".format(name_template)
+                )
             )
 
         datamart_recursive.generate_sas_infiles(
@@ -72,7 +75,9 @@ def main():
             table_name_replace=name_template,
             )
 
-        path_local_ref.unlink()
+    for name in list_reference_files:
+        i_path = path_template_source / name
+        i_path.unlink()
 
 
 if __name__ == '__main__':
