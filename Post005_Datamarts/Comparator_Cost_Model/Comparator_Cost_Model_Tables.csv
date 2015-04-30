@@ -14,8 +14,8 @@ name_client,memmos,Y,N
 elig_status_1,memmos,Y,N
 prm_coverage_type,memmos,Y,N
 prm_memmos,memmos,N,N
-name_client,ref_prm_line,Y,N
-prm_line,ref_prm_line,Y,N
+name_client,ref_prm_line,N,N
+prm_line,ref_prm_line,Y,Y
 prm_line_desc,ref_prm_line,N,N
 prm_line_category,ref_prm_line,N,N
 prm_util_type,ref_prm_line,N,N
