@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen, Mark Lucas, Jack Leemhuis
+### CODE OWNERS: David Pierce, 
 
 ### OBJECTIVE:
 	Find the distribution of paid percent, number of admits percent, and number of days admitted percent to 
@@ -20,20 +20,17 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %let start = %sysfunc(intnx(Month,&Date_LatestPaid.,-14));
 %let end = %sysfunc(intnx(Month,&Date_LatestPaid.,-2));
 %let end_admits = %sysfunc(intnx(month, &end., -2, end));
-%let admit_limit = 5; *Minimum number of admits a facility needs to be in this report;
 
 %let SAS_dir = %GETPARENTFOLDER(0); *Directory that holds the SAS programs;
 %let outputdir = ; *Directory of the SAS results;
 
 libname M020_Out "&M020_Out.";
+libname M015_Out "&M015_Out.";
 
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-
-
-*Import DRG mapping to replace DRG with DRG_Description_ID;
 proc import out=DRG_groups
-	datafile="%GETPARENTFOLDER(1)Reference\MS-DRG Crosswalk.xls" 
+	datafile="S:\PHI\NYP\Reference\MS-DRG Crosswalk.xls" 
 	dbms=excel replace;
 	sheet='ForSAS'; 
 run;
@@ -44,9 +41,9 @@ run;
 	,IncEnd=%eval(&end.-1)
 	,Time_Slice=discharge
 	,Med_Rx=Med
-	,Dimensions=Member_ID~prv_name~claimid~PRM_Line~PRM_DRG~PRM_FromDate~PRM_ToDate~DischargeStatus~CaseAdmitID~ICD9Diag1~mem_report_hier_1
+	,Dimensions=Member_ID~prv_name~claimid~PRM_Line~PRM_DRG~PRM_FromDate~PRM_ToDate~DischargeStatus~CaseAdmitID~ICDDiag1~mem_report_hier_1
 	,Where_Claims=%str(substr(outclaims_prm.prm_line,1,1) eq "I" and outclaims_prm.prm_line ne "I31")
-	,Where_Elig=%str(member.Report_Status eq "Death" or member.include_in_report eq "Y")
+	,Where_Elig=%str(member.Report_Status eq "Death" or member.include_in_CCR eq "Y")
 );
 
 
@@ -58,56 +55,25 @@ data cclf1_parta_header;
 run;
 
 proc sql;
-	create table outclaims_w_mpn (rename = (prvdr_oscar_num=MPN)) as select
+	create table elig_claims (rename = (prvdr_oscar_num=MPN)) as 
+	select
 		src.*
 		,cclf.prvdr_oscar_num
-	from Agg_claims_med_discharge as src
-	left join cclf1_parta_header as cclf
-		on src.ClaimID = cclf.ClaimID
-;
-quit;
-
-
-*Merge on DRG_Description_ID;
-proc sql;
-	create table elig_claims as select
-		src.*
 		,drg.DRG_Description_ID
 		,drg.DRG_Description
-	from outclaims_w_mpn as src
+	from Agg_claims_med_discharge as src
+
+	left join cclf1_parta_header as cclf
+		on src.ClaimID = cclf.ClaimID
+
 	left join DRG_groups as drg
-		on src.PRM_DRG = drg.MS_v25
+		on src.PRM_DRG = drg.MS_v25 
 ;
 quit;
 
-
-*Eliminate the facilities who do not have at least a given number of admits;
-proc summary nway missing data = elig_claims;
-class prv_name;
-var Admits;
-output out = provider_admits_summ (drop = _type_ _freq_)sum=;
-run;
-
-data provider_admits_summ_limit provider_other_summ;
-	set provider_admits_summ;
-	if Admits ge &admit_limit. then output provider_admits_summ_limit;
-	else output provider_other_summ;
-run;
-
-proc sort data = provider_admits_summ_limit;
-by descending Admits;
-run;
-
-proc sort data = provider_other_summ;
-by descending Admits;
-run;
 
 
 **************************************************************************************************;
-
-*Include the Readmission Analysis program;
-%Include "&SAS_dir.Readmission Analysis.sas";
-
 *Include the Discharge Status Analysis program;
 %Include "&SAS_dir.Discharge Status Analysis.sas";
 

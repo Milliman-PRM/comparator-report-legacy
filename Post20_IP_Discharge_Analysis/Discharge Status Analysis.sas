@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anders Larson, Anna Chen, Jack Leemhuis
+### CODE OWNERS: David Pierce, 
 
 ### OBJECTIVE:
 	Create some final discharge summaries to merge with the readmission rates table for the final discharge analysis results.
@@ -11,8 +11,17 @@
 
 
 /****** SAS SPECIFIC HEADER SECTION *****/
-options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compress = yes;
+options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%GetParentFolder(0)supp010_shared_code.sas";
+%include "&M008_cde.func06_build_metadata_table.sas";
+%include "&M073_Cde.pudd_methods\*.sas";
+
+/* Libnames */
+libname outputs "&path_dir_outputs.";
+
+%let assign_name_client = name_client = "&name_client.";
+%put assign_name_client = &assign_name_client.;
 
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -20,21 +29,27 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 
 *Summarize paid amount, number of admits, and number of admit days by discharge status and aco type from grouped claims;
 proc summary nway missing data = elig_claims;
-class dischargestatus prv_name;
+class dischargestatus;
 var prm_costs admits prm_util;
 output out = discharge_totals (drop= _freq_ _type_) sum=;
 run;
 
 proc summary nway missing data = elig_claims;
-class DRG_Description_ID prv_name dischargestatus;
+class DRG_Description_ID dischargestatus;
 var admits;
 output out = drg_totals (drop= _type_ _freq_) sum=;
 run;
 
 proc sort data = drg_totals;
-by prv_name dischargestatus;
+by dischargestatus;
 run;
 
+proc transpose data = discharge_totals
+			   out = Flipped_discharge_totals (drop = mr_cases_admits)
+			   name = mr_cases_admits;
+	by  dischargestatus;
+	id dischargestatus;
+run;
 
 *************************************/
 
