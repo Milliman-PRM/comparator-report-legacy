@@ -138,6 +138,7 @@ data outputs.cost_util;
 	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
 	else prm_days = 0;
 	prm_allowed = Allowed;
+	prm_paid = paid;
 	PRM_Coverage_Type = 'Medical';
 	keep &cost_util_fields_space.;
 run;
