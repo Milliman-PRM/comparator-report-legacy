@@ -114,8 +114,25 @@ data data_dictionary_target;
 		;
 run;
 
+proc sql;
+	create table data_dictionary_recursive_order as
+	select src.*
+	from data_dictionary_recursive_nodup as src
+	left join (
+		select name, varnum
+		from dictionary.columns
+		where
+			upcase(libname) eq 'WORK'
+			and upcase(memname) eq 'DATA_DICTIONARY_TARGET'
+		) as final_order on
+	src.name_field eq final_order.name
+	order by final_order.varnum
+	;
+quit;
+
+
 proc export
-	data = data_dictionary_recursive_nodup
+	data = data_dictionary_recursive_order
 	outfile = "&path_file_output."
 	dbms = xlsx
 	label
