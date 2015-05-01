@@ -27,7 +27,7 @@ class AssignmentWorksheet(object):
         self.date_start = None
         self.date_end = None
 
-        for row in self.ws_obj.get_squared_range(1, 1, 24, 24):
+        for row in self.ws_obj.get_squared_range(0, 0, 24, 24):
             for cell in row:
                 if cell.value is None:
                     continue
