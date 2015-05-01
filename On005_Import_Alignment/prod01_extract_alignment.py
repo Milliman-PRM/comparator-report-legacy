@@ -29,6 +29,11 @@ class AssignmentWorksheet(object):
         self.date_start = None
         self.date_end = None
 
+        self._sniff_header()
+        self._calc_intrinsic_value()
+
+    def _sniff_header(self):
+        """Inspect the header for interesting information"""
         for row in self.ws_obj.get_squared_range(0, 0, 24, 24):
             for cell in row:
                 if cell.value is None:
@@ -58,7 +63,7 @@ class AssignmentWorksheet(object):
                         int(match_quarters.group('year')),
                         int(match_quarters.group('quarter')) * 3,
                         1,
-                        ) # Not quite right yet, adjusted below
+                        ) # Not quite right yet, adjustments follow
                     self.date_start = (
                         self.date_end + datetime.timedelta(days=-45)
                         ).replace(day=1)
@@ -82,7 +87,11 @@ class AssignmentWorksheet(object):
             assert self.date_start.month % 3 == 1, 'Windows must start on a quarter'
             assert self.date_end.month % 3 == 0, 'Windows must end on a quarter'
 
+    def _calc_intrinsic_value(self):
+        """Calculate a score that represents the worth of this sheet"""
         if 'hicno' not in self.key_cells:
+            self.intrinsic_value = 0
+        elif not self.date_end:
             self.intrinsic_value = 0
         elif len({cell.row for cell in self.key_cells.values()}) > 1:
             self.intrinsic_value = 0
