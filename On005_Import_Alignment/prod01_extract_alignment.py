@@ -9,7 +9,9 @@
 """
 import shutil
 import re
+import datetime
 
+from datetime import date
 from pathlib import Path
 from openpyxl import load_workbook
 
@@ -35,10 +37,50 @@ class AssignmentWorksheet(object):
                     continue
                 if cell.value.lower() == 'hicno':
                     self.key_cells['hicno'] = cell
+                    continue
                 if re.search(r'\bparticipant tin\b', cell.value, re.I):
                     self.key_cells['tin'] = cell
+                    continue
                 if re.search(r'\bnpi\b', cell.value, re.I):
                     self.key_cells['npi'] = cell
+                    continue
+                if cell.value.lower() == 'year 2013 (october 2012-september 2013)':
+                    self.date_start = date(2012, 10, 1)
+                    self.date_end = date(2013, 9, 30)
+                    continue
+                match_quarters = re.search(
+                    r'year\D*(?P<year>\d{4}).*Q\D*(?P<quarter>\d)',
+                    cell.value,
+                    re.IGNORECASE,
+                    )
+                if match_quarters:
+                    self.date_end = date(
+                        int(match_quarters.group('year')),
+                        int(match_quarters.group('quarter')) * 3,
+                        1,
+                        ) # Not quite right yet, adjusted below
+                    self.date_start = (
+                        self.date_end + datetime.timedelta(days=-45)
+                        ).replace(day=1)
+                    self.date_end = (
+                        self.date_end + datetime.timedelta(days=45)
+                        ).replace(day=1) + datetime.timedelta(days=-1)
+                    continue
+                match_annual = re.search(
+                    r'year (?P<year>\d{4})',
+                    cell.value,
+                    re.IGNORECASE,
+                    )
+                if match_annual:
+                    self.date_start = date(int(match_annual.group('year')), 1, 1)
+                    self.date_end = date(int(match_annual.group('year')), 12, 31)
+                    continue
+        if self.date_start:
+            assert self.date_start.day == 1, 'Windows must start on the first of the month'
+            assert (self.date_end + datetime.timedelta(days=1)).day == 1, \
+                'Windows must end on the last of the month'
+            assert self.date_start.month % 3 == 1, 'Windows must start on a quarter'
+            assert self.date_end.month % 3 == 0, 'Windows must end on a quarter'
 
         if 'hicno' not in self.key_cells:
             self.intrinsic_value = 0
@@ -95,4 +137,6 @@ if __name__ == '__main__':
         print('\n' + path_wb.name)
         wb = AssignmentWorkbook(path_wb)
         print(wb.key_worksheet.ws_obj.title)
+        print(wb.key_worksheet.date_start)
+        print(wb.key_worksheet.date_end)
         print(wb.key_worksheet.key_cells)
