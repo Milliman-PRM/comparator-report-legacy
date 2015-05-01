@@ -171,6 +171,17 @@ class AssignmentWorkbook(object):
             for ws in self.worksheets
             if ws.intrinsic_value == self._max_intrinsic_value
             ][0]
+        self.has_value = self._max_intrinsic_value > 0
+
+    def write_values(self, fh_out):
+        """Extract interesting values"""
+        assert self.has_value, 'There is nothing worth extracting'
+        self.key_worksheet.write_values(fh_out)
+
+    @property
+    def fields_found(self):
+        """A quick introspection"""
+        return self.key_worksheet.key_cells.keys()
 
 
 def uncover_xlsx_files(path_sniffing):
@@ -190,16 +201,25 @@ def uncover_xlsx_files(path_sniffing):
             shutil.copy(str(file_), str(file_with_ext))
 
 
+def main(path_root, filepath_out):
+    """Process a directory of slop and put the clean info into an output file"""
+    uncover_xlsx_files(path_root)
+    with filepath_out.open('w') as fh_out:
+        AssignmentWorksheet.write_header(fh_out)
+        for path_wb in path_root.rglob('*.xlsx'):
+            print('Processing {}\n'.format(path_wb.name))
+            wb_ = AssignmentWorkbook(path_wb)
+            print('Found the following fields: {}\n'.format(wb_.fields_found))
+            print('Date range inferred to be from {} to {}\n\n'.format(
+                wb_.key_worksheet.date_start,
+                wb_.key_worksheet.date_end,
+                ))
+            if wb_.has_value:
+                print('Workbook was determined to have value; data is being extracted.\n\n')
+                wb_.write_values(fh_out)
+
+
 if __name__ == '__main__':
     root_path = Path(r"P:\PHI\FAL\3.SHA-FAL(NYP_Dev)\5-Support_Files\01-SHA_Data_Thru_201503_Demo\_From_Client\Scrappy_References\\")
-    uncover_xlsx_files(root_path)
-    for path_wb in root_path.rglob('*.xlsx'):
-        print('\n' + path_wb.name)
-        wb = AssignmentWorkbook(path_wb)
-        print(wb.key_worksheet.ws_obj.title)
-        print(wb.key_worksheet.date_start)
-        print(wb.key_worksheet.date_end)
-        print(wb.key_worksheet.key_cells)
-with open('damn2.txt','w') as fh_damn:
-    wb.key_worksheet.write_header(fh_damn)
-    wb.key_worksheet.write_values(fh_damn)
+    main(root_path, root_path / 'extract.txt')
+
