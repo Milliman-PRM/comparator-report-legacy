@@ -60,9 +60,11 @@ def main():
         assert name_template not in mainline_template_names, \
             '{} is already defined in mainline PRM'.format(name_template)
 
-        sas_infile_path_string = "&path_onboarding_code.\\{}\\{}".format(
-            path_template_source.stem,
-            name_template,
+        sas_infile_path_string = str(path_template_source / name_template).lower()
+        # Generalize the location; likely appropriate when running out of source control
+        sas_infile_path_string = sas_infile_path_string.replace(
+            os.environ['USERPROFILE'].lower(),
+            '%SysGet(UserProfile)',
             )
 
         print("Validating and code generating for template: {}".format(name_template))
