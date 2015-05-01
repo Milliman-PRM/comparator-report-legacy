@@ -14,6 +14,7 @@ import datetime
 from datetime import date
 from pathlib import Path
 from openpyxl import load_workbook
+from openpyxl.utils import column_index_from_string
 
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
@@ -23,9 +24,18 @@ from openpyxl import load_workbook
 class AssignmentWorksheet(object):
     """A single sheet in an MSSP assignment Workbook"""
 
+    extract_fields = [
+        'date_start',
+        'date_end',
+        'hicno',
+        'tin',
+        'npi',
+        ]
+
     def __init__(self, ws):
         self.ws_obj = ws
         self.key_cells = dict()
+        self.header_row = None
         self.date_start = None
         self.date_end = None
 
@@ -89,14 +99,55 @@ class AssignmentWorksheet(object):
 
     def _calc_intrinsic_value(self):
         """Calculate a score that represents the worth of this sheet"""
+        interesting_rows = {cell.row for cell in self.key_cells.values()}
+
         if 'hicno' not in self.key_cells:
             self.intrinsic_value = 0
         elif not self.date_end:
             self.intrinsic_value = 0
-        elif len({cell.row for cell in self.key_cells.values()}) > 1:
+        elif len(interesting_rows) > 1:
             self.intrinsic_value = 0
         else:
+            self.header_row = interesting_rows.pop()
             self.intrinsic_value = len(self.key_cells)
+
+    def write_values(self, fh_out):
+        """Write any discovered value"""
+        assert self.intrinsic_value > 0, 'This worksheet is not worth extracting.'
+
+        key_col_nums = {
+            k: column_index_from_string(v.column) - 1
+            for k, v
+            in self.key_cells.items()
+            }
+        static_values = {
+            'date_start': str(self.date_start),
+            'date_end': str(self.date_end),
+            }
+
+        for row_num, row in enumerate(self.ws_obj.rows):
+            if row_num <= self.header_row:
+                continue
+            if row[key_col_nums['hicno']].value is None:
+                break
+
+            row_values = []
+            for field in AssignmentWorksheet.extract_fields:
+                try:
+                    row_values.append(row[key_col_nums[field]].value)
+                except KeyError:
+                    try:
+                        row_values.append(static_values[field])
+                    except KeyError:
+                        row_values.append('')
+            fh_out.write('~'.join(row_values))
+            fh_out.write('\n')
+
+    @classmethod
+    def write_header(cls, fh_out):
+        """Write a header on anticipated output"""
+        fh_out.write('~'.join(cls.extract_fields))
+        fh_out.write('\n')
 
 
 class AssignmentWorkbook(object):
@@ -149,3 +200,6 @@ if __name__ == '__main__':
         print(wb.key_worksheet.date_start)
         print(wb.key_worksheet.date_end)
         print(wb.key_worksheet.key_cells)
+with open('damn2.txt','w') as fh_damn:
+    wb.key_worksheet.write_header(fh_damn)
+    wb.key_worksheet.write_values(fh_damn)
