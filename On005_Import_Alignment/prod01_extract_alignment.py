@@ -5,7 +5,7 @@
   Extract contents of various excel files for later use
 
 ### DEVELOPER NOTES:
-  Requires a standard PRM project to be set up and available
+  Requires a full PRM environment when executed as a script.
 """
 import shutil
 import re
@@ -197,7 +197,7 @@ def uncover_xlsx_files(path_sniffing):
             file_with_ext = file_.parent / (file_.name + '.xlsx')
             if file_with_ext.is_file():
                 continue
-            print('Duplicating {} with an "xlsx" extension'.format(file_))
+            print('Duplicating {} with an "xlsx" extension\n\n'.format(file_))
             shutil.copy(str(file_), str(file_with_ext))
 
 
@@ -220,6 +220,13 @@ def main(path_root, filepath_out):
 
 
 if __name__ == '__main__':
-    root_path = Path(r"P:\PHI\FAL\3.SHA-FAL(NYP_Dev)\5-Support_Files\01-SHA_Data_Thru_201503_Demo\_From_Client\Scrappy_References\\")
-    main(root_path, root_path / 'extract.txt')
-
+    import sys
+    import os
+    sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
+    import healthbi_env
+    print('BEGINNING TO SCAN RECEIVED DATA FOR ASSIGNMENT INFORMATION.\n\n')
+    main(
+        Path(healthbi_env.META['path_project_received']).parent,
+        Path(healthbi_env.META[(17, 'out')]) / 'timeline_assign_extract.txt',
+        )
+    print('\n\nFINISHED SCANNING.\n')
