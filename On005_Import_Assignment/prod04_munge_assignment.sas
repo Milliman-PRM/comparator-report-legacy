@@ -12,6 +12,7 @@
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&M008_cde.func06_build_metadata_table.sas";
 
 libname M015_Out "&M015_Out." access=readonly;
 libname M017_Out "&M017_Out.";
@@ -22,7 +23,58 @@ libname M020_Out "&M020_Out." access=readonly; /*This is accessed out of "order"
 
 
 
+/*** CODEGEN FROM TARGET METADATA ***/
+
+%build_metadata_table(
+	references_client
+	,name_dset_out=metadata_target
+	)
+
+%macro generate_codegen_variables(name_table);
+	%global
+		&name_table._fields_space
+		&name_table._codegenformat
+		;
+	proc sql noprint;
+		select
+			name_field
+			,catx(
+				" "
+				,name_field
+				,sas_format
+				)
+		into :&name_table._fields_space separated by " "
+			,:&name_table._codegenformat separated by " "
+		from metadata_target
+		where upcase(name_table) eq "%upcase(&name_table.)"
+		;
+	quit;
+	%put &name_table._fields_space = &&&name_table._fields_space.;
+	%put &name_table._codegenformat = &&&name_table._codegenformat.;
+%mend generate_codegen_variables;
+
+proc sql;
+	create table tables_target as
+	select distinct name_table
+	from metadata_target
+	;
+quit;
+
+data _null_;
+	set tables_target;
+	call execute(
+		cats(
+			'%nrstr(%generate_codegen_variables(name_table='
+			,name_table
+			,'))'
+			)
+		);
+run;
+
+
+
 /**** MUNGE THE SHORT-CIRCUITED CLAIMS DATA ****/
+
 proc sql noprint;
 	select distinct quote(strip(Specialty))
 	into :pcp_spec_codes separated by ','
