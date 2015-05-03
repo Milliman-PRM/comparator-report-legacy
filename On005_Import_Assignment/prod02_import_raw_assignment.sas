@@ -28,9 +28,9 @@ data M017_Out.timeline_assign_extract;
 	input
 		date_start :YYMMDD10.
 		date_end :YYMMDD10.
-		hicno :$32.
-		tin :$32.
-		npi :$32.
+		hicno :$11.
+		tin :$10.
+		npi :$10.
 		;
 	format date_: YYMMDDd10.;
 run;
