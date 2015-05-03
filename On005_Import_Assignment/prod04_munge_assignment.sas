@@ -22,6 +22,73 @@ libname M020_Out "&M020_Out." access=readonly; /*This is accessed out of "order"
 
 
 
+/**** MUNGE THE SHORT-CIRCUITED CLAIMS DATA ****/
+proc sql noprint;
+	select distinct quote(strip(Specialty))
+	into :pcp_spec_codes separated by ','
+	from M015_Out.Specialty_Names
+	where upcase(Type) eq 'PCP'
+	;
+quit;
+%put pcp_spec_codes = &pcp_spec_codes.;
+
+data claims_slim;
+	set M020_Out.CCLF5_PartB_Phys(keep = 
+		clm_prvdr_spclty_cd
+		clm_from_dt
+		clm_thru_dt
+		clm_idr_ld_dt
+		bene_hic_num /*Not worth xref'ing for these limited purposes.*/
+		clm_prvdr_tax_num
+		rndrg_prvdr_npi_num
+	);
+	where clm_prvdr_spclty_cd in (&pcp_spec_codes.);
+	format paid_month YYMMDDd10.;
+	paid_month = intnx('month',clm_idr_ld_dt,0,'end');
+run;
+
+proc sql noprint;
+	select max(paid_month)
+	into :Date_LatestPaid trimmed
+	from (
+		select 
+			paid_month
+			,count(distinct bene_hic_num) as cnt_memid
+		from claims_slim
+		group by paid_month
+		/*order by paid_month desc*/
+		)
+	where cnt_memid gt 42
+	;
+quit;
+
+%put Date_LatestPaid = &Date_LatestPaid. %sysfunc(putn(&Date_LatestPaid.,YYMMDD10.));
+
+proc sql;
+	create table tin_to_npi_claims_dist as
+	select
+		clm_prvdr_tax_num as tin
+		,rndrg_prvdr_npi_num as npi
+		,count(distinct bene_hic_num) as cnt_memid
+	from claims_slim
+	group by
+		clm_prvdr_tax_num
+		,rndrg_prvdr_npi_num
+	order by
+		clm_prvdr_tax_num
+		,cnt_memid desc
+		,rndrg_prvdr_npi_num desc
+	;
+quit;
+
+data tin_to_npi_claims;
+	set tin_to_npi_claims_dist;
+	by tin;
+	if first.tin;
+run;
+
+
+
 
 /*
 	TODO: Determine assigned NPI (not just TIN)
