@@ -14,8 +14,10 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 
+libname Ref_Prod "&Path_Product_Ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
-libname M017_Out "&M017_Out.";
+libname M017_Out "&M017_Out." access=readonly;
+libname M018_Out "&M018_Out.";
 libname M020_Out "&M020_Out." access=readonly; /*This is accessed out of "order"*/
 
 
@@ -233,14 +235,116 @@ quit;
 %AssertRecordCount(assign_extract,eq,%GetRecordCount(M017_Out.timeline_assign_extract),ReturnMessage=Table integrity was not maintained.)
 %AssertNoNulls(assign_extract,npi,ReturnMessage=Not all assignments were resovled to an approximately useful NPI.)
 
-/*
-	TODO: Determine assigned NPI (not just TIN)
 
-	From assignment: most common npi per tin
-	From claims: most common npi per tin by claim count (PCP specialty claims only from cclf5_partb_phys only)
-	Map NPIs onto TINs
-	Fall back on TIN if have to and just make an entry in 
-*/
+
+/*** AUTHOR CLIENT_PROVIDER AND CLIENT_FACILITY ***/
+
+data M018_Out.Client_Facility;
+	format &Client_Facility_CodegenFormat.;
+	set _Null_;
+	call missing(of _all_);
+	label fac_net_hier_1 = 'ACO';
+run;
+
+
+proc sql;
+	create table npi_roster as
+	select distinct npi
+	from assign_extract
+	union
+	select distinct claims.npi
+	from tin_to_npi_claims_dist as claims
+	inner join (
+		select distinct tin
+		from assign_extract
+		) as network_tins on
+		claims.tin eq network_tins.tin
+	order by npi
+	;
+quit;
+%AssertNoDuplicates(npi_roster,npi,ReturnMessage=NPI Roster was not put together correctly.)
+
+proc sort data=tin_to_npi_claims_dist out=npi_to_tin_claims_dist;
+	by npi descending cnt_memid tin;
+run;
+
+data npi_to_tin_claims;
+	set npi_to_tin_claims_dist;
+	by npi;
+	if first.npi;
+run;
+
+proc sort data=tin_to_npi_assign_dist out=npi_to_tin_assign_dist;
+	by npi descending cnt_memid tin;
+run;
+
+data npi_to_tin_assign;
+	set npi_to_tin_assign_dist;
+	by npi;
+	if first.npi;
+run;
+
+
+proc sql;
+	create table npi_decorated as
+	select
+		src.npi as prv_id
+		,case
+			when npi.entity_type_cd eq "1" then case
+				when npi.prvdr_credential_text is null then cat(propcase(strip(npi.prvdr_last_name)), ", ", propcase(strip(npi.prvdr_first_name)))
+				else cat(propcase(strip(npi.prvdr_last_name)), " ", compress(npi.prvdr_credential_text,". "), ", ", propcase(strip(npi.prvdr_first_name)))
+				end
+			when npi.entity_type_cd eq "2" then propcase(coalescec(npi.prvdr_org_name, npi.prvdr_other_org_name, "Unknown"))
+			else "Unknown"
+			end as prv_name format=$128. length=128 label = 'Assigned Provider'
+		,coalesce(
+			tin_assign.tin
+			,tin_claims.tin
+			,'Unknown'
+			) as prv_hier_1 format=$128. length=128 label='Assigned Provider TIN'
+	from npi_roster as src
+	left join ref_prod.&filename_sas_npi. as npi on
+		src.npi eq npi.npi
+	left join npi_to_tin_assign as tin_assign on
+		src.npi eq tin_assign.npi
+	left join npi_to_tin_claims as tin_claims on
+		src.npi eq tin_claims.npi
+	order by src.npi
+	;
+quit;
+
+proc sql noprint;
+	select tgt.name_field
+	into :providers_fields_lacking separated by ','
+	from (
+		select *
+		from metadata_target
+		where upcase(name_table) eq 'CLIENT_PROVIDER'
+		) as tgt
+	left join (
+		select name
+		from dictionary.columns
+		where
+			upcase(libname) eq 'WORK'
+			and upcase(memname) eq 'NPI_DECORATED'
+		) as thus_far on
+		upcase(tgt.name_field) eq upcase(thus_far.name)
+	where thus_far.name is null
+	order by tgt.field_position
+	;
+quit;
+%put providers_fields_lacking = &providers_fields_lacking.;
+
+data M018_Out.Client_Provider;
+	format &Client_Provider_CodeGenFormat.;
+	set npi_decorated;
+	call missing(&providers_fields_lacking.);
+
+	prv_id_name = 'NPI';
+	prv_net_hier_1 = 'ACO';
+	label prv_net_hier_1 = 'ACO';
+	prv_net_aco_yn = 'Y';
+run;
 
 /*
 	TODO: Fill in non-assigned members.
@@ -260,12 +364,6 @@ quit;
 	Add a blanket underlying period of non-assigned for all members.
 */
 
-/*
-	TODO:
-
-	Assume all the assigned NPIs are in-network (including the ones we inferred from TIN links in claims)
-	Scrape the prv_names from NPI file just because it is required on client_physician
-*/
 
 
 %put System Return Code = &syscc.;
