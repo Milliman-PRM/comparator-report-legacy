@@ -2,7 +2,7 @@
 ### CODE OWNERS: Shea Parkes
 
 ### OBJECTIVE:
-	Get assignment information ready for client datamart.
+	Generate "client datamart" files from CMS assignment information.
 
 ### DEVELOPER NOTES:
 	Need something just plausible enough.
@@ -144,7 +144,7 @@ run;
 
 
 
-/*** IMPUTE MISSING NPIs FROM ASSIGNMENT DATA ***/
+/*** IMPUTE MISSING NPIs ON ASSIGNMENT DATA ***/
 
 proc sql;
 	create table tin_to_npi_assign_dist as
@@ -284,7 +284,6 @@ data npi_to_tin_assign;
 	by npi;
 	if first.npi;
 run;
-
 
 proc sql;
 	create table npi_decorated as
@@ -483,7 +482,6 @@ data M018_Out.Client_Member_Time;
 	
 	keep &Client_Member_Time_Fields_Space.;
 run;
-
 
 proc sql;
 	create table client_member_prep as
