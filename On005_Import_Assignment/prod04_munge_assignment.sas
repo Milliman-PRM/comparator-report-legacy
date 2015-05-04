@@ -297,7 +297,7 @@ proc sql;
 				end
 			when npi.entity_type_cd eq "2" then propcase(coalescec(npi.prvdr_org_name, npi.prvdr_other_org_name, "Unknown"))
 			else "Unknown"
-			end as prv_name format=$128. length=128 label = 'Assigned Provider'
+			end as prv_name format=$128. length=128 label = 'ACO Provider'
 		,coalesce(
 			tin_assign.tin
 			,tin_claims.tin
@@ -456,14 +456,88 @@ run;
 
 /*** MUNGE INTO FINAL FORMAT ***/
 
-data assignment_monthly;
-	set assignment_all_priorities(rename=(
-		date_start = window_start
-		date_end = window_end
+data M018_Out.Client_Member_Time;
+	format &Client_Member_Time_CodeGenFormat.;
+
+	set assignment_massaged(rename=(
+		date_start = Sloppy_Start
+		date_end = Sloppy_End
+		hicno = member_id
+		npi = mem_prv_id_align
 		));
 
+	Date_Start = Sloppy_Start;
+	Date_End = min(intnx('month', Date_Start, 0, 'end'), Sloppy_End);
+	output;
+
+	do while (Date_End ne Sloppy_End);
+	  Date_Start = Date_End + 1;
+	  Date_End = min(intnx('month', Date_Start, 0, 'end'), Sloppy_End);
+	  output;
+	  end;
+
+	label
+		assignment_indicator = 'Assigned Patient'
+		mem_prv_id_align = 'Assigned Provider'
+		;
+	
+	keep &Client_Member_Time_Fields_Space.;
 run;
 
 
+proc sql;
+	create table client_member_prep as
+	select
+		src.*
+		,coalesce(prv.prv_name,'Unknown') as mem_report_hier_2 format = $64. length=64 label='Assigned Provider (Hier)'
+	from M018_Out.Client_Member_Time as src
+	left join M018_Out.Client_Provider as prv on
+		src.mem_prv_id_align eq prv.prv_id
+	order by 
+		src.member_id
+		,src.date_end desc
+	;
+quit;
+
+proc sql noprint;
+	select tgt.name_field
+	into :member_fields_lacking separated by ','
+	from (
+		select *
+		from metadata_target
+		where upcase(name_table) eq 'CLIENT_MEMBER'
+		) as tgt
+	left join (
+		select name
+		from dictionary.columns
+		where
+			upcase(libname) eq 'WORK'
+			and upcase(memname) eq 'CLIENT_MEMBER_PREP'
+		) as thus_far on
+		upcase(tgt.name_field) eq upcase(thus_far.name)
+	where thus_far.name is null
+	order by tgt.field_position
+	;
+quit;
+%put member_fields_lacking = &member_fields_lacking.;
+
+data M018_Out.client_member;
+	format &Client_Member_CodeGenFormat.;
+	set client_member_prep;
+	by member_id;
+	if first.member_id;
+
+	call missing(&member_fields_lacking.);
+
+	mem_dependent_status = 'P';
+
+	label mem_report_hier_1 = 'All Members (Hier)';
+	mem_report_hier_1 = 'All';
+
+	label mem_report_hier_3 = 'Not Implemented (Hier)';
+	mem_report_hier_3 = 'Not Implemented';
+
+	keep &Client_Member_Fields_Space.;
+run;
 
 %put System Return Code = &syscc.;
