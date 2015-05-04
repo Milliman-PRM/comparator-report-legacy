@@ -297,11 +297,11 @@ proc sql;
 			when npi.entity_type_cd eq "2" then propcase(coalescec(npi.prvdr_org_name, npi.prvdr_other_org_name, "Unknown"))
 			else "Unknown"
 			end as prv_name format=$128. length=128 label = 'ACO Provider'
-		,coalesce(
-			tin_assign.tin
-			,tin_claims.tin
-			,'Unknown'
-			) as prv_hier_1 format=$128. length=128 label='Assigned Provider TIN'
+		,case
+			when tin_assign.tin is not null then catx(' ', 'Representative TIN:', tin_assign.tin)
+			when tin_claims.tin is not null then catx(' ', 'Representative TIN:', tin_claims.tin)
+			else 'Unknown'
+			end as prv_hier_1 format=$128. length=128 label='Assigned Provider TIN'
 	from npi_roster as src
 	left join ref_prod.&filename_sas_npi. as npi on
 		src.npi eq npi.npi
