@@ -397,19 +397,26 @@ data assignment_broken_years;
 run;
 
 data assignment_extended_edges;
-	set assignment_broken_years;
+	format date_start date_end YYMMDDd10.;
 
-	if &observed_end. lt &Date_LatestPaid. and Date_end eq &Observed_End. then do;
-		date_start = date_end + 1;
+	set assignment_broken_years(rename=(
+		date_start = Preserve_Start
+		date_end = Preserve_End
+		));
+
+	if &observed_end. lt &Date_LatestPaid. and Preserve_End eq &Observed_End. then do;
+		date_start = Preserve_End + 1;
 		date_end = &Date_LatestPaid.;
 		output;
 		end;
 
-	if &observed_start. gt &Date_CredibleStart. and Date_start eq &Observed_Start. then do;
-		date_end = date_start - 1;
+	if &observed_start. gt &Date_CredibleStart. and Preserve_Start eq &Observed_Start. then do;
+		date_end = Preserve_Start - 1;
 		date_start = &Date_CredibleStart.;
 		output;
 		end;
+
+	drop Preserve_:;
 
 run;
 
