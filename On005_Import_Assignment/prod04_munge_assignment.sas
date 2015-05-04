@@ -13,6 +13,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
+%include "&M008_cde.Func02_massage_windows.sas";
 
 libname Ref_Prod "&Path_Product_Ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
@@ -346,23 +347,122 @@ data M018_Out.Client_Provider;
 	prv_net_aco_yn = 'Y';
 run;
 
-/*
-	TODO: Fill in non-assigned members.
 
-	Fill in rest of members from CCLF8 with assignement_indicator = N
-*/
 
-/*
-	TODO: Make timeline assignment.
+/*** FLESH OUT FULL TIMELINE INFORMATION ***/
 
-	Break yearly assignment into quarters.  Last quarter is priority 3, rest are priority 1.
-	Quarterly assignment gets priority 2.
-	Then brake overlaps by priority.
-	Extend oldest back to date_crediblestart.
+proc sql noprint;
+	select 
+		max(date_end)
+		,min(date_start)
+	into
+		:observed_end trimmed
+		,:observed_start trimmed
+	from assign_extract
+	;
+quit;
+%put observed_end = &observed_end. %sysfunc(putn(&observed_end.,YYMMDD10.));
+%put observed_start = &observed_start. %sysfunc(putn(&observed_start.,YYMMDD10.));
 
-	Extend the newest forwards to 2099
-	Add a blanket underlying period of non-assigned for all members.
-*/
+data assignment_broken_years;
+	set assign_extract;
+
+	format assignment_indicator $1.;
+	assignment_indicator = 'Y';
+
+	format priority 12.;
+	/*
+		Priority=0 will be a blanket "unassigned" action for all members.
+		Priority=1 will be the first three quarters of a yearly assignment
+		Priority=2 will be the quarterly periods
+		Priority=3 will be the last quarter of a yearly assignment
+		Extension periods will get the same priority as what they are extending.
+	*/
+
+	/*Bust up yearly assignments if we find them.*/
+	if date_start eq intnx('month',date_end,-11,'beg') then do;
+		date_end = intnx('month',date_end,-3,'end');
+		priority = 1;
+		output;
+		date_start = date_end + 1;
+		date_end = intnx('month',date_start,2,'end');
+		priority = 3;
+		output;
+		end;
+	else do;
+		/*Assumed quarterly*/
+		priority = 2;
+		output;
+		end;
+
+run;
+
+data assignment_extended_edges;
+	set assignment_broken_years;
+
+	if &observed_end. lt &Date_LatestPaid. and Date_end eq &Observed_End. then do;
+		date_start = date_end + 1;
+		date_end = &Date_LatestPaid.;
+		output;
+		end;
+
+	if &observed_start. gt &Date_CredibleStart. and Date_start eq &Observed_Start. then do;
+		date_end = date_start - 1;
+		date_start = &Date_CredibleStart.;
+		output;
+		end;
+
+run;
+
+proc sql;
+	create table assignment_latent_negation as
+	select
+		min(&Date_CredibleStart.,&Observed_Start.) as date_start format=YYMMDDd10.
+		,max(&Date_LatestPaid.,&Observed_End.) as date_end format=YYMMDDd10.
+		,src.hicno
+		,'' as npi format=$10.
+		,'' as tin format=$10.
+		,'N' as assignment_indicator format=$1.
+		,0 as priority format=12.
+	from (
+		select distinct bene_hic_num as hicno
+		from M020_Out.CCLF8_Bene_Demog
+		union
+		select distinct hicno
+		from assign_extract
+		) as src
+	order by hicno
+	;
+quit;
+
+data assignment_all_priorities;
+	set
+		assignment_broken_years
+		assignment_extended_edges
+		assignment_latent_negation
+		;
+run;
+
+%massage_windows(
+	assignment_all_priorities
+	,assignment_massaged
+	,date_start
+	,date_end
+	,hicno
+	,-priority
+	)
+
+
+
+/*** MUNGE INTO FINAL FORMAT ***/
+
+data assignment_monthly;
+	set assignment_all_priorities(rename=(
+		date_start = window_start
+		date_end = window_end
+		));
+
+run;
 
 
 
