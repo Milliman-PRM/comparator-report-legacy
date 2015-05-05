@@ -462,6 +462,64 @@ data assignment_extended_edges;
 
 run;
 
+/*Plug file level gaps (not member level gaps)*/
+proc sql;
+	create table assignment_file_windows as
+	select distinct
+		date_start
+		,date_end
+		,'Dummy' as Dimension
+	from assignment_broken_years
+	;
+quit;
+
+%massage_windows(
+	assignment_file_windows
+	,assignment_file_windows_massage
+	,date_start
+	,date_end
+	,Dimension
+	)
+
+proc sort data=assignment_file_windows_massage(drop=Dimension) out=assignment_file_windows_sort;
+	by date_start;
+run;
+
+data assignment_file_windows_gaps(keep = gap_:);
+	set assignment_file_windows_sort;
+	by date_start;
+
+	format date_end_retain YYMMDDd10.;
+	retain date_end_retain;
+
+	format gap_start gap_end YYMMDDd10.;
+
+	if _N_ gt 1 then do;
+		if (date_end_retain + 1) ne date_start then do;
+			gap_start = date_end_retain + 1;
+			gap_end = date_start - 1;
+			output;
+			end;
+		end;
+
+	date_end_retain = date_end;
+run;
+
+proc sql;
+	create table assignment_gap_fillers(drop = orig_date_:) as
+	select
+		gap.gap_start as date_start format=YYMMDDd10.
+		,gap.gap_end as date_end format=YYMMDDd10.
+		,assign.*
+	from assignment_file_windows_gaps as gap
+	left join assignment_broken_years(rename=(
+		date_start = orig_date_start
+		date_end = orig_date_end
+		)) as assign on
+		(gap.gap_end + 1) eq assign.orig_date_start
+	;
+quit;
+
 proc sql;
 	create table assignment_latent_negation as
 	select
@@ -487,6 +545,7 @@ data assignment_all_priorities;
 	set
 		assignment_broken_years
 		assignment_extended_edges
+		assignment_gap_fillers
 		assignment_latent_negation
 		;
 run;
