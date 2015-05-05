@@ -126,6 +126,7 @@ proc sql;
 		,rndrg_prvdr_npi_num as npi
 		,count(distinct bene_hic_num) as cnt_memid
 	from claims_slim
+	where rndrg_prvdr_npi_num is not null
 	group by
 		clm_prvdr_tax_num
 		,rndrg_prvdr_npi_num
