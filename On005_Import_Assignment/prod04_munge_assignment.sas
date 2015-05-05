@@ -9,6 +9,9 @@
 		Assignment status credibility should be high.
 		Assigned physician name should just have a plausible entry.
 		Physician network status will just be sloppy at this time.
+	Potential future TODOs:
+		Can apply actual MSSP assignment logic to claims data to choose individual NPIs.
+		Couldn't get actual assignment info (Y/N) because ACO status of other NPIs is unknown.
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
