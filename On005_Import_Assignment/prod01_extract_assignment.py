@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
   Extract contents of various excel files for later use
@@ -140,7 +140,7 @@ class AssignmentWorksheet(object):
                         row_values.append(static_values[field])
                     except KeyError:
                         row_values.append('')
-            fh_out.write('~'.join(row_values))
+            fh_out.write('~'.join([value_.strip() for value_ in row_values]))
             fh_out.write('\n')
 
     @classmethod
