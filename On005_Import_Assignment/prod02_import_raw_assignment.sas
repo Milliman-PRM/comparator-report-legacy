@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
 	Bring raw assignment information into SAS.
@@ -34,5 +34,6 @@ data M017_Out.timeline_assign_extract;
 		;
 	format date_: YYMMDDd10.;
 run;
+%LabelDataSet(M017_Out.timeline_assign_extract)
 
 %put System Return Code = &syscc.;

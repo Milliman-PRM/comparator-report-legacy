@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
 	Import the CCLF data out of order so we have something to work from.
@@ -20,7 +20,7 @@ libname log "&path_onboarding_logs.";
 
 %RunProductionPrograms(
 	dir_program_src=&M020_Cde.CCLF\
-	,dir_log_lst_output=&M020_Log.
+	,dir_log_lst_output=&M020_Log.CCLF\
 	,name_python_environment=&python_environment.
 	,library_process_log=log
 	,bool_notify_success=False
