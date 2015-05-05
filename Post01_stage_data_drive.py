@@ -77,12 +77,19 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
     import healthbi_env
-    PATH_PROJECT_DATA = Path(healthbi_env.META['path_project_data'])
+
+    PATH_PROJECT_DATA = Path(healthbi_env.META['path_project_data']) / 'postboarding'
+    try:
+        PATH_PROJECT_DATA.mkdir()
+    except FileExistsError:
+        pass
 
     PATH_CURRENT = get_path_current()
 
     PATH_SAS_SETUP = PATH_PROJECT_DATA / 'postboarding_libraries.sas'
 
+
+    print('BEGINNING GENERATION OF {}\n\n'.format(PATH_SAS_SETUP))
     with PATH_SAS_SETUP.open('w') as fh_codegen:
 
         fh_codegen.write('/*Code generation requested by {} on {}*/\n\n'.format(
@@ -90,9 +97,12 @@ if __name__ == '__main__':
             datetime.datetime.now()
             ))
 
+        print('BEGINNING SCAN OF {}\n\n'.format(PATH_CURRENT))
         for path_ in PATH_CURRENT.iterdir():
             mod_ = PostboardModule(path_, PATH_PROJECT_DATA)
             print(mod_)
             if mod_.true_module:
                 mod_.make_data_dir()
                 fh_codegen.write('\n{}\n'.format(mod_.codegen_sas_macro_variable()))
+
+    print('\n\nFINISHED GENERATION OF {}\n\n'.format(PATH_SAS_SETUP))
