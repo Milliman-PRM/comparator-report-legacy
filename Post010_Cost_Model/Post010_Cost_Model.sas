@@ -10,12 +10,13 @@
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(0)supp010_shared_code.sas";
 %include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
-libname outputs "&path_dir_outputs.";
+libname post010 "&post010.";
 
 %let assign_name_client = name_client = "&name_client.";
 %put assign_name_client = &assign_name_client.;
@@ -129,7 +130,7 @@ proc means noprint
 run;
 
 /***** CREATE FINAL OUTPUTS *****/
-data outputs.cost_util;
+data post010.cost_util;
 	format &cost_util_codegen_format.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
@@ -142,7 +143,7 @@ data outputs.cost_util;
 	PRM_Coverage_Type = 'Medical';
 	keep &cost_util_fields_space.;
 run;
-%LabelDataSet(outputs.cost_util)
+%LabelDataSet(post010.cost_util)
 
 
 proc sort data=agg_memmos out=agg_memmos_dimsort;
@@ -159,7 +160,7 @@ proc transpose
 	var memmos_:;
 run;
 
-data outputs.memmos;
+data post010.memmos;
 	format &memmos_codegen_format.;
 	set agg_memmos_long;
 	&assign_name_client.;
@@ -167,9 +168,9 @@ data outputs.memmos;
 	prm_coverage_type = propcase(scan(Coverage_Type_Raw, 2 ,"_"));
 	keep &memmos_fields_space.;
 run;
-%LabelDataSet(outputs.memmos)
+%LabelDataSet(post010.memmos)
 
-data outputs.ref_prm_line;
+data post010.ref_prm_line;
 	format &ref_prm_line_codegen_format.;
 	set M015_out.mr_line_info;
 	&assign_name_client.;
@@ -178,6 +179,6 @@ data outputs.ref_prm_line;
 	prm_util_type = costmodel_util;
 	keep &ref_prm_line_fields_space.;
 run;
-%LabelDataSet(outputs.ref_prm_line)
+%LabelDataSet(post010.ref_prm_line)
 
 %put System Return Code = &syscc.;
