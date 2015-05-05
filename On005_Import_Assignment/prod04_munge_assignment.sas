@@ -143,6 +143,18 @@ data tin_to_npi_claims;
 	if first.tin;
 run;
 
+proc sql;
+	create table npi_dist_claims as
+	select
+		rndrg_prvdr_npi_num as npi
+		,count(unique bene_hic_num) as npi_freq_claims
+	from claims_slim
+	where rndrg_prvdr_npi_num is not null
+	group by npi
+	order by npi_freq_claims desc
+	;
+quit;
+
 
 
 /*** IMPUTE MISSING NPIs ON ASSIGNMENT DATA ***/
@@ -199,39 +211,65 @@ data tin_to_npi_future;
 run;
 
 proc sql;
+	create table npi_dist_assign as
+	select
+		npi
+		,count(unique hicno) as npi_freq_assign
+	from M017_Out.timeline_assign_extract
+	where npi is not null
+	group by npi
+	order by npi_freq_assign desc
+	;
+quit;
+
+
+proc sql;
 	create table assign_extract as
 	select
-		src.date_start
-		,src.date_end
-		,coalesce(xref.crnt_hic_num, src.hicno) as hicno format=$11. length=11
-		,src.tin
-		,coalesce(
-			src.npi
-			,npi_future.npi
-			,npi_recurse.npi
-			,npi_claims.npi
-			/*,src.tin - Haven't gotten this desperate yet.*/
-			) as npi format=$10. length=10
-		/*,npi_future.npi as npi_future
-		,npi_recurse.npi as npi_recurse
-		,npi_claims.npi as npi_claims*/
-	from M017_Out.timeline_assign_extract as src
-	left join (
-		select distinct crnt_hic_num, prvs_hic_num
-		from M020_Out.CCLF9_bene_xref 
-		)as xref on
-		src.hicno eq xref.prvs_hic_num
-	left join tin_to_npi_future as npi_future on
-		src.hicno eq npi_future.hicno
-		and src.tin eq npi_future.tin
-	left join tin_to_npi_assign as npi_recurse on
-		src.tin eq npi_recurse.tin
-	left join tin_to_npi_claims as npi_claims on
-		src.tin eq npi_claims.tin
+		inner.*
+		,coalesce(npi_dist_claims.npi_freq_claims, 0) as npi_freq_claims
+		,coalesce(npi_dist_assign.npi_freq_assign, 0) as npi_freq_assign
+	from (
+		select
+			src.date_start
+			,src.date_end
+			,coalesce(xref.crnt_hic_num, src.hicno) as hicno format=$11. length=11
+			,src.tin
+			,coalesce(
+				src.npi
+				,npi_future.npi
+				,npi_recurse.npi
+				,npi_claims.npi
+				/*,src.tin - Haven't gotten this desperate yet.*/
+				) as npi format=$10. length=10
+
+			/*,npi_future.npi as npi_future
+			,npi_recurse.npi as npi_recurse
+			,npi_claims.npi as npi_claims*/
+		from M017_Out.timeline_assign_extract as src
+		left join (
+			select distinct crnt_hic_num, prvs_hic_num
+			from M020_Out.CCLF9_bene_xref 
+			)as xref on
+			src.hicno eq xref.prvs_hic_num
+		left join tin_to_npi_future as npi_future on
+			src.hicno eq npi_future.hicno
+			and src.tin eq npi_future.tin
+		left join tin_to_npi_assign as npi_recurse on
+			src.tin eq npi_recurse.tin
+		left join tin_to_npi_claims as npi_claims on
+			src.tin eq npi_claims.tin
+		) as inner
+	left join npi_dist_assign on
+		inner.npi eq npi_dist_assign.npi
+	left join npi_dist_claims on
+		inner.npi eq npi_dist_claims.npi
 	order by
-		calculated hicno
-		,src.date_end desc
-		,src.date_start
+		inner.hicno
+		,inner.date_end desc
+		,inner.date_start
+		,calculated npi_freq_assign desc
+		,calculated npi_freq_claims desc
 	;
 quit;
 %AssertRecordCount(assign_extract,eq,%GetRecordCount(M017_Out.timeline_assign_extract),ReturnMessage=Table integrity was not maintained.)
@@ -456,7 +494,7 @@ run;
 	,date_start
 	,date_end
 	,hicno
-	,-priority
+	,-priority~-npi_freq_assign~-npi_freq_claims~npi
 	)
 
 
