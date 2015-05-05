@@ -288,7 +288,7 @@ data M018_Out.Client_Facility;
 	call missing(of _all_);
 	label fac_net_hier_1 = 'ACO';
 run;
-
+%LabelDataSet(M018_Out.Client_Facility)
 
 proc sql;
 	create table npi_roster as
@@ -387,7 +387,7 @@ data M018_Out.Client_Provider;
 	label prv_net_hier_1 = 'ACO';
 	prv_net_aco_yn = 'Y';
 run;
-
+%LabelDataSet(M018_Out.Client_Provider)
 
 
 /*** FLESH OUT FULL TIMELINE INFORMATION ***/
@@ -531,6 +531,7 @@ data M018_Out.Client_Member_Time;
 	
 	keep &Client_Member_Time_Fields_Space.;
 run;
+%LabelDataSet(M018_Out.Client_Member_Time)
 
 proc sql;
 	create table client_member_prep as
@@ -586,5 +587,6 @@ data M018_Out.client_member;
 
 	keep &Client_Member_Fields_Space.;
 run;
+%LabelDataSet(M018_Out.client_member)
 
 %put System Return Code = &syscc.;
