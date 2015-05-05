@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
   Extract contents of various excel files for later use
