@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
 	Generate "client datamart" files from CMS assignment information.
