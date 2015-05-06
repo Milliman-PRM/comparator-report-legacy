@@ -11,13 +11,14 @@
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(0)supp010_shared_code.sas";
 %include "&M008_cde.func06_build_metadata_table.sas";
 
-%let path_file_output = &path_dir_outputs.Data Dictionary.xlsx;
+%let path_file_output = &post010.Data Dictionary.xlsx;
 %put path_file_output = &path_file_output.;
 
-libname outputs "&path_dir_outputs." access = readonly;
+libname post010 "&post010." access=readonly;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 

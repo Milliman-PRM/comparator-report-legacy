@@ -11,10 +11,6 @@
 %let name_datamart_target = comparator_cost_model;
 %let name_module = Post010_Cost_Model;
 
-%let path_dir_outputs = &path_project_data.postboarding\&name_module.\;
-%put path_dir_outputs = &path_dir_outputs.;
-%CreateFolder(&path_dir_outputs.)
-
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
