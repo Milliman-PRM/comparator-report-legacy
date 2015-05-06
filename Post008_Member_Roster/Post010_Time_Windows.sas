@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
 	Define time windows of interest in Comparator Reporting.
