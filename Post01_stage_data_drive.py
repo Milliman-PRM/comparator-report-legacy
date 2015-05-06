@@ -29,6 +29,7 @@ def get_path_current():
 
 class NotAPostModuleException(Exception):
     """Custom exception to allow graceful control flow handling"""
+    pass
 
 
 class PostboardModule(object):
