@@ -27,6 +27,9 @@ def get_path_current():
         # Likely running interactively
         return Path.cwd()
 
+class NotAPostModuleException(Exception):
+    """Custom exception to allow graceful control flow handling"""
+
 
 class PostboardModule(object):
     """Represents a postboarding module"""
@@ -36,19 +39,22 @@ class PostboardModule(object):
         self.path_data_root = path_data_root
         self.path_data = self.path_data_root / self.path_obj.name
 
+        if not self.path_obj.is_dir():
+            raise NotAPostModuleException('{} is not a folder'.format(self.path_obj))
+
         prefix_match = re.match(
             r'Post\d{3}',
             self.path_obj.name,
             re.IGNORECASE,
             )
 
-        self.true_module = self.path_obj.is_dir() and prefix_match
+        if not prefix_match:
+            raise NotAPostModuleException('{} does not start with "Post###"'.format(self.path_obj))
 
-        self.abbreviation = prefix_match.group(0).lower() if self.true_module else None
+        self.abbreviation = prefix_match.group(0).lower()
 
     def make_data_dir(self):
         """Make the module's data dir if appropriate"""
-        assert self.true_module, 'Not a true module.'
         try:
             self.path_data.mkdir()
         except FileExistsError:
@@ -56,8 +62,6 @@ class PostboardModule(object):
 
     def codegen_sas_macro_variable(self):
         """Generate SAS code that will create an appropriate macro variable"""
-        assert self.true_module, 'Not a true module.'
-
         return r'%let {} = {}{};'.format(
             self.abbreviation,
             self.path_data,
@@ -67,7 +71,7 @@ class PostboardModule(object):
     def __repr__(self):
         return '\n'.join([
             '',
-            'Path is {}'.format(self.path_obj),
+            'PostBoarding Module Path is {}'.format(self.path_obj),
             'Abbreviation is {}'.format(self.abbreviation),
             ])
 
@@ -100,10 +104,12 @@ if __name__ == '__main__':
 
         print('BEGINNING SCAN OF {}\n\n'.format(PATH_CURRENT))
         for path_ in PATH_CURRENT.iterdir():
-            mod_ = PostboardModule(path_, PATH_PROJECT_DATA)
-            print(mod_)
-            if mod_.true_module:
+            try:
+                mod_ = PostboardModule(path_, PATH_PROJECT_DATA)
+                print(mod_)
                 mod_.make_data_dir()
                 fh_codegen.write('\n{}\n'.format(mod_.codegen_sas_macro_variable()))
+            except NotAPostModuleException as exception:
+                print('\n{}\n'.format(exception.args[0]))
 
     print('\n\nFINISHED GENERATION OF {}\n\n'.format(PATH_SAS_SETUP))
