@@ -17,7 +17,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
-libname post008 "&post008.";
+libname post008 "&post008." access = readonly;
 libname post020 "&post020.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -76,7 +76,7 @@ quit;
 %put sum = &prior_obssum;
 
 /*Create a summary by Discharge/DRG combo for NYH to use to normalize, then get a discharge only summary
-  first we are going to stage up the discharge data by time period then summarize*/
+  first we are going to stage up the discharge data by time period and limit to only members in our member table then summarize*/
 proc sql;
 	create table discharge_pre as
 		select
@@ -99,6 +99,9 @@ proc sql;
 			,"&name_client." as name_client
 
 		 from Agg_claims_med as src
+		 
+		 inner join Post008.Members as memb on
+		 	src.member_ID = memb.member_ID
 ;
 quit;
 
