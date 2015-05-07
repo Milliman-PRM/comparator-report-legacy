@@ -4,7 +4,7 @@ time_period,cost_util,Y,N
 prm_line,cost_util,Y,N
 elig_status_1,cost_util,Y,N
 prv_net_aco_yn,cost_util,Y,N
-prm_admits,cost_util,N,N
+prm_discharges,cost_util,N,N
 prm_days,cost_util,N,N
 prm_util,cost_util,N,N
 prm_costs,cost_util,N,N
