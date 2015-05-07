@@ -51,7 +51,7 @@ quit;
 	,PaidThru = &paid_thru.
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
-	,Dimensions=member_ID~DischargeStatus
+	,Dimensions=member_ID~DRG~DischargeStatus
 	,Where_Claims=%str(substr(outclaims_prm.prm_line,1,1) eq "I" and outclaims_prm.prm_line ne "I31")
 	
 );
@@ -75,43 +75,65 @@ proc sql noprint;
 quit;
 %put sum = &prior_obssum;
 
+/*Create a summary by Discharge/DRG combo for NYH to use to normalize, then get a discharge only summary
+  first we are going to stage up the discharge data by time period then summarize*/
+proc sql;
+	create table discharge_pre as
+		select
+			src.time_slice as time_period
+			,DRG
+			,src.DischargeStatus
+			,Case when src.DischargeStatus = "01" then "Discharged to Home"
+		  		  when src.DischargeStatus = "62" then "Discharged to IRF"
+		  		  when src.DischargeStatus = "03" then "Discharged to SNF"
+		  		  when src.DischargeStatus = "06" then "Discharged to Home Health Care"
+				  when src.DischargeStatus = "20" then "Died"
+		  		  else "Other"
+			 End as Discharge_Desc
+			,src.Admits
+			,Case when upcase(src.time_slice) = "CURRENT" then (src.admits /&curr_obssum.)
+				  when upcase(src.time_slice) = "PRIOR" then (src.admits/&prior_obssum.)
+				  else 0
+			 END as Admits_pct
+			,src.PRM_Costs
+			,"&name_client." as name_client
+
+		 from Agg_claims_med as src
+;
+quit;
+
+proc sql;
+	create table post020.DRG_Discharge_totals as
+		select
+			"Discharge" as Metric
+			,src.time_period
+			,src.DRG
+			,src.Discharge_Desc
+			,SUM(src.Admits) as Admits
+			,SUM(src.Admits_pct) as Admits_pct
+			,SUM(src.PRM_Costs) as PRM_Costs
+			,src.name_client
+		from discharge_pre as src
+		group by src.time_period,src.DRG,src.Discharge_Desc,src.name_client
+;
+quit;
+
 proc sql;
 	create table post020.Discharge_totals as
 		select
 			"Discharge" as Metric
-			,nest.time_slice as time_period
-			,nest.Discharge_Desc
-			,SUM(Admits) as Admits
-			,SUM(Admits_pct) as Admits_pct
-			,SUM(PRM_Costs) as PRM_Costs
-			,name_client
-		from (
-			select
-				src.time_slice
-				,src.DischargeStatus
-				,Case when src.DischargeStatus = "01" then "Discharged to Home"
-			  		  when src.DischargeStatus = "62" then "Discharged to IRF"
-			  		  when src.DischargeStatus = "03" then "Discharged to SNF"
-			  		  when src.DischargeStatus = "06" then "Discharged to Home Health Care"
-					  when src.DischargeStatus = "20" then "Died"
-			  		  else "Other"
-		 		 End as Discharge_Desc
-				,src.Admits
-				,Case when upcase(src.time_slice) = "CURRENT" then (src.admits /&curr_obssum.)
-					  when upcase(src.time_slice) = "PRIOR" then (src.admits/&prior_obssum.)
-					  else 0
-				 END as Admits_pct
-				,src.PRM_Costs
-				,"&name_client." as name_client
-
-			 from Agg_claims_med as src
-
-			  ) as NEST
-
-		group by nest.time_slice,nest.Discharge_Desc,nest.name_client
+			,src.time_period
+			,src.Discharge_Desc
+			,SUM(src.Admits) as Admits
+			,SUM(src.Admits_pct) as Admits_pct
+			,SUM(src.PRM_Costs) as PRM_Costs
+			,src.name_client
+		from discharge_pre as src
+		group by src.time_period,src.Discharge_Desc,src.name_client
 ;
 quit;
 
+%LabelDataSet(post020.DRG_Discharge_totals)
 %LabelDataSet(post020.Discharge_totals)
 
 %put System Return Code = &syscc.;
