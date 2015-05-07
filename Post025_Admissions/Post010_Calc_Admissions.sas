@@ -52,12 +52,14 @@ quit;
 		,Suffix_Output=
 		)
 
-
-/*Limit to acute IP stays by removing the following prm_lines:
-	I11b--Medical - Rehabilitation
-	I13b--Psychiatric - Residential
-	I14b--Alcohol and Drug Abuse - Residential
-*/
+/*Extract medical member months*/
+proc sql noprint;
+	select memmos_medical
+	into :member_months_current
+	from agg_memmos_current
+;
+quit;
+%put memmos = &member_months_current.;
 
 %run_hcc_wrap_prm(&inc_start_current.
 		,&inc_end_current.
@@ -66,30 +68,41 @@ quit;
 		,post008
 		)
 
-/*Determine member months for per 1000 calcs*/
-
-
-
-
-
-/*Limit to Acute Inpatient Admissions*/
-proc summary nway missing data = agg_claims_med_current;
-var discharges;
-where prm_line not in ('I11b', 'I13b', 'I14b');
-output out=acute_ip_admits (drop = _:)sum=total_admits;
-run;
+/*Limit to acute IP stays by removing the following prm_lines:
+	I11b--Medical - Rehabilitation
+	I13b--Psychiatric - Residential
+	I14b--Alcohol and Drug Abuse - Residential
+*/
+proc sql noprint;
+	select sum(discharges)
+	into :acute_admits
+	from agg_claims_med_current
+	where prm_line not in ('I11b', 'I13b', 'I14b')
+	;
+quit;
+%put Acute Admits = &acute_admits.;
 
 /*Limit to Medical Admissions I11a and I11b*/
-proc summary nway missing data = agg_claims_med_current;
-var discharges;
-where prm_line in ('I11a', 'I11b');
-output out=medical_ip_admits (drop = _:)sum=total_admits;
-run;
+proc sql noprint;
+	select sum(discharges)
+	into :medical_admits
+	from agg_claims_med_current
+	where prm_line in ('I11a', 'I11b')
+	;
+quit;
+%put Medical Admits = &medical_admits.;
 
 /*Limit to Surgical Admissions I12*/
-proc summary nway missing data = agg_claims_med_current;
-var discharges;
-where prm_line = 'I12';
-output out=surgical_ip_admits (drop = _:)sum=total_admits;
-run;
+proc sql noprint;
+	select sum(discharges)
+	into :surgical_admits
+	from agg_claims_med_current
+	where prm_line = 'I12'
+	;
+quit;
+%put Surgical Admits = &surgical_admits.;
+
+
+
+
 
