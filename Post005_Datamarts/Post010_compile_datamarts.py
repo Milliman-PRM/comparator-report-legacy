@@ -29,12 +29,18 @@ def main():
         Run the main procedure. Creates and generates data marts for each
         provided data mart.
     """
-    path_template_source = Path(healthbi_env.META["path_onboarding_code"]) / "Post005_Datamarts"
+    path_template_source = Path(os.path.realpath(__file__)).parent
     # path_template_source = Path(r"C:\Users\Kyle.Baird\repos\Comparator_Report\Post005_Datamarts")
     path_dir_codegen_output = Path(healthbi_env.META[2, 'out'])
     list_template_names = [
         path_.name.lower() for path_ in path_template_source.iterdir() if path_.is_dir()
         ]
+
+    mainline_template_names = {
+        path_.name.lower()
+        for path_ in Path(healthbi_env.META[2, 'code']).iterdir()
+        if path_.is_dir()
+        }
 
     # Make a local copy of this reference file because the DataMart class
     # requires it to be next to the source templates
@@ -51,9 +57,15 @@ def main():
         )
 
     for name_template in list_template_names:
-        # pylint: disable=anomalous-backslash-in-string
-        sas_infile_path_string = "&path_onboarding_code.\Post005_Datamarts\\" + name_template
-        # pylint: enable=anomalous-backslash-in-string
+        assert name_template not in mainline_template_names, \
+            '{} is already defined in mainline PRM'.format(name_template)
+
+        sas_infile_path_string = str(path_template_source / name_template).lower()
+        # Generalize the location; likely appropriate when running out of source control
+        sas_infile_path_string = sas_infile_path_string.replace(
+            os.environ['USERPROFILE'].lower(),
+            '%SysGet(UserProfile)',
+            )
 
         print("Validating and code generating for template: {}".format(name_template))
 
