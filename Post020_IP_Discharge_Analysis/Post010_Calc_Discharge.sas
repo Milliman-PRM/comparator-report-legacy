@@ -20,12 +20,10 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 libname post008 "&post008.";
 libname post020 "&post020.";
 
-
-
-
-
-
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
 
 /*Pull out the start/end dates from the time windows dataset*/
 proc sql noprint;
@@ -39,7 +37,6 @@ proc sql noprint;
 		 ,:inc_end separated by "~"
 		 ,:paid_thru separated by "~"
 	from post008.Time_Windows
-	
 	;
 quit;
 %put time_period = &time_period.;
@@ -79,43 +76,43 @@ quit;
 %put sum = &prior_obssum;
 
 proc sql;
-	CREATE TABLE Discharge_totals AS
-		SELECT 
+	create table post020.Discharge_totals as
+		select
 			"Discharge" as Metric
 			,nest.time_slice as time_period
 			,nest.Discharge_Desc
 			,SUM(Admits) as Admits
 			,SUM(Admits_pct) as Admits_pct
 			,SUM(PRM_Costs) as PRM_Costs
-			,ACO
-		FROM (
-			SELECT
+			,name_client
+		from (
+			select
 				src.time_slice
 				,src.DischargeStatus
-				,Case WHEN src.DischargeStatus = "01" THEN "Discharged to Home"
-			  		  WHEN src.DischargeStatus = "62" THEN "Discharged to IRF"
-			  		  WHEN src.DischargeStatus = "03" THEN "Discharged to SNF"
-			  		  WHEN src.DischargeStatus = "06" THEN "Discharged to Home Health Care"
-					  WHEN src.DischargeStatus = "20" THEN "Died"
-			  		  ELSE "Other"
-		 		 End AS Discharge_Desc
+				,Case when src.DischargeStatus = "01" then "Discharged to Home"
+			  		  when src.DischargeStatus = "62" then "Discharged to IRF"
+			  		  when src.DischargeStatus = "03" then "Discharged to SNF"
+			  		  when src.DischargeStatus = "06" then "Discharged to Home Health Care"
+					  when src.DischargeStatus = "20" then "Died"
+			  		  else "Other"
+		 		 End as Discharge_Desc
 				,src.Admits
-				,Case WHEN upcase(src.time_slice) = "CURRENT" then (src.admits /&curr_obssum.)
-					  WHEN upcase(src.time_slice) = "PRIOR" then (src.admits/&prior_obssum.)
-					  ELSE 0
-				 END AS Admits_pct
+				,Case when upcase(src.time_slice) = "CURRENT" then (src.admits /&curr_obssum.)
+					  when upcase(src.time_slice) = "PRIOR" then (src.admits/&prior_obssum.)
+					  else 0
+				 END as Admits_pct
 				,src.PRM_Costs
-				,"&name_client." AS name_client
+				,"&name_client." as name_client
 
-			 FROM Agg_claims_med AS src
+			 from Agg_claims_med as src
 
-			  ) AS NEST
+			  ) as NEST
 
-		GROUP BY nest.time_slice,nest.Discharge_Desc,nest.ACO
+		group by nest.time_slice,nest.Discharge_Desc,nest.name_client
 ;
 quit;
 
-%LabelDataSet(outputs.Discharge_totals)
+%LabelDataSet(post020.Discharge_totals)
 
 %put System Return Code = &syscc.;
 
