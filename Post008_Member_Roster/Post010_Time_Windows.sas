@@ -35,7 +35,7 @@ data post008.time_windows;
 
 	/*Now round to nearest calendar quarter.*/
 	inc_end = intnx('month', inc_end, -mod(month(inc_end), 3), 'end');
-	inc_start = intnx('month', inc_end, -12, 'beg');
+	inc_start = intnx('month', inc_end, -11, 'beg');
 
 	output;
 
