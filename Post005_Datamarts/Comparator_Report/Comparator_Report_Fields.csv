@@ -1,0 +1,62 @@
+name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,require_label_ifnotallnull,notes_develop,notes_client
+name_client,,varchar,256,N,,N,,Client Name
+time_period,,varchar,32,N,,N,,Period for the information
+prm_line,,varchar,4,N,,N,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category; Refer to the [MR_Line] tab in the Code Sets workbook for a complete list.","Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
+elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
+prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
+prm_line_desc,,varchar,128,N,,N,,Detailed Service Category Description
+prm_line_category,,varchar,16,N,,N,,Aggregate Service Category Description
+prm_util_type,,varchar,16,N,,N,Utilization Type,Utilization Type
+prm_discharges,,integer,,N,,N,Indicator of discharges. Should summarize to count of discharges. Only populated for Inpatient claims.,Indicates a discharges for an inpatient claim.
+prm_days,,integer,,N,,N,Count of days for an inpatient claim.,Count of days for the claim line for inpatient claims.
+prm_util,,integer,,N,,N,Utilization,Utilization Count.  Refer to PRM_Util_Type to understand the units for a given record.
+prm_memmos,,float,,N,,N,,Number of Member Months
+prm_costs,,float,,N,,N,Costs,"Costs chosen for the client.  This could be allowed, billed, or paid amount."
+prm_allowed,,float,,N,,N,,Allowed costs
+prm_paid,,float,,N,,N,,Paid costs
+prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,"What type of coverage does this correspond to? (e.g. Medical, Rx)"
+type_benchmark,,varchar,8,N,Loose~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed)
+benchmark_discharges_per1k,,float,,N,,N,,"Rate of Discharges per 1,000 member years."
+benchmark_days_per1k,,float,,N,,N,,"Rate of Days per 1,000 member years."
+benchmark_util_per1k,,float,,N,,N,,"Rate of Utilization per 1,000 member years."
+deceased_yn,,char,1,N,Y~N,N,,Are these members deceased as of the end of this time period?
+deceased_hospital_yn,,char,1,N,Y~N,N,,Did the deceased members die in the hospital?
+deceased_chemo_yn,,char,1,N,Y~N,N,,Did the deceased members recently receive chemotherapy?
+final_hospice_days,,integer,,N,,N,,"For deceased members, how many days were they in the hospice immediately prior to death?"
+riskscr_avg,,float,,N,,N,,Average risk score for the corresponding members.
+memcnt,,integer,,N,,N,,Count of members with the corresponding statuses.
+prv_id_inpatient,,varchar,40,N,,N,,Provider ID of the corresponding inpatient facility.
+discharge_status_code,,char,2,N,,N,,Discharge status code for these stays.
+discharge_status_desc,,varchar,256,N,,N,,Description of the discharge status code for these stays.
+drg_inpatient,,char,3,N,,N,,DRG for these stays.
+drg_version_inpatient,,char,5,N,,N,,DRG Version for these stays.
+acute_yn,,char,1,N,Y~N,N,,Were these stays at an acute facility?
+medical_surgical,,char,8,N,Medical~Surgical,N,,What type of services did these stays contain (i.e. Medical or Surgical)?
+inpatient_pqi_yn,,char,1,N,Y~N,N,,Were these stays for a PQI?
+preference_sensitive_yn,,char,1,N,Y~N,N,,Were these stays for a Preference Sensitive reason?
+los_inpatient,,integer,,N,,N,,What was the Length of Stay for these stays?
+cnt_discharges_inpatient,,integer,,N,,N,,Count of discharges for these stays.
+sum_days_inpatient,,integer,,N,,N,,Sum of days for these stays.
+sum_costs_inpatient,,float,,N,,N,,Sum of costs for these stays.
+prv_id_snf,,varchar,40,N,,N,,Provider ID of the corresponding SNF.
+snf_from_ip_yn,,char,1,N,Y~N,N,,Did these stays begin with a transfer from an inpatient facility?
+snf_readmit_yn,,char,1,N,Y~N,N,,Were these troublingly short stays that ended with an admission to an inpatient facility?
+los_snf,,integer,,N,,N,,What was the Length of Stay for these stays?
+cnt_discharges_snf,,integer,,N,,N,,Count of discharges for these stays.
+sum_days_snf,,integer,,N,,N,,Sum of days for these stays.
+sum_costs_snf,,float,,N,,N,,Sum of costs for these stays.
+metric_category,,varchar,32,N,inpatient~discharge_status~snf~er~outpatient~end_of_life,N,,Category of metrics; loosely correlated to anticipated reporting views.
+metric_id,,varchar,32,N,,N,,"Code-friendly name/description of metric (no spaces, max of 32 characters)"
+metric_name,,varchar,256,N,,N,,Human-friendly name/description of the metric.
+metric_value,,float,,N,,N,,Value of the metric.
+inc_start,,date,,N,,N,,The earliest incurred date.
+inc_end,,date,,N,,N,,The latest incurred date.
+paid_thru,,date,,N,,N,,The latest paid date.
+meta_field,,varchar,32,N,,N,,Field Name
+meta_field_label,,varchar,64,Y,,N,"Not the key, but no duplicates allowed!",Field Description. Primarily used to identify contents of abstracted fields (e.g. elig_status_1)
+meta_field_comment,,varchar,4096,N,,N,,Field Comment
+meta_project,,varchar,64,N,,N,,Project Metadata Name
+meta_project_string,,varchar,1024,Y,,N,,"Project Metadata Value (String). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
+meta_project_date,,date,,Y,,N,,"Project Metadata Value (Date). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
+meta_project_integer,,integer,,Y,,N,,"Project Metadata Value (Integer). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
+meta_project_notes,,varchar,256,N,,N,,Describes provided metadata.
