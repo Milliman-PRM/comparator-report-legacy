@@ -1,9 +1,10 @@
 name_field,name_table,key_table,key_global
 name_client,cost_util,Y,N
+time_period,cost_util,Y,N
 prm_line,cost_util,Y,N
 elig_status_1,cost_util,Y,N
 prv_net_aco_yn,cost_util,Y,N
-prm_admits,cost_util,N,N
+prm_discharges,cost_util,N,N
 prm_days,cost_util,N,N
 prm_util,cost_util,N,N
 prm_costs,cost_util,N,N
@@ -11,6 +12,7 @@ prm_allowed,cost_util,N,N
 prm_paid,cost_util,N,N
 prm_coverage_type,cost_util,N,N
 name_client,memmos,Y,N
+time_period,memmos,Y,N
 elig_status_1,memmos,Y,N
 prm_coverage_type,memmos,Y,N
 prm_memmos,memmos,N,N

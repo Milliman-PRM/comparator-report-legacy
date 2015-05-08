@@ -16,6 +16,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
+libname post008 "&post008." access=readonly;
 libname post010 "&post010.";
 
 %let assign_name_client = name_client = "&name_client.";
@@ -77,28 +78,58 @@ data _null_;
 run;
 
 /***** GENERATE RAW SOURCE DATA *****/
+proc sql noprint;
+	select
+		time_period
+		,inc_start format = best12.
+		,inc_end format = best12.
+		,paid_thru format = best12.
+	into :list_time_period separated by "~"
+		,:list_inc_start separated by "~"
+		,:list_inc_end separated by "~"
+		,:list_paid_thru separated by "~"
+	from post008.time_windows
+	;
+quit;
+%put list_time_period = &list_time_period.;
+%put list_inc_start = &list_inc_start.;
+%put list_inc_end = &list_inc_end.;
+%put list_paid_thru = &list_paid_thru.;
+
 %agg_claims(
-	IncStart=&date_performanceyearstart.
-	,IncEnd=&date_latestpaid.
-	,PaidThru=&date_latestpaid.
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=Discharge
 	,Force_Util=N
-	,Dimensions=prm_line~elig_status_1~prv_net_aco_yn
-	,Time_Slice=
+	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn
+	,Time_Slice=&list_time_period.
 	,Where_Claims=
 	,Where_Elig=
 	,Date_DateTime=
-	,Suffix_Output=
+	,Suffix_Output=member
 	)
 
 data agg_claims_med_coalesce;
-	set agg_claims_med;
+	set agg_claims_med_member;
 	elig_status_1 = coalescec(elig_status_1,"Unknown");
 	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
+	rename time_slice = time_period;
 run;
 
-%GetVariableInfo(agg_claims_med_coalesce,meta_variables)
+proc sql;
+	create table agg_claims_med_limited as
+	select
+		src.*
+	from agg_claims_med_coalesce as src
+	inner join post008.members as limit on
+		src.member_id eq limit.member_id
+			and src.time_period eq limit.time_period
+	;
+quit;
+
+%GetVariableInfo(agg_claims_med_limited,meta_variables)
 
 proc sql noprint;
 	select
@@ -114,9 +145,10 @@ quit;
 proc means noprint
 	nway
 	missing
-	data = agg_claims_med_coalesce
+	data = agg_claims_med_limited
 	;
-	class prm_line
+	class time_period
+		prm_line
 		elig_status_1
 		prv_net_aco_yn
 		;
@@ -134,8 +166,8 @@ data post010.cost_util;
 	format &cost_util_codegen_format.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
-	if lowcase(prm_line) eq: "i" then prm_admits = Discharges;
-	else prm_admits = 0;
+	if lowcase(prm_line) eq: "i" then prm_discharges = Discharges;
+	else prm_discharges = 0;
 	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
 	else prm_days = 0;
 	prm_allowed = Allowed;
@@ -145,8 +177,37 @@ data post010.cost_util;
 run;
 %LabelDataSet(post010.cost_util)
 
+proc sql;
+	create table agg_memmos_limited as
+	select
+		src.*
+	from agg_memmos_member as src
+	inner join post008.members as limit on
+		src.member_id eq limit.member_id
+			and src.time_slice eq limit.time_period
+	;
+quit;
 
-proc sort data=agg_memmos out=agg_memmos_dimsort;
+proc means
+	noprint
+	nway
+	missing
+	data = agg_memmos_limited
+	;
+	class
+		time_slice
+		elig_status_1
+		;
+	var _numeric_;
+	output out = agg_memmos_reagg (
+		drop = _TYPE_
+			_FREQ_
+		)
+		sum =
+		;
+run;
+
+proc sort data=agg_memmos_reagg out=agg_memmos_dimsort;
 	by _character_;
 run;
 
@@ -162,7 +223,7 @@ run;
 
 data post010.memmos;
 	format &memmos_codegen_format.;
-	set agg_memmos_long;
+	set agg_memmos_long (rename = (time_slice = time_period));
 	&assign_name_client.;
 	prm_memmos = memmos1;
 	prm_coverage_type = propcase(scan(Coverage_Type_Raw, 2 ,"_"));
