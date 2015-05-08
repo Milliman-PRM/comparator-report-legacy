@@ -44,17 +44,38 @@ quit;
 	,PaidThru=&paid_thru.
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
-	,Dimensions=member_ID
+	,Ongoing_Util_Basis=Discharge
+	,Dimensions=prm_line~caseadmitid~member_id
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
 );
 
-/*Output a table with only the current Agg_Claims*/
-data Agg_claims_med_current (drop = time_slice);
-	set Agg_claims_med;
-	where time_slice = "Current";
+proc sort data=agg_claims_med out=agg_claims_med;
+	by member_id date_case_latest date_case_earliest;
 run;
 
-/*Find the number of distinct SNFs utilized in past 12 month period*/
+/*Determine if there are readmissions within 30 days (still needs work)*/
+data claims_with_readmit;
+	set Agg_claims_med;
+	by member_id;
+
+	format
+		prev_discharge yymmddd10.
+		prev_time_period $12.
+		Readmit $1.
+		;
+
+	if first.member_id then do;
+		prev_discharge = date_case_latest;
+		prev_time_period = time_slice;
+	end;
+	if date_case_earliest-prev_discharge le 30
+		and date_case_earliest-prev_discharge gt 0
+		and prev_time_period = time_slice then do;
+		Readmit = 'Y';
+		prev_discharge = date_case_latest;
+	end;
+	else Readmit = 'N';
+run;
 
 /*Find the number of SNF Admissions per 1000*/
 proc summary nway missing data = Agg_claims_med_current;
@@ -66,3 +87,4 @@ data SNF_adm_per_1000 (drop = num_of_mems num_of_adms);
 	set SNF_number_admissions;
 	adms_per_1000 = num_of_adms / (num_of_mems / 1000);
 run;
+
