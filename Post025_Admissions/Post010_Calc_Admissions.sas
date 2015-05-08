@@ -85,12 +85,55 @@ proc sql;
 	;
 quit;
 
-proc import
-	datafile="Discharge_status_xwalk.csv"
-	out=disch_xwalk
-	DBMS=CSV replace;
+/*Add in discharge status description*/
+data disch_xwalk;
+	infile "%GetParentFolder(0)Discharge_status_xwalk.csv"
+		lrecl=2048
+		firstobs=2
+		missover
+		dsd
+		delimiter=','
+		;
+	input
+		disch_code :$2.
+		disch_desc :$32.
+		;
 run;
 	
+proc sql;
+	create table claims_w_desc as
+	select
+		a.*
+		,coalesce(b.disch_desc,'Other') as discharge_status_desc
+	from claims_elig as a
+	left join disch_xwalk as b on
+		a.discharge_status_code = b.disch_code
+	;
+quit;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		
 
