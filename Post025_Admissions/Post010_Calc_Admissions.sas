@@ -84,6 +84,14 @@ proc sql;
 		a.member_id = b.member_id and a.time_slice = b.time_period
 	;
 quit;
+
+proc import
+	datafile="Discharge_status_xwalk.csv"
+	out=disch_xwalk
+	DBMS=CSV replace;
+run;
+	
+
 		
 
 /*
