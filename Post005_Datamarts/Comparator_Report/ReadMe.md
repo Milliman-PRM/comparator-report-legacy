@@ -14,3 +14,6 @@ The contents of this data mart will be delivered to support the Comparator Repor
 | `details_inpatient` | Decorated IP Cost Model Aggregation. |
 | `details_snf` | Decorated SNF Cost Model Aggregation |
 | `metrics_key_value` | Key-value store of metrics |
+| `meta_project` | Key-value store of project metadata. |
+| `meta_field` | Key-value store of field level information. |
+| `time_windows` | Reference table explaining the claims periods included in each time period. |
