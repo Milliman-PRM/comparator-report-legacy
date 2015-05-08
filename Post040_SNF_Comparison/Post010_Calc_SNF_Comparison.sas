@@ -12,38 +12,4 @@
 options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
-%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
-
-libname post008 "&post008." access = readonly;
-
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-
-/*Store the start and end dates from the time windows dataset in variables for later use.*/
-proc sql noprint;
-	select
-		time_period
-		,inc_start format = 12.
-		,inc_end format = 12.
-		,paid_thru format = 12.
-	into :time_period separated by "~"
-	    ,:inc_start separated by "~"
-		,:inc_end separated by "~"
-		,:paid_thru separated by "~"
-	from post008.Time_Windows
-	;
-quit;
-%put time_period = &time_period.;
-%put inc_start = &inc_start.;
-%put inc_end = &inc_end.;
-%put paid_thru = &paid_thru.;
-
-/*Create the current and prior data sets with only SNF claims.*/
-%Agg_Claims(
-	IncStart=&inc_start.
-	,IncEnd=&inc_end.
-	,PaidThru=&paid_thru.
-	,Time_Slice=&time_period.
-	,Med_Rx=Med
-	,Dimensions=
-	,Where_Claims=outclaims_prm.prm_line eq "I31"
-);
