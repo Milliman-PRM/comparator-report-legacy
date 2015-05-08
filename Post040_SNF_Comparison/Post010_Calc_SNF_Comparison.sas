@@ -44,6 +44,6 @@ quit;
 	,PaidThru=&paid_thru.
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
-	,Dimensions=member_ID
+	,Dimensions=
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
 );
