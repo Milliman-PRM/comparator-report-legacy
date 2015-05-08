@@ -58,4 +58,6 @@ data _null_;
 		);
 run;
 
+%AssertNoNulls(validate.comparator_report_fields,notes_client,ReturnMessage=This datamart is intended for semi-external release.)
+
 %put System Return Code = &syscc.;
