@@ -47,22 +47,3 @@ quit;
 	,Dimensions=member_ID
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
 );
-
-/*Output a table with only the current Agg_Claims*/
-data Agg_claims_med_current (drop = time_slice);
-	set Agg_claims_med;
-	where time_slice = "Current";
-run;
-
-/*Find the number of distinct SNFs utilized in past 12 month period*/
-
-/*Find the number of SNF Admissions per 1000*/
-proc summary nway missing data = Agg_claims_med_current;
-	vars RowCnt;
-	output out = SNF_number_admissions (drop = _TYPE_ rename=(_FREQ_=num_of_mems RowCnt=num_of_adms)) sum=;
-run;
-
-data SNF_adm_per_1000 (drop = num_of_mems num_of_adms);
-	set SNF_number_admissions;
-	adms_per_1000 = num_of_adms / (num_of_mems / 1000);
-run;
