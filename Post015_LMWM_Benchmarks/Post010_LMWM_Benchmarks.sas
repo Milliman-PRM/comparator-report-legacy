@@ -17,6 +17,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname post008 "&post008." access=readonly;
 libname post010 "&post010." access=readonly;
+libname post015 "&post015.";
 
 %let assign_name_client = name_client = "&name_client.";
 %put assign_name_client = &assign_name_client.;
