@@ -46,7 +46,7 @@ quit;
 		,Med_Rx=Med
 		,Ongoing_Util_Basis=Discharge
 		,Force_Util=N
-		,Dimensions=prm_line~caseadmitid~member_id
+		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&time_period.
 		,Where_Claims=%str(substr(outclaims_prm.prm_line,1,1) eq "I" and outclaims_prm.prm_line ne "I31")
 		,Where_Elig=
@@ -54,61 +54,39 @@ quit;
 		,Suffix_Output=
 		)
 
-
-
-proc sort data=agg_claims_med out=claims_sort;
-	by member_id  time_period date_case_latest date_case_earliest;
-run;
-
-
-/*Determine if there are readmissions within 30 days*/
-data claims_w_readmit (drop=prev_discharge prev_time_period);
-	set claims_sort;
-	by member_id;
-
-	format	
-			prev_discharge yymmddd10.
-			prev_time_period $32.
-			Readmit $1.
-			;
-
-	retain prev_discharge prev_time_period;
-		if first.member_id then do;
-				prev_discharge = date_case_latest;
-				prev_time_period = time_slice;
-		end;
-		if date_case_earliest-prev_discharge le 30 
-			and date_case_earliest-prev_discharge gt 0
-			and prev_time_period = time_slice then do;
-			Readmit = 'Y';
-			prev_discharge = date_case_latest;
-		end;
-		else Readmit = 'N';
-run;
-
 /*Limit acute IP stays by removing the following prm_lines:
 	I11b--Medical - Rehabilitation
+	I13a--Psychiatric - Hospital
 	I13b--Psychiatric - Residential
-	I14b--Alcohol and Drug Abuse - Residential
 */
 proc sql;
 	create table claims_elig as
 	select
-		a.time_slice
+		"&name_client." as name_client
+		,a.time_slice as time_period
 		,a.member_id
+		,a.providerid as prv_id_inpatient
 		,a.discharges
-		,a.prm_costs
-		,(case when a.prm_line not in ('I11b', 'I13b', 'I14b') then 'Y' else 'N' end) as Acute_Discharge
-		,(case when a.prm_line in ('I11a', 'I11b') then 'Med' 
-			  when a.prm_line = 'I12' then 'Surg' else 'N/A' end) as Med_Surg
-		,(case when a.prm_util = 1 then 'Y' else 'N' end) as One_day_stay
-		,a.readmit
-	from claims_w_readmit as a
+		,a.dischargestatus as discharge_status_code
+		,a.prm_util as days
+		,a.prm_util as los_inpatient
+		,a.prm_costs as costs
+		,a.prm_drg as drg_inpatient
+		,a.prm_drgversion as drg_version_inpatient
+		,(case when a.prm_line not in ('I11b', 'I13a', 'I13b') then 'Y' else 'N' end) as acute_yn
+		,(case when a.prm_line in ('I11a', 'I11b') then 'Medical' 
+			  when a.prm_line = 'I12' then 'Surgical' else 'N/A' end) as medical_surgical
+		,a.prm_readmit_all_cause_yn as inpatient_readmit_yn
+		,(case when a.prm_ahrq_pqi = 'None' then 'N' else 'Y' end) as inpatient_pqi_yn
+		,'N' as preference_sensitive_yn
+	from agg_claims_med as a
 	inner join post008.members as b on
 		a.member_id = b.member_id and a.time_slice = b.time_period
 	;
 quit;
 		
+
+/*
 %run_hcc_wrap_prm(&inc_start_current.
 		,&inc_end_current.
 		,&paid_thru_current.
@@ -116,7 +94,7 @@ quit;
 		,post008
 		)
 
-/*Limit HCC to the members in the member roster*/
+/*Limit HCC to the members in the member roster
 proc sql;
 	create table HCC_Limit as
 	select
@@ -128,3 +106,4 @@ proc sql;
 		a.hicno = b.member_id and a.time_slice = b.time_period
 	;
 quit;
+*/
