@@ -3,7 +3,7 @@ name_client,,varchar,256,N,,N,,Client Name
 time_period,,varchar,32,N,,N,,Period for the information
 prm_line,,varchar,4,N,,N,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category; Refer to the [MR_Line] tab in the Code Sets workbook for a complete list.","Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
 elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
-prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,
+prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
 prm_line_desc,,varchar,128,N,,N,,Detailed Service Category Description
 prm_line_category,,varchar,16,N,,N,,Aggregate Service Category Description
 prm_util_type,,varchar,16,N,,N,Utilization Type,Utilization Type
@@ -14,7 +14,7 @@ prm_memmos,,float,,N,,N,,Number of Member Months
 prm_costs,,float,,N,,N,Costs,"Costs chosen for the client.  This could be allowed, billed, or paid amount."
 prm_allowed,,float,,N,,N,,Allowed costs
 prm_paid,,float,,N,,N,,Paid costs
-prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,
+prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,"What type of coverage does this correspond to? (e.g. Medical, Rx)"
 type_benchmark,,varchar,8,N,Loose~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed)
 benchmark_discharges_per1k,,float,,N,,N,,"Rate of Discharges per 1,000 member years."
 benchmark_days_per1k,,float,,N,,N,,"Rate of Days per 1,000 member years."
