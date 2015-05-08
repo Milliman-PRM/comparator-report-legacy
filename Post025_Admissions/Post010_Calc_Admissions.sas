@@ -12,9 +12,11 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "&M073_Cde.pudd_methods\*.sas";
 %include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
+%include "&M002_cde.supp01_validation_functions.sas";
 
 /*Libnames*/
 libname post008 "&post008.";
+libname post025 "&post025.";
 
 
 proc sql noprint;
@@ -119,7 +121,7 @@ var discharges days costs;
 output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
 run;
 
-
+%ValidateAgainstTemplate(post025,Comparator_Report)
 
 
 
