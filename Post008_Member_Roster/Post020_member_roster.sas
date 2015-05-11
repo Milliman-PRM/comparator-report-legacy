@@ -91,10 +91,12 @@ proc sql noprint;
 		time_period
 		,inc_start format = 12.
 		,inc_end format = 12.
+		,paid_thru format = 12.
 		,time_period format = $12.
 	into :time_period separated by "~"
 		,:inc_start separated by "~"
 		,:inc_end separated by "~"
+		,:paid_thru separated by "~"
 		,:time_period separated by "~"
 	from post008.Time_windows
 	;
@@ -103,7 +105,7 @@ quit;
 
 %run_hcc_wrap_prm(&inc_start.
 		,&inc_end.
-		,&inc_end.
+		,&paid_thru.
 		,&time_period.
 		,post008
 		)
