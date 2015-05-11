@@ -11,10 +11,12 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
 
 /* Libnames */
 libname M035_Out "&M035_Out." access = readonly;
 libname post008 "&post008.";
+
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -83,6 +85,31 @@ run;
 	,ReturnMessage=Multiple time windows assigned for a given time period.
 	)
 
+/*Calculate Risk Scores to add to the member table*/
+proc sql noprint;
+	select 
+		time_period
+		,inc_start format = 12.
+		,inc_end format = 12.
+		,paid_thru format = 12.
+		,time_period format = $12.
+	into :time_period separated by "~"
+		,:inc_start separated by "~"
+		,:inc_end separated by "~"
+		,:paid_thru separated by "~"
+		,:time_period separated by "~"
+	from post008.Time_windows
+	;
+quit;
+
+
+%run_hcc_wrap_prm(&inc_start.
+		,&inc_end.
+		,&paid_thru.
+		,&time_period.
+		,post008
+		)
+
 /*Decorate roster with information from member that may be needed
   for subsequent analyses (e.g. risk scoring)*/
 proc sql;
@@ -104,11 +131,14 @@ proc sql;
 					)
 				)
 			end as age
+		,riskscr.score_community as riskscr_1
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
+	left join post008.hcc_results as riskscr
+		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
 	order by
 		roster.member_id
 		,roster.time_period
