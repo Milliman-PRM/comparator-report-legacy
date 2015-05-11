@@ -37,7 +37,7 @@ quit;
 %put inc_end = &inc_end.;
 %put paid_thru = &paid_thru.;
 
-/*Create the current and prior data sets with only SNF claims.*/
+/*Create the current and prior data sets with only SNF claims at the case level.*/
 %Agg_Claims(
 	IncStart=&inc_start.
 	,IncEnd=&inc_end.
@@ -49,66 +49,106 @@ quit;
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
     );
 
-proc sort data=agg_claims_med out=agg_claims_med;
+proc sort data=agg_claims_med out=cases_med;
 	by member_id date_case_latest date_case_earliest;
 run;
 
 /*Limit cases to the current time slice*/
-data Agg_claims_med_current;
-	set Agg_claims_med;
+data cases_med_current;
+	set cases_med;
 	where time_slice = "Current";
 run;
 
 /*Limit cases to the prior time slice*/
-data Agg_claims_med_prior;
-	set Agg_claims_med;
+data cases_med_prior;
+	set cases_med;
 	where time_slice = "Prior";
 run;
 	
+/*Now create the current and prior data sets with only SNF claims at the member level.*/
+%Agg_Claims(
+	IncStart=&inc_start.
+	,IncEnd=&inc_end.
+	,PaidThru=&paid_thru.
+	,Time_Slice=&time_period.
+	,Med_Rx=Med
+	,Ongoing_Util_Basis=Discharge
+	,Dimensions=member_id
+	,Where_Claims=outclaims_prm.prm_line eq "I31"
+    );
+
+proc sort data=agg_claims_med out=members;
+	by member_id;
+run;
+
+/*Limit members to the current time slice*/
+data members_current;
+	set members;
+	where time_slice = "Current";
+run;
+
+/*Limit members to the prior time slice*/
+data members_prior;
+	set members;
+	where time_slice = "Prior";
+run;
+
 /*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
 proc sql noprint;
 	create table Number_NPIs_current as
 	select count(distinct prv_id_npi) as NPI_Count
-	from Agg_claims_med_current;
+	from cases_med_current;
 quit;
 	
 proc sql noprint;
 	create table Number_NPIs_prior as
 	select count(distinct prv_id_npi) as NPI_Count
-	from Agg_claims_med_prior;
+	from cases_med_prior;
 quit;
 
 /*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
-proc summary nway missing data = Agg_claims_med_current;
+proc summary nway missing data = Members_current;
 	vars RowCnt;
 	output out = Number_admissions_current (drop = _TYPE_ _FREQ_ rename=(RowCnt=num_of_adms)) sum=;
 run;
 
-proc sql noprint;
-	create table Number_members_current as
-	select count(distinct member_id) as Members_Count
-	from Agg_claims_med_current;
+proc summary nway missing data = Members_current;
+	vars MemMos;
+	output out = Total_mem_mos_current (drop = _TYPE_ _FREQ_ rename=(MemMos=Total_memmos)) sum=;
 quit;
 
-data Adm_per_1000_current (keep = adms_per_1000);
-	merge Number_admissions_current Number_members_current;
-	adms_per_1000 = num_of_adms / (Members_Count / 1000);
+data Total_mem_k_years_current;
+	set Total_mem_mos_current;
+	Mem_k_years = Total_memmos / 12000;
+	keep Mem_k_years;
 run;
 
-proc summary nway missing data = Agg_claims_med_prior;
+data Admissions_per_1000_current;
+	merge Number_admissions_current Total_mem_k_years_current;
+	Admissions_per_1000 = num_of_adms / Mem_k_years;
+	keep Admissions_per_1000;
+run;
+
+proc summary nway missing data = Members_prior;
 	vars RowCnt;
 	output out = Number_admissions_prior (drop = _TYPE_ _FREQ_ rename=(RowCnt=num_of_adms)) sum=;
 run;
 
-proc sql noprint;
-	create table Number_members_prior as
-	select count(distinct member_id) as Members_Count
-	from Agg_claims_med_prior;
+proc summary nway missing data = Members_prior;
+	vars MemMos;
+	output out = Total_mem_mos_prior (drop = _TYPE_ _FREQ_ rename=(MemMos=Total_memmos)) sum=;
 quit;
 
-data Adm_per_1000_prior (keep = adms_per_1000);
-	merge Number_admissions_prior Number_members_prior;
-	adms_per_1000 = num_of_adms / (Members_Count / 1000);
+data Total_mem_k_years_prior;
+	set Total_mem_mos_prior;
+	Mem_k_years = Total_memmos / 12000;
+	keep Mem_k_years;
+run;
+
+data Admissions_per_1000_prior;
+	merge Number_admissions_prior Total_mem_k_years_prior;
+	Admissions_per_1000 = num_of_adms / Mem_k_years;
+	keep Admissions_per_1000;
 run;
 
 
@@ -134,16 +174,5 @@ data claims_with_readmit;
 		prev_discharge = date_case_latest;
 	end;
 	else Readmit = 'N';
-run;
-
-/*Find the number of SNF Admissions per 1000*/
-proc summary nway missing data = Agg_claims_med_current;
-	vars RowCnt;
-	output out = SNF_number_admissions (drop = _TYPE_ rename=(_FREQ_=num_of_mems RowCnt=num_of_adms)) sum=;
-run;
-
-data SNF_adm_per_1000 (drop = num_of_mems num_of_adms);
-	set SNF_number_admissions;
-	adms_per_1000 = num_of_adms / (num_of_mems / 1000);
 run;
 
