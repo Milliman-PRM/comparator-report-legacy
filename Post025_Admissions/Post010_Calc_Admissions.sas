@@ -18,7 +18,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 libname post008 "&post008.";
 libname post025 "&post025.";
 
-
+/*Create macro variables to be used in developing the metrics*/
 proc sql noprint;
 	select 
 		time_period
@@ -38,7 +38,6 @@ quit;
 %put inc_end = &inc_end.;
 %put paid_thru = &paid_thru.;
 
-
 /*Used Ongoing_Util_Basis=Discharge and Force_Util=No to match the cost model program*/
 /*Import inpatient claims excluding SNF for the "Current" time period*/
 %agg_claims(
@@ -55,6 +54,45 @@ quit;
 		,Date_DateTime=
 		,Suffix_Output=
 		)
+
+
+/*Determine memmos and risk score for use in calculating the metrics*/
+
+proc sql;
+	create table mem_w_rskscr
+	select
+		memmos.*
+		,members.riskscr_1
+	from agg_memmos as memmos
+	left join post008.members as members on
+		memmos.member_id = members.member_id
+	;
+quit;
+
+/*Determine the member months per time period*/
+proc sql noprint;
+	select
+		sum(case when time_slice = "Current" then memmos_medical else 0 end)
+		,sum(case when time_slice = "Prior" then memmos_medical else 0 end)
+	into :memmos_current
+		,:memmos_prior
+	from mem_w_rskscr
+	;
+quit;
+%put current_memmos = &memmos_current.;
+%put prior_memmos = &memmos_prior.;
+
+/*Determine the average risk score by time period*/
+proc sql;
+	select
+		sum(case when time_slice = "Current" then memmos_medical*riskscr_1 else 0 end)/&memmos_current.
+		,sum(case when time_slcie = "Prior" then memmos_medical*riskscr_1 else 0 end)/&memmos_prior.
+	into :rskscr_current
+		,:rskscr_prior
+	from mem_w_rskscr
+	;
+quit;
+
 
 /*Limit acute IP stays by removing the following prm_lines:
 	I11b--Medical - Rehabilitation
@@ -123,8 +161,20 @@ run;
 
 %ValidateAgainstTemplate(post025,Comparator_Report)
 
+/*Calculate the requested measures*/
+proc sql;
+	create table measures as
+	select
+		time_period
+		,sum(case when acute_yn = 'Y' then 1 else 0 end)XXXX as acute_per_1000
+		,sum(case when 
 
 
+
+
+
+
+		group by time_period
 
 
 
