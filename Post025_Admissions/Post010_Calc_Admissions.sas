@@ -92,6 +92,8 @@ proc sql;
 	from mem_w_rskscr
 	;
 quit;
+%put risk_score_current = &rskscr_current.;
+%put risk_score_prior = &rskscr_prior.;
 
 
 /*Limit acute IP stays by removing the following prm_lines:
