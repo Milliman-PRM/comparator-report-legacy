@@ -59,7 +59,7 @@ quit;
 /*Determine memmos and risk score for use in calculating the metrics*/
 
 proc sql;
-	create table mem_w_rskscr
+	create table mem_w_rskscr as
 	select
 		memmos.*
 		,members.riskscr_1
@@ -83,10 +83,10 @@ quit;
 %put prior_memmos = &memmos_prior.;
 
 /*Determine the average risk score by time period*/
-proc sql;
+proc sql noprint;
 	select
 		sum(case when time_slice = "Current" then memmos_medical*riskscr_1 else 0 end)/&memmos_current.
-		,sum(case when time_slcie = "Prior" then memmos_medical*riskscr_1 else 0 end)/&memmos_prior.
+		,sum(case when time_slice = "Prior" then memmos_medical*riskscr_1 else 0 end)/&memmos_prior.
 	into :rskscr_current
 		,:rskscr_prior
 	from mem_w_rskscr
