@@ -45,13 +45,72 @@ quit;
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=Discharge
-	,Dimensions=prm_line~caseadmitid~member_id
+	,Dimensions=prm_line~caseadmitid~member_id~providerID~prv_id_npi
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
-);
+    );
 
 proc sort data=agg_claims_med out=agg_claims_med;
 	by member_id date_case_latest date_case_earliest;
 run;
+
+/*Limit cases to the current time slice*/
+data Agg_claims_med_current;
+	set Agg_claims_med;
+	where time_slice = "Current";
+run;
+
+/*Limit cases to the prior time slice*/
+data Agg_claims_med_prior;
+	set Agg_claims_med;
+	where time_slice = "Prior";
+run;
+	
+/*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
+proc sql noprint;
+	create table Number_NPIs_current as
+	select count(distinct prv_id_npi) as NPI_Count
+	from Agg_claims_med_current;
+quit;
+	
+proc sql noprint;
+	create table Number_NPIs_prior as
+	select count(distinct prv_id_npi) as NPI_Count
+	from Agg_claims_med_prior;
+quit;
+
+/*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
+proc summary nway missing data = Agg_claims_med_current;
+	vars RowCnt;
+	output out = Number_admissions_current (drop = _TYPE_ _FREQ_ rename=(RowCnt=num_of_adms)) sum=;
+run;
+
+proc sql noprint;
+	create table Number_members_current as
+	select count(distinct member_id) as Members_Count
+	from Agg_claims_med_current;
+quit;
+
+data Adm_per_1000_current (keep = adms_per_1000);
+	merge Number_admissions_current Number_members_current;
+	adms_per_1000 = num_of_adms / (Members_Count / 1000);
+run;
+
+proc summary nway missing data = Agg_claims_med_prior;
+	vars RowCnt;
+	output out = Number_admissions_prior (drop = _TYPE_ _FREQ_ rename=(RowCnt=num_of_adms)) sum=;
+run;
+
+proc sql noprint;
+	create table Number_members_prior as
+	select count(distinct member_id) as Members_Count
+	from Agg_claims_med_prior;
+quit;
+
+data Adm_per_1000_prior (keep = adms_per_1000);
+	merge Number_admissions_prior Number_members_prior;
+	adms_per_1000 = num_of_adms / (Members_Count / 1000);
+run;
+
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
