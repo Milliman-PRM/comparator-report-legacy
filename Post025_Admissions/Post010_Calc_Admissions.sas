@@ -100,6 +100,8 @@ quit;
 	I11b--Medical - Rehabilitation
 	I13a--Psychiatric - Hospital
 	I13b--Psychiatric - Residential
+
+	Exclude pqi02 from the count because it is not part of the composite PQI score.
 */
 proc sql;
 	create table claims_elig as
@@ -119,7 +121,7 @@ proc sql;
 		,(case when a.prm_line in ('I11a', 'I11b') then 'Medical' 
 			  when a.prm_line = 'I12' then 'Surgical' else 'N/A' end) as medical_surgical
 		,a.prm_readmit_all_cause_yn as inpatient_readmit_yn
-		,(case when a.prm_ahrq_pqi = 'None' then 'N' else 'Y' end) as inpatient_pqi_yn
+		,(case when a.prm_ahrq_pqi in('None', 'pqi02') then 'N' else 'Y' end) as inpatient_pqi_yn
 		,'N' as preference_sensitive_yn
 	from agg_claims_med as a
 	inner join post008.members as b on
@@ -146,7 +148,7 @@ proc sql;
 	create table claims_w_desc as
 	select
 		a.*
-		,coalesce(b.disch_desc,'Other') as discharge_status_desc
+		,coalesce(b.disch_desc,'Other') as discharge_status_desc format $256. 
 	from claims_elig as a
 	left join disch_xwalk as b on
 		a.discharge_status_code = b.disch_code
@@ -158,64 +160,90 @@ proc summary nway missing data=claims_w_desc;
 class name_client time_period prv_id_inpatient discharge_status_code discharge_status_desc drg_inpatient drg_version_inpatient
 	  acute_yn medical_surgical inpatient_pqi_yn preference_sensitive_yn inpatient_readmit_yn los_inpatient;
 var discharges days costs;
-output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
+output out=post025.details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
 run;
-
-%ValidateAgainstTemplate(post025,Comparator_Report)
 
 /*Calculate the requested measures*/
 proc sql;
 	create table measures as
 	select
-		time_period
-		,sum(case when acute_yn = 'Y' then 1 else 0 end)XXXX as acute_per_1000
-		,sum(case when 
+		name_client format $256.
+		,time_period
+		,"Admissions" as metric_category format $32.
+		,case when time_period = 'Current' then 
+					sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000 
+			  when time_period = 'Prior' then 
+					sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
+		 end as acute_per_1000 label="Acute Admits per 1000"
 
+		,case when time_period = 'Current' then 
+					(sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000)/&rskscr_current. 
+			  when time_period = 'Prior' then 
+					(sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000)/&rskscr_prior.
+		 end as acute_adj_1000 label="Acute Admits per 1000 Risk Adjusted"
 
+		,case when time_period = 'Current' then 
+					sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000
+			  when time_period = 'Prior' then 
+					sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
+		 end as surg_per_1000 label="Surgical Admits per 1000"
 
+		,case when time_period = 'Current' then 
+					(sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000)/&rskscr_current.
+			  when time_period = 'Prior' then 
+					(sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000)/&rskscr_prior.
+		 end as surg_adj_1000 label="Surgical Admits per 1000 Risk Adjusted"
 
+		,case when time_period = 'Current' then 
+					sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000
+			  when time_period = 'Prior' then 
+					sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
+		end as med_per_1000 label="Medical Admits per 1000"
 
+		,case when time_period = 'Current' then 
+					(sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000)/&rskscr_current.
+			  when time_period = 'Prior' then 
+					(sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000)/&rskscr_prior.
+		end as med_adj_1000 label="Medical Admits per 1000 Risk Adjusted"
 
-		group by time_period
+		,case when time_period = 'Current' then 
+					sum(case when inpatient_pqi_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.
+			  when time_period = 'Prior' then 
+					sum(case when inpatient_pqi_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.
+		end as pqi	label="PQI Combined (Chronic and Acute)"
 
+		,case when time_period = 'Current' then 
+					sum(case when preference_sensitive_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000
+			  when time_period = 'Prior' then 
+					sum(case when preference_sensitive_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
+		end as pref_sens_per_1000 label="Preference Sensitive Admits per 1000"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		
-
-/*
-%run_hcc_wrap_prm(&inc_start_current.
-		,&inc_end_current.
-		,&paid_thru_current.
-		,current
-		,post008
-		)
-
-/*Limit HCC to the members in the member roster
-proc sql;
-	create table HCC_Limit as
-	select
-		a.time_slice
-		,a.hicno
-		,a.score_community
-	from post008.HCC_results as a
-	inner join post008.members as b on 
-		a.hicno = b.member_id and a.time_slice = b.time_period
+		,case when time_period = 'Current' then 
+					sum(case when los_inpatient = 1 then cnt_discharges_inpatient else 0 end)/sum(cnt_discharges_inpatient)
+			 when time_period = 'Prior' then 
+					sum(case when los_inpatient = 1 then cnt_discharges_inpatient else 0 end)/sum(cnt_discharges_inpatient)
+		end as pct_1_day_LOS label="One Day LOS as a Percent of Total Admits"
+	from post025.details_inpatient
+	group by time_period, name_client, metric_category
 	;
 quit;
-*/
+
+/*Transpose the dataset to get the data into a long format*/
+proc transpose data=measures 
+				out=metrics_transpose(rename=(COL1 = metric_value))
+				name=metric_id
+				label=metric_name;
+by name_client time_period metric_category;
+run;
+
+/*Re-label the transposed variables with useful names and export*/
+data post025.metrics_key_value;
+length metric_id $32 metric_name $256 metric_category $32 name_client $256;
+set metrics_transpose;
+format metric_id $32. metric_name $256.;
+label metric_id=metric_id metric_name=metric_name;
+run;
+
+%ValidateAgainstTemplate(post025,Comparator_Report)
+
+%put return_code = &syscc.;
