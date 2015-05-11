@@ -129,14 +129,14 @@ proc sql;
 					)
 				)
 			end as age
-		,risk_scr.score_community as risk_scr_1
+		,riskscr.score_community as riskscr_1
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
-	left join post008.hcc_results as risk_scr
-		on upcase(roster.time_period) eq upcase(risk_scr.time_slice) and roster.member_id eq risk_scr.hicno
+	left join post008.hcc_results as riskscr
+		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
 	order by
 		roster.member_id
 		,roster.time_period
