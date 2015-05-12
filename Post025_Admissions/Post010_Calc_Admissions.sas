@@ -15,6 +15,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M002_cde.supp01_validation_functions.sas";
 
 /*Libnames*/
+libname post005 "&post005.";
 libname post008 "&post008.";
 libname post025 "&post025.";
 
@@ -109,7 +110,6 @@ proc sql;
 	create table claims_w_desc as
 	select
 		claims.*
-		,mem_rsk.*
 		,coalesce(xwalk.disch_desc,'Other') as discharge_status_desc format $256. 
 	from claims_elig as claims
 	left join disch_xwalk as xwalk on
@@ -121,8 +121,8 @@ quit;
 proc summary nway missing data=claims_w_desc;
 class name_client time_period prv_id_inpatient discharge_status_code discharge_status_desc drg_inpatient drg_version_inpatient
 	  acute_yn medical_surgical inpatient_pqi_yn preference_sensitive_yn inpatient_readmit_yn los_inpatient;
-var discharges days costs;
-output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
+var discharges days costs memmos riskscr_1;
+output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient sum_memmos sum_riskscr;
 run;
 
 /*Calculate the requested measures*/
@@ -132,59 +132,25 @@ proc sql;
 		name_client format $256.
 		,time_period
 		,"Admissions" as metric_category format $32.
-		,case when time_period = 'Current' then 
-					sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000 
-			  when time_period = 'Prior' then 
-					sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
-		 end as acute_per_1000 label="Acute Admits per 1000"
-
-		,case when time_period = 'Current' then 
-					(sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000)/&rskscr_current. 
-			  when time_period = 'Prior' then 
-					(sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000)/&rskscr_prior.
-		 end as acute_adj_1000 label="Acute Admits per 1000 Risk Adjusted"
-
-		,case when time_period = 'Current' then 
-					sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000
-			  when time_period = 'Prior' then 
-					sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
-		 end as surg_per_1000 label="Surgical Admits per 1000"
-
-		,case when time_period = 'Current' then 
-					(sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000)/&rskscr_current.
-			  when time_period = 'Prior' then 
-					(sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000)/&rskscr_prior.
-		 end as surg_adj_1000 label="Surgical Admits per 1000 Risk Adjusted"
-
-		,case when time_period = 'Current' then 
-					sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000
-			  when time_period = 'Prior' then 
-					sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
-		end as med_per_1000 label="Medical Admits per 1000"
-
-		,case when time_period = 'Current' then 
-					(sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000)/&rskscr_current.
-			  when time_period = 'Prior' then 
-					(sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000)/&rskscr_prior.
-		end as med_adj_1000 label="Medical Admits per 1000 Risk Adjusted"
-
-		,case when time_period = 'Current' then 
-					sum(case when inpatient_pqi_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.
-			  when time_period = 'Prior' then 
-					sum(case when inpatient_pqi_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.
-		end as pqi	label="PQI Combined (Chronic and Acute)"
-
-		,case when time_period = 'Current' then 
-					sum(case when preference_sensitive_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_current.*12000
-			  when time_period = 'Prior' then 
-					sum(case when preference_sensitive_yn = 'Y' then cnt_discharges_inpatient else 0 end)/&memmos_prior.*12000 
-		end as pref_sens_per_1000 label="Preference Sensitive Admits per 1000"
-
-		,case when time_period = 'Current' then 
-					sum(case when los_inpatient = 1 then cnt_discharges_inpatient else 0 end)/sum(cnt_discharges_inpatient)
-			 when time_period = 'Prior' then 
-					sum(case when los_inpatient = 1 then cnt_discharges_inpatient else 0 end)/sum(cnt_discharges_inpatient)
-		end as pct_1_day_LOS label="One Day LOS as a Percent of Total Admits"
+		,sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/sum(case when acute_yn = 'Y' then sum_memmos else 0 end)*12000 
+			  as acute_per_1000 label="Acute Admits per 1000"
+		,sum(case when acute_yn = 'Y' then cnt_discharges_inpatient else 0 end)/sum(case when acute_yn = 'Y' then sum_riskscr*sum_memmos else 0 end)*12000 
+			  as acute_adj_1000 label="Acute Admits per 1000 Risk Adjusted"
+		,sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/sum(case when medical_surgical = 'Surgical' then sum_memmos else 0 end)*12000 
+			  as surg_per_1000 label="Surgical Admits per 1000"
+		,sum(case when medical_surgical = 'Surgical' then cnt_discharges_inpatient else 0 end)/sum(case when medical_surgical = 'Surgical' then sum_riskscr*sum_memmos else 0 end)*12000 
+			  as surg_adj_1000 label="Surgical Admits per 1000 Risk Adjusted"
+		,sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/sum(case when medical_surgical = 'Medical' then sum_memmos else 0 end)*12000
+			  as med_per_1000 label="Medical Admits per 1000"
+		,sum(case when medical_surgical = 'Medical' then cnt_discharges_inpatient else 0 end)/sum(case when medical_surgical = 'Medical' then sum_riskscr*sum_memmos else 0 end)*12000
+			  as med_adj_1000 label="Medical Admits per 1000 Risk Adjusted"
+		,sum(case when inpatient_pqi_yn = 'Y' then cnt_discharges_inpatient else 0 end)/sum(case when inpatient_pqi_yn = 'Y' then sum_memmos else 0 end)
+			  as pqi label="PQI Combined (Chronic and Acute)"
+		,sum(case when preference_sensitive_yn = 'Y' then cnt_discharges_inpatient else 0 end)/sum(case when preference_sensitive_yn = 'Y' then sum_memmos else 0 end)*12000
+			  as pref_sens_per_1000 label="Preference Sensitive Admits per 1000"
+		,sum(case when los_inpatient = 1 then cnt_discharges_inpatient else 0 end)/sum(cnt_discharges_inpatient)
+			  as pct_1_day_LOS label="One Day LOS as a Percent of Total Admits"
+		,sum(sum_costs_inpatient) as tot_acute_ccosts label="Total Acute Inpatient Costs"
 	from details_inpatient
 	group by time_period, name_client, metric_category
 	;
@@ -199,6 +165,14 @@ by name_client time_period metric_category;
 run;
 
 /*Codegen the output format for details_inpatient and metrics_key_value*/
+
+
+
+
+
+
+
+
 
 
 
