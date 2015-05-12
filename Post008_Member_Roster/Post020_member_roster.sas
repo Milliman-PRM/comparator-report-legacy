@@ -106,6 +106,15 @@ quit;
 		,post008
 		)
 
+
+
+/*Pull in member months to append to the member roster*/
+%agg_memmos(&inc_start.
+		,&inc_end.
+		,member_id
+		,&time_period.
+		)
+
 /*Decorate roster with information from member that may be needed
   for subsequent analyses (e.g. risk scoring)*/
 proc sql;
@@ -127,6 +136,7 @@ proc sql;
 					)
 				)
 			end as age
+		,memmos.memmos_medical as memmos
 		,riskscr.score_community as riskscr_1
 	from member_roster as roster
 	left join M035_Out.member as member
@@ -135,6 +145,8 @@ proc sql;
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
 	left join post008.hcc_results as riskscr
 		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
+	left join agg_memmos as memmos
+		on roster.member_id = memmos.member_id
 	order by
 		roster.member_id
 		,roster.time_period
