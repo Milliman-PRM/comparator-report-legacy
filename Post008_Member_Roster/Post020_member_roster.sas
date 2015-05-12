@@ -136,7 +136,7 @@ proc sql;
 					)
 				)
 			end as age
-		,memmos.memmos_medical as memmos
+		,coalesce(memmos.memmos_medical,0) as memmos
 		,riskscr.score_community as riskscr_1
 	from member_roster as roster
 	left join M035_Out.member as member
@@ -146,12 +146,14 @@ proc sql;
 	left join post008.hcc_results as riskscr
 		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
 	left join agg_memmos as memmos
-		on roster.member_id = memmos.member_id
+		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
 	order by
 		roster.member_id
 		,roster.time_period
 	;
 quit;
 %LabelDataSet(post008.members)
+
+%assertthat(%getrecordcount(member_roster),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
 
 %put System Return Code = &syscc.;
