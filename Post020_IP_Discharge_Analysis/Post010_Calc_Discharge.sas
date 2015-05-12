@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: David Pierce, 
+### CODE OWNERS: David Pierce, Anna Chen
 
 ### OBJECTIVE:
 	Find the distribution of paid percent, number of admits percent, and number of days admitted percent to 
@@ -92,11 +92,10 @@ proc sql;
 	create table Agg_Claims_med_w_desc as
 	select
 		claims.*
-		,mem_rsk.*
-		,coalesce(xwalk.disch_desc,'Other') as discharge_status_desc format $256. 
+		,coalesce(xwalk.disch_desc,'Other') as Discharge_Desc format $256. 
 	from Agg_claims_med as claims
 	left join disch_xwalk as xwalk on
-		a.DischargeStatus = xwalk.disch_code
+		claims.DischargeStatus = xwalk.disch_code
 	;
 quit;
 
@@ -108,13 +107,7 @@ proc sql;
 			src.time_slice as time_period
 			,DRG
 			,src.DischargeStatus
-			,Case when src.DischargeStatus = "01" then "Discharged to Home"
-		  		  when src.DischargeStatus = "62" then "Discharged to IRF"
-		  		  when src.DischargeStatus = "03" then "Discharged to SNF"
-		  		  when src.DischargeStatus = "06" then "Discharged to Home Health Care"
-				  when src.DischargeStatus = "20" then "Died"
-		  		  else "Other"
-			 End as Discharge_Desc
+			,Discharge_Desc
 			,src.Admits
 			,Case when upcase(src.time_slice) = "CURRENT" then (src.admits /&curr_obssum.)
 				  when upcase(src.time_slice) = "PRIOR" then (src.admits/&prior_obssum.)
@@ -126,7 +119,8 @@ proc sql;
 		 from Agg_Claims_med_w_desc as src
 		 
 		 inner join Post008.Members as memb on
-		 	src.member_ID = memb.member_ID
+		 		src.member_ID = memb.member_ID
+			and src.time_slice = memb.time_period
 ;
 quit;
 
