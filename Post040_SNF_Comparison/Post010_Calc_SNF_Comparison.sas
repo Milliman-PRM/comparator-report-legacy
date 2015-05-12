@@ -122,7 +122,7 @@ data ALOS;
 	keep time_slice ALOS;
 run;
 
-/*Calculate Average Paid Per Day in SNF*/
+/*Calculate Average Paid Per Day in SNF.*/
 proc summary nway missing data = Mem_prov_with_risk_scr;
 	vars Paid PRM_Util;
 	class time_slice;
@@ -133,6 +133,19 @@ data Average_paid_per_day;
 	set Total_paid_days;
 	Avg_paid_per_day = total_paid / total_days;
 	keep time_slice Avg_paid_per_day;
+run;
+
+/*Calculate Average Paid Per SNF Discharge.*/
+proc summary nway missing data = Mem_prov_with_risk_scr;
+	vars Paid Discharges;
+	class time_slice;
+	output out = Total_paid_discharges (drop = _TYPE_ _FREQ_ rename=(Paid=total_paid Discharges=total_discharges)) sum=;
+run;
+
+data Average_paid_per_discharge;
+	set Total_paid_discharges;
+	Avg_paid_per_disch = total_paid / total_discharges;
+	keep time_slice Avg_paid_per_disch;
 run;
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
