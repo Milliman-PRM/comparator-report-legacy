@@ -145,8 +145,32 @@ data risk_adj_adm_per_1000_prior;
 	keep risk_adj_adm_per_thou;
 run;
 
-/*Calculate the % Cost Contribution to Total Spent*/
+/*Calculate the % Cost Contribution to Total Spent for the current and prior periods.*/
 
+/*Calculate the SNF ALOS (Average Length of Stay) for the current and prior periods.*/
+proc summary nway missing data = Mem_prov_with_risk_scr;
+	vars PRM_Util RowCnt;
+	where time_slice = "Current";
+	output out = Total_days_stays_current (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days RowCnt=total_stays)) sum=;
+run;
+
+data ALOS_current;
+	set Total_days_stays_current;
+	ALOS = total_days / total_stays;
+	keep ALOS;
+run;
+
+proc summary nway missing data = Mem_prov_with_risk_scr;
+	vars PRM_Util RowCnt;
+	where time_slice = "Prior";
+	output out = Total_days_stays_prior (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days RowCnt=total_stays)) sum=;
+run;
+
+data ALOS_prior;
+	set Total_days_stays_prior;
+	ALOS = total_days / total_stays;
+	keep ALOS;
+run;
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
