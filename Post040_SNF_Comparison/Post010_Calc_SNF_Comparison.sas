@@ -15,6 +15,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
 libname post008 "&post008." access = readonly;
+libname post010 "&post010.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -37,7 +38,7 @@ quit;
 %put inc_end = &inc_end.;
 %put paid_thru = &paid_thru.;
 
-/*Create the current and prior data sets with only SNF claims at the case level.*/
+/*Create the current and prior data sets by SNF provider and member.*/
 %Agg_Claims(
 	IncStart=&inc_start.
 	,IncEnd=&inc_end.
@@ -45,65 +46,34 @@ quit;
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=Discharge
-	,Dimensions=prm_line~caseadmitid~member_id~providerID~prv_id_npi
+	,Dimensions=providerID~member_ID
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
     );
 
-proc sort data=agg_claims_med out=cases_med;
-	by member_id date_case_latest date_case_earliest;
-run;
+/*Merge the newly created table with the member roster table.*/
+proc sql noprint;
+	create table mem_prov_with_risk_scr as
+	select A.*, B.riskscr_1
+	from members_providers_med as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID);
+quit;
 
-/*Limit cases to the current time slice*/
-data cases_med_current;
-	set cases_med;
-	where time_slice = "Current";
-run;
-
-/*Limit cases to the prior time slice*/
-data cases_med_prior;
-	set cases_med;
-	where time_slice = "Prior";
-run;
-	
-/*Now create the current and prior data sets with only SNF claims at the member level.*/
-%Agg_Claims(
-	IncStart=&inc_start.
-	,IncEnd=&inc_end.
-	,PaidThru=&paid_thru.
-	,Time_Slice=&time_period.
-	,Med_Rx=Med
-	,Ongoing_Util_Basis=Discharge
-	,Dimensions=member_id
-	,Where_Claims=outclaims_prm.prm_line eq "I31"
-    );
-
-proc sort data=agg_claims_med out=members;
-	by member_id;
-run;
-
-/*Limit members to the current time slice*/
-data members_current;
-	set members;
-	where time_slice = "Current";
-run;
-
-/*Limit members to the prior time slice*/
-data members_prior;
-	set members;
-	where time_slice = "Prior";
+proc sort data=mem_prov_with_risk_scr out=mem_prov_with_risk_scr;
+	by time_slice member_ID providerID;
 run;
 
 /*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
 proc sql noprint;
 	create table Number_NPIs_current as
-	select count(distinct prv_id_npi) as NPI_Count
-	from cases_med_current;
+	select count(distinct ProviderID) as NPI_Count
+	from Mem_prov_with_risk_scr
+	where time_slice = "Current";
 quit;
 	
 proc sql noprint;
 	create table Number_NPIs_prior as
-	select count(distinct prv_id_npi) as NPI_Count
-	from cases_med_prior;
+	select count(distinct ProviderID) as NPI_Count
+	from Mem_prov_with_risk_scr
+	where time_slice = "Prior";
 quit;
 
 /*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
