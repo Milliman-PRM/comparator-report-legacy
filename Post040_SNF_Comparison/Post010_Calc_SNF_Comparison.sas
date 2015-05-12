@@ -77,50 +77,72 @@ proc sql noprint;
 quit;
 
 /*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
-proc summary nway missing data = Members_current;
-	vars RowCnt;
-	output out = Number_admissions_current (drop = _TYPE_ _FREQ_ rename=(RowCnt=num_of_adms)) sum=;
+proc summary nway missing data = Mem_prov_with_risk_scr;
+	vars RowCnt MemMos;
+	where time_slice = "Current";
+	output out = Total_adm_memmos_current (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms MemMos=total_mem_mos)) sum=;
 run;
 
-proc summary nway missing data = Members_current;
-	vars MemMos;
-	output out = Total_mem_mos_current (drop = _TYPE_ _FREQ_ rename=(MemMos=Total_memmos)) sum=;
-quit;
-
-data Total_mem_k_years_current;
-	set Total_mem_mos_current;
-	Mem_k_years = Total_memmos / 12000;
-	keep Mem_k_years;
+data Admissions_per_thou_current;
+	set Total_adm_memmos_current;
+	adm_per_k_years = total_num_of_adms / (total_mem_mos / 12000);
+	keep adm_per_k_years;
 run;
 
-data Admissions_per_1000_current;
-	merge Number_admissions_current Total_mem_k_years_current;
-	Admissions_per_1000 = num_of_adms / Mem_k_years;
-	keep Admissions_per_1000;
+proc summary nway missing data = Mem_prov_with_risk_scr;
+	vars RowCnt MemMos;
+	where time_slice = "Prior";
+	output out = Total_adm_memmos_prior (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms MemMos=total_mem_mos)) sum=;
 run;
 
-proc summary nway missing data = Members_prior;
-	vars RowCnt;
-	output out = Number_admissions_prior (drop = _TYPE_ _FREQ_ rename=(RowCnt=num_of_adms)) sum=;
+data Admissions_per_thou_prior;
+	set Total_adm_memmos_prior;
+	adm_per_k_years = total_num_of_adms / (total_mem_mos / 12000);
+	keep adm_per_k_years;
 run;
 
-proc summary nway missing data = Members_prior;
-	vars MemMos;
-	output out = Total_mem_mos_prior (drop = _TYPE_ _FREQ_ rename=(MemMos=Total_memmos)) sum=;
-quit;
-
-data Total_mem_k_years_prior;
-	set Total_mem_mos_prior;
-	Mem_k_years = Total_memmos / 12000;
-	keep Mem_k_years;
+/*Find the risk adjusted SNF Admissions per 1000 for the current and prior periods.*/
+data mem_risk_scr_times_memmos;
+	set Mem_prov_with_risk_scr;
+	risk_scr_times_memmos = MemMos * riskscr_1;
+	keep time_slice member_id ProviderID memmos risk_scr_times_memmos;
 run;
 
-data Admissions_per_1000_prior;
-	merge Number_admissions_prior Total_mem_k_years_prior;
-	Admissions_per_1000 = num_of_adms / Mem_k_years;
-	keep Admissions_per_1000;
+proc summary nway missing data = mem_risk_scr_times_memmos;
+	vars risk_scr_times_memmos memmos;
+	where time_slice = "Current";
+	output out = total_rsk_scr_tms_memmos_cur (drop = _TYPE_ _FREQ_) sum=;
 run;
 
+data average_risk_score_current;
+	set total_rsk_scr_tms_memmos_cur;
+	average_risk_score = risk_scr_times_memmos / memmos;
+	keep average_risk_score;
+run;
+
+data risk_adj_adm_per_1000_current;
+	merge admissions_per_thou_current average_risk_score_current;
+	risk_adj_adm_per_thou = adm_per_k_years / average_risk_score;
+	keep risk_adj_adm_per_thou;
+run; 
+	
+proc summary nway missing data = mem_risk_scr_times_memmos;
+	vars risk_scr_times_memmos memmos;
+	where time_slice = "Prior";
+	output out = total_rsk_scr_tms_memmos_pri (drop = _TYPE_ _FREQ_) sum=;
+run;
+
+data average_risk_score_prior;
+	set total_rsk_scr_tms_memmos_pri;
+	average_risk_score = risk_scr_times_memmos / memmos;
+	keep average_risk_score;
+run;
+
+data risk_adj_adm_per_1000_prior;
+	merge admissions_per_thou_prior average_risk_score_prior;
+	risk_adj_adm_per_thou = adm_per_k_years / average_risk_score;
+	keep risk_adj_adm_per_thou;
+run;
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
