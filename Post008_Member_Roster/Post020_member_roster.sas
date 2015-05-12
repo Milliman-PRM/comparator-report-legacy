@@ -61,10 +61,6 @@ data member_roster;
 		prv_name_align
 		);
 	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
-		and (
-			upcase(cover_medical) eq "Y"
-				or upcase(cover_rx) eq "Y"
-			) /*Must have actually had coverage (gets rid of any "zombie periods")*/
 		;
 
 	/*Only output the windows that include then ending boundary of our time period.*/
