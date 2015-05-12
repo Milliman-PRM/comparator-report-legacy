@@ -1,0 +1,159 @@
+/*
+### CODE OWNERS: Kyle Baird
+
+### OBJECTIVE:
+	Create a centralized list of members who were assigned
+	at the end of each time period.
+
+### DEVELOPER NOTES:
+	<none>
+*/
+options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
+
+/* Libnames */
+libname M035_Out "&M035_Out." access = readonly;
+libname post008 "&post008.";
+
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
+
+data codegen_member_selection;
+	set post008.time_windows;
+	format codegen_member_selection $256.;
+	codegen_member_selection = cat(
+		"if date_start le "
+		,strip(put(inc_end,12.))
+		," and date_end ge "
+		,strip(put(inc_end,12.))
+		," then do; time_period = '"
+		,strip(time_period)
+		,"'; output; end;"
+		);
+run;
+
+proc sql noprint;
+	select
+		codegen_member_selection
+	into :codegen_member_selection separated by " "
+	from codegen_member_selection
+	;
+quit;
+%put codegen_member_selection = %bquote(&codegen_member_selection.);
+
+data member_roster;
+	format time_period $16.;
+	set M035_Out.member_time (keep =
+		member_id
+		assignment_indicator
+		cover_medical
+		cover_rx
+		date_start
+		date_end
+		/*Any time-varying dimensions to keep*/
+		elig_status_1
+		mem_prv_id_align
+		prv_name_align
+		);
+	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
+		;
+
+	/*Only output the windows that include then ending boundary of our time period.*/
+	&codegen_member_selection.
+	; *Just to get syntax highlighting in IDE;
+	drop
+		assignment_indicator
+		cover_medical
+		cover_rx
+		date_start
+		date_end
+		;
+run;
+/*Should not happen because we do not allow overlapping time windows, but just in case.*/
+%AssertNoDuplicates(
+	member_roster
+	,member_id time_period
+	,ReturnMessage=Multiple time windows assigned for a given time period.
+	)
+
+/*Calculate Risk Scores to add to the member table*/
+proc sql noprint;
+	select 
+		time_period
+		,inc_start format = 12.
+		,inc_end format = 12.
+		,paid_thru format = 12.
+		,time_period format = $12.
+	into :time_period separated by "~"
+		,:inc_start separated by "~"
+		,:inc_end separated by "~"
+		,:paid_thru separated by "~"
+		,:time_period separated by "~"
+	from post008.Time_windows
+	;
+quit;
+
+
+%run_hcc_wrap_prm(&inc_start.
+		,&inc_end.
+		,&paid_thru.
+		,&time_period.
+		,post008
+		)
+
+
+
+/*Pull in member months to append to the member roster*/
+%agg_memmos(&inc_start.
+		,&inc_end.
+		,member_id
+		,&time_period.
+		)
+
+/*Decorate roster with information from member that may be needed
+  for subsequent analyses (e.g. risk scoring)*/
+proc sql;
+	create table post008.members as
+	select
+		roster.*
+		,member.dob
+		,member.gender
+		,member.mem_name
+		/*Re-calc age at time of period end*/
+/*		,time_windows.inc_end*/
+		,case
+			when member.dob gt time_windows.inc_end then 0
+			else floor(
+				yrdif(
+					member.dob
+					,time_windows.inc_end
+					,"age"
+					)
+				)
+			end as age
+		,coalesce(memmos.memmos_medical,0) as memmos
+		,riskscr.score_community as riskscr_1
+	from member_roster as roster
+	left join M035_Out.member as member
+		on roster.member_id eq member.member_id
+	left join post008.time_windows as time_windows
+		on upcase(roster.time_period) eq upcase(time_windows.time_period)
+	left join post008.hcc_results as riskscr
+		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
+	left join agg_memmos as memmos
+		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
+	order by
+		roster.member_id
+		,roster.time_period
+	;
+quit;
+%LabelDataSet(post008.members)
+
+%assertthat(%getrecordcount(member_roster),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
+
+%put System Return Code = &syscc.;
