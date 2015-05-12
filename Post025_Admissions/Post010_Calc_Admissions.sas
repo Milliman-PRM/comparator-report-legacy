@@ -265,8 +265,4 @@ format &metrics_format.;
 label metric_id=metric_id metric_name=metric_name;
 run;
 
-
-/*Still need to update this to see if we can target specific tables in the template*/
-%ValidateAgainstTemplate(post025,Comparator_Report)
-
 %put return_code = &syscc.;
