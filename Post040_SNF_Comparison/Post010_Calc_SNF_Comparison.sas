@@ -63,46 +63,26 @@ run;
 
 /*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
 proc sql noprint;
-	create table Number_NPIs_current as
-	select count(distinct ProviderID) as NPI_Count
+	create table Number_NPIs as
+	select time_slice, count(distinct ProviderID) as NPI_Count
 	from Mem_prov_with_risk_scr
-	where time_slice = "Current";
+	group by time_slice;
 quit;
 	
-proc sql noprint;
-	create table Number_NPIs_prior as
-	select count(distinct ProviderID) as NPI_Count
-	from Mem_prov_with_risk_scr
-	where time_slice = "Prior";
-quit;
-
 /*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
 proc summary nway missing data = Mem_prov_with_risk_scr;
 	vars RowCnt MemMos;
-	where time_slice = "Current";
-	output out = Total_adm_memmos_current (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms MemMos=total_mem_mos)) sum=;
+	class time_slice;
+	output out = Total_adm_memmos (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms MemMos=total_mem_mos)) sum=;
 run;
 
-data Admissions_per_thou_current;
-	set Total_adm_memmos_current;
+data Admissions_per_thou;
+	set Total_adm_memmos;
 	adm_per_k_years = total_num_of_adms / (total_mem_mos / 12000);
-	keep adm_per_k_years;
-run;
-
-proc summary nway missing data = Mem_prov_with_risk_scr;
-	vars RowCnt MemMos;
-	where time_slice = "Prior";
-	output out = Total_adm_memmos_prior (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms MemMos=total_mem_mos)) sum=;
-run;
-
-data Admissions_per_thou_prior;
-	set Total_adm_memmos_prior;
-	adm_per_k_years = total_num_of_adms / (total_mem_mos / 12000);
-	keep adm_per_k_years;
+	keep time_slice adm_per_k_years;
 run;
 
 /*Find the risk adjusted SNF Admissions per 1000 for the current and prior periods.*/
-
 data mem_risk_scr_times_memmos;
 	set Mem_prov_with_risk_scr;
 	risk_scr_times_memmos = MemMos * riskscr_1;
@@ -111,66 +91,39 @@ run;
 
 proc summary nway missing data = mem_risk_scr_times_memmos;
 	vars risk_scr_times_memmos memmos;
-	where time_slice = "Current";
-	output out = total_rsk_scr_tms_memmos_cur (drop = _TYPE_ _FREQ_) sum=;
+	class time_slice;
+	output out = total_rsk_scr_tms_memmos (drop = _TYPE_ _FREQ_) sum=;
 run;
 
-data average_risk_score_current;
-	set total_rsk_scr_tms_memmos_cur;
+data average_risk_score;
+	set total_rsk_scr_tms_memmos;
 	average_risk_score = risk_scr_times_memmos / memmos;
-	keep average_risk_score;
+	keep time_slice average_risk_score;
 run;
 
-data risk_adj_adm_per_1000_current;
-	merge admissions_per_thou_current average_risk_score_current;
+data risk_adj_adm_per_1000;
+	merge admissions_per_thou average_risk_score;
 	risk_adj_adm_per_thou = adm_per_k_years / average_risk_score;
-	keep risk_adj_adm_per_thou;
+	keep time_slice risk_adj_adm_per_thou;
 run; 
 	
-proc summary nway missing data = mem_risk_scr_times_memmos;
-	vars risk_scr_times_memmos memmos;
-	where time_slice = "Prior";
-	output out = total_rsk_scr_tms_memmos_pri (drop = _TYPE_ _FREQ_) sum=;
-run;
-
-data average_risk_score_prior;
-	set total_rsk_scr_tms_memmos_pri;
-	average_risk_score = risk_scr_times_memmos / memmos;
-	keep average_risk_score;
-run;
-
-data risk_adj_adm_per_1000_prior;
-	merge admissions_per_thou_prior average_risk_score_prior;
-	risk_adj_adm_per_thou = adm_per_k_years / average_risk_score;
-	keep risk_adj_adm_per_thou;
-run;
-
 /*Calculate the % Cost Contribution to Total Spent for the current and prior periods.*/
 
 /*Calculate the SNF ALOS (Average Length of Stay) for the current and prior periods.*/
 proc summary nway missing data = Mem_prov_with_risk_scr;
 	vars PRM_Util RowCnt;
-	where time_slice = "Current";
-	output out = Total_days_stays_current (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days RowCnt=total_stays)) sum=;
+	class time_slice;
+	output out = Total_days_stays (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days RowCnt=total_stays)) sum=;
 run;
 
-data ALOS_current;
-	set Total_days_stays_current;
+data ALOS;
+	set Total_days_stays;
 	ALOS = total_days / total_stays;
-	keep ALOS;
+	keep time_slice ALOS;
 run;
 
-proc summary nway missing data = Mem_prov_with_risk_scr;
-	vars PRM_Util RowCnt;
-	where time_slice = "Prior";
-	output out = Total_days_stays_prior (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days RowCnt=total_stays)) sum=;
-run;
+/*Calculate Average Paid Per Day in SNF*/
 
-data ALOS_prior;
-	set Total_days_stays_prior;
-	ALOS = total_days / total_stays;
-	keep ALOS;
-run;
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
