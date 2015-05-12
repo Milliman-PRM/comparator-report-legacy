@@ -17,12 +17,10 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
-libname post008 "&post008." access = readonly;
-libname post020 "&post020.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-
-
+libname post008 "&post008." access = readonly;
+libname post020 "&post020.";
 
 
 /*Pull out the start/end dates from the time windows dataset*/
@@ -75,6 +73,33 @@ proc sql noprint;
 quit;
 %put sum = &prior_obssum;
 
+/*Add in discharge status description;*/
+data disch_xwalk;
+	infile "%GetParentFolder(0)Discharge_status_xwalk.csv"
+		lrecl=2048
+		firstobs=2
+		missover
+		dsd
+		delimiter=','
+		;
+	input
+		disch_code :$2.
+		disch_desc :$32.
+		;
+run;
+
+proc sql;
+	create table Agg_Claims_med_w_desc as
+	select
+		claims.*
+		,mem_rsk.*
+		,coalesce(xwalk.disch_desc,'Other') as discharge_status_desc format $256. 
+	from Agg_claims_med as claims
+	left join disch_xwalk as xwalk on
+		a.DischargeStatus = xwalk.disch_code
+	;
+quit;
+
 /*Create a summary by Discharge/DRG combo for NYH to use to normalize, then get a discharge only summary
   first we are going to stage up the discharge data by time period and limit to only members in our member table then summarize*/
 proc sql;
@@ -98,7 +123,7 @@ proc sql;
 			,src.PRM_Costs
 			,"&name_client." as name_client
 
-		 from Agg_claims_med as src
+		 from Agg_Claims_med_w_desc as src
 		 
 		 inner join Post008.Members as memb on
 		 	src.member_ID = memb.member_ID
