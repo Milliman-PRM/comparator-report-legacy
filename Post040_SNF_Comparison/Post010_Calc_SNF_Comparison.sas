@@ -50,7 +50,7 @@ quit;
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
     );
 
-/*Merge the newly created table with the member roster table.*/
+/*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
 proc sql noprint;
 	create table mem_prov_with_risk_scr as
 	select A.*, B.riskscr_1
@@ -102,6 +102,7 @@ data Admissions_per_thou_prior;
 run;
 
 /*Find the risk adjusted SNF Admissions per 1000 for the current and prior periods.*/
+
 data mem_risk_scr_times_memmos;
 	set Mem_prov_with_risk_scr;
 	risk_scr_times_memmos = MemMos * riskscr_1;
@@ -143,6 +144,9 @@ data risk_adj_adm_per_1000_prior;
 	risk_adj_adm_per_thou = adm_per_k_years / average_risk_score;
 	keep risk_adj_adm_per_thou;
 run;
+
+/*Calculate the % Cost Contribution to Total Spent*/
+
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
