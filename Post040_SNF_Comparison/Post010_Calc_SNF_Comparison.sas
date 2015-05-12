@@ -123,7 +123,17 @@ data ALOS;
 run;
 
 /*Calculate Average Paid Per Day in SNF*/
+proc summary nway missing data = Mem_prov_with_risk_scr;
+	vars Paid PRM_Util;
+	class time_slice;
+	output out = Total_paid_days (drop = _TYPE_ _FREQ_ rename=(Paid=total_paid PRM_Util=total_days)) sum=;
+run;
 
+data Average_paid_per_day;
+	set Total_paid_days;
+	Avg_paid_per_day = total_paid / total_days;
+	keep time_slice Avg_paid_per_day;
+run;
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
