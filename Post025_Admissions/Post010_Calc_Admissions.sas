@@ -70,31 +70,16 @@ proc sql;
 quit;
 
 /*Determine the member months per time period*/
-proc sql noprint;
+proc sql;
+	create table memmos_and_rskscr as
 	select
-		sum(case when time_slice = "Current" then memmos_medical else 0 end)
-		,sum(case when time_slice = "Prior" then memmos_medical else 0 end)
-	into :memmos_current
-		,:memmos_prior
+		time_slice
+		,sum(memmos_medical) as memmos_total
+		,sum(memmos_medical*riskscr_1)/sum(memmos_medical) as avg_rskscr
 	from mem_w_rskscr
+	group by time_slice
 	;
 quit;
-%put current_memmos = &memmos_current.;
-%put prior_memmos = &memmos_prior.;
-
-/*Determine the average risk score by time period*/
-proc sql noprint;
-	select
-		sum(case when time_slice = "Current" then memmos_medical*riskscr_1 else 0 end)/&memmos_current.
-		,sum(case when time_slice = "Prior" then memmos_medical*riskscr_1 else 0 end)/&memmos_prior.
-	into :rskscr_current
-		,:rskscr_prior
-	from mem_w_rskscr
-	;
-quit;
-%put risk_score_current = &rskscr_current.;
-%put risk_score_prior = &rskscr_prior.;
-
 
 /*Limit acute IP stays by removing the following prm_lines:
 	I11b--Medical - Rehabilitation
@@ -147,11 +132,14 @@ run;
 proc sql;
 	create table claims_w_desc as
 	select
-		a.*
-		,coalesce(b.disch_desc,'Other') as discharge_status_desc format $256. 
-	from claims_elig as a
-	left join disch_xwalk as b on
-		a.discharge_status_code = b.disch_code
+		claims.*
+		,mem_rsk.*
+		,coalesce(xwalk.disch_desc,'Other') as discharge_status_desc format $256. 
+	from claims_elig as claims
+	left join disch_xwalk as xwalk on
+		a.discharge_status_code = xwalk.disch_code
+	left join memmos_and_rskscr as mem_rsk on
+		a.time_period = mem_rsk.time_slice
 	;
 quit;
 
@@ -160,7 +148,7 @@ proc summary nway missing data=claims_w_desc;
 class name_client time_period prv_id_inpatient discharge_status_code discharge_status_desc drg_inpatient drg_version_inpatient
 	  acute_yn medical_surgical inpatient_pqi_yn preference_sensitive_yn inpatient_readmit_yn los_inpatient;
 var discharges days costs;
-output out=post025.details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
+output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
 run;
 
 /*Calculate the requested measures*/
@@ -223,7 +211,7 @@ proc sql;
 			 when time_period = 'Prior' then 
 					sum(case when los_inpatient = 1 then cnt_discharges_inpatient else 0 end)/sum(cnt_discharges_inpatient)
 		end as pct_1_day_LOS label="One Day LOS as a Percent of Total Admits"
-	from post025.details_inpatient
+	from details_inpatient
 	group by time_period, name_client, metric_category
 	;
 quit;
@@ -236,6 +224,17 @@ proc transpose data=measures
 by name_client time_period metric_category;
 run;
 
+/*Codegen the output format for details_inpatient and metrics_key_value*/
+
+
+
+
+
+
+
+
+
+
 /*Re-label the transposed variables with useful names and export*/
 data post025.metrics_key_value;
 length metric_id $32 metric_name $256 metric_category $32 name_client $256;
@@ -244,6 +243,8 @@ format metric_id $32. metric_name $256.;
 label metric_id=metric_id metric_name=metric_name;
 run;
 
+
+/*Still need to update this to see if we can target specific tables in the template*/
 %ValidateAgainstTemplate(post025,Comparator_Report)
 
 %put return_code = &syscc.;
