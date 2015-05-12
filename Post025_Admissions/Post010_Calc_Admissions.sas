@@ -55,32 +55,6 @@ quit;
 		,Suffix_Output=
 		)
 
-
-/*Determine memmos and risk score for use in calculating the metrics*/
-
-proc sql;
-	create table mem_w_rskscr as
-	select
-		memmos.*
-		,members.riskscr_1
-	from agg_memmos as memmos
-	left join post008.members as members on
-		memmos.member_id = members.member_id
-	;
-quit;
-
-/*Determine the member months per time period*/
-proc sql;
-	create table memmos_and_rskscr as
-	select
-		time_slice
-		,sum(memmos_medical) as memmos_total
-		,sum(memmos_medical*riskscr_1)/sum(memmos_medical) as avg_rskscr
-	from mem_w_rskscr
-	group by time_slice
-	;
-quit;
-
 /*Limit acute IP stays by removing the following prm_lines:
 	I11b--Medical - Rehabilitation
 	I13a--Psychiatric - Hospital
@@ -108,6 +82,8 @@ proc sql;
 		,a.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,(case when a.prm_ahrq_pqi in('None', 'pqi02') then 'N' else 'Y' end) as inpatient_pqi_yn
 		,'N' as preference_sensitive_yn
+		,b.memmos
+		,b.riskscr_1
 	from agg_claims_med as a
 	inner join post008.members as b on
 		a.member_id = b.member_id and a.time_slice = b.time_period
@@ -137,9 +113,7 @@ proc sql;
 		,coalesce(xwalk.disch_desc,'Other') as discharge_status_desc format $256. 
 	from claims_elig as claims
 	left join disch_xwalk as xwalk on
-		a.discharge_status_code = xwalk.disch_code
-	left join memmos_and_rskscr as mem_rsk on
-		a.time_period = mem_rsk.time_slice
+		claims.discharge_status_code = xwalk.disch_code
 	;
 quit;
 
