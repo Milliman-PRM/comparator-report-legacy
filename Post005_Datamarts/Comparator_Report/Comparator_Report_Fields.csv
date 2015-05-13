@@ -46,8 +46,6 @@ los_snf,,integer,,N,,N,,What was the Length of Stay for these stays?
 cnt_discharges_snf,,integer,,N,,N,,Count of discharges for these stays.
 sum_days_snf,,integer,,N,,N,,Sum of days for these stays.
 sum_costs_snf,,float,,N,,N,,Sum of costs for these stays.
-sum_memmos,,float,,N,,N,Used in metric calculations,
-sum_riskscr,,float,,N,,N,Used in metric calculations,
 metric_category,,varchar,32,N,inpatient~discharge_status~snf~er~outpatient~end_of_life,N,,Category of metrics; loosely correlated to anticipated reporting views.
 metric_id,,varchar,32,N,,N,,"Code-friendly name/description of metric (no spaces, max of 32 characters)"
 metric_name,,varchar,256,N,,N,,Human-friendly name/description of the metric.
