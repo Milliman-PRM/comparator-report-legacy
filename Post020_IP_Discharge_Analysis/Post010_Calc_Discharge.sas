@@ -115,7 +115,7 @@ proc sql;
 quit;
 
 proc sql;
-	create table post020.DRG_Discharge_totals_1 as
+	create table post020.DRG_Discharge_totals as
 		select
 			"Discharge" as Metric
 			,src.time_period
@@ -131,7 +131,7 @@ proc sql;
 quit;
 
 proc sql;
-	create table post020.Discharge_totals_1 as
+	create table post020.Discharge_totals as
 		select
 			"Discharge" as Metric
 			,src.time_period
