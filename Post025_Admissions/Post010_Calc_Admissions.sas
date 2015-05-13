@@ -49,11 +49,26 @@ quit;
 		,Force_Util=N
 		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&time_period.
-		,Where_Claims=%str(substr(outclaims_prm.prm_line,1,1) eq "I" and outclaims_prm.prm_line ne "I31")
+		,Where_Claims=
 		,Where_Elig=
 		,Date_DateTime=
 		,Suffix_Output=
 		)
+
+/*%str(substr(outclaims_prm.prm_line,1,1) eq "I" and outclaims_prm.prm_line ne "I31")*/
+
+proc summary nway missing data=
+
+
+
+
+
+
+
+
+
+
+
 
 /*Limit acute IP stays by removing the following prm_lines:
 	I11b--Medical - Rehabilitation
