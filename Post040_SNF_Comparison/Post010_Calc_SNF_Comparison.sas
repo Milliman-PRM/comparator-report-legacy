@@ -38,7 +38,7 @@ quit;
 %put inc_end = &inc_end.;
 %put paid_thru = &paid_thru.;
 
-/*Create the current and prior data sets by SNF provider and member.  Limit only to SNF data.*/
+/*Create the current and prior data sets summarized at the case level (all cases, not just SNF).*/
 %Agg_Claims(
 	IncStart=&inc_start.
 	,IncEnd=&inc_end.
@@ -46,20 +46,28 @@ quit;
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=Discharge
-	,Dimensions=providerID~member_ID
-	,Where_Claims=outclaims_prm.prm_line eq "I31"
-	,Suffix_Output=SNF
+	,Dimensions=providerID~member_ID~prm_line~caseadmitid
     );
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
 proc sql noprint;
-	create table mem_prov_with_risk_scr as
-	select A.*, B.riskscr_1
-	from agg_claims_med_SNF as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID);
+	create table all_cases_table as
+	select A.*
+	from agg_claims_med as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID)
+	order by time_slice caseadmitid;
 quit;
 
-proc sort data=mem_prov_with_risk_scr out=mem_prov_with_risk_scr;
-	by time_slice member_ID providerID;
+/*Calculate the total risk score and total member months of the institution from the member roster.*/
+data mem_risk_scr_times_memmos;
+	set Post008.Members;
+	risk_scr_times_memmos = memmos * riskscr_1;
+	keep time_period member_id memmos riskscr_1 risk_scr_times_memmos;
+run;
+
+proc summary nway missing data = Post008.Members;
+	vars memmos riskscr_1;
+	class time_period;
+	output out = Total_memmos_riskscr (drop = _TYPE_ _FREQ_ rename=(memmos=memmos_total riskscr_1=risk_scr_total)) sum=;
 run;
 
 /*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
@@ -155,7 +163,8 @@ run;
 	,Time_Slice=&time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=Discharge
-	,Dimensions=providerID~member_ID~prm_line
+	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Where_Claims=outclaims_prm.prm_line eq "I31"
 	,Suffix_Output=all
     );
 
