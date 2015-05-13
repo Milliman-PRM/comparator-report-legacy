@@ -93,12 +93,14 @@ data stacked_benchmarks;
 
 	format name_client $60. type_benchmark $8.;
 	
-	name_client = &assign_name_client.;
+	&assign_name_client.;
 	
 	if loose then type_benchmark = "Loose";
 		else if well then type_benchmark = "Well";
 	
 run;
+
+
 
 %put System Return Code = &syscc.;
 
