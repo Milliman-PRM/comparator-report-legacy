@@ -38,7 +38,7 @@ quit;
 %put inc_end = &inc_end.;
 %put paid_thru = &paid_thru.;
 
-/*Create the current and prior data sets by SNF provider and member.*/
+/*Create the current and prior data sets by SNF provider and member.  Limit only to SNF data.*/
 %Agg_Claims(
 	IncStart=&inc_start.
 	,IncEnd=&inc_end.
@@ -48,13 +48,14 @@ quit;
 	,Ongoing_Util_Basis=Discharge
 	,Dimensions=providerID~member_ID
 	,Where_Claims=outclaims_prm.prm_line eq "I31"
+	,Suffix_Output=SNF
     );
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
 proc sql noprint;
 	create table mem_prov_with_risk_scr as
 	select A.*, B.riskscr_1
-	from members_providers_med as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID);
+	from agg_claims_med_SNF as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID);
 quit;
 
 proc sort data=mem_prov_with_risk_scr out=mem_prov_with_risk_scr;
@@ -107,8 +108,6 @@ data risk_adj_adm_per_1000;
 	keep time_slice risk_adj_adm_per_thou;
 run; 
 	
-/*Calculate the % Cost Contribution to Total Spent for the current and prior periods.*/
-
 /*Calculate the SNF ALOS (Average Length of Stay) for the current and prior periods.*/
 proc summary nway missing data = Mem_prov_with_risk_scr;
 	vars PRM_Util RowCnt;
@@ -147,6 +146,25 @@ data Average_paid_per_discharge;
 	Avg_paid_per_disch = total_paid / total_discharges;
 	keep time_slice Avg_paid_per_disch;
 run;
+
+/*In order to calculate % Cost Contribution to Total Spend, we need a table with all data, not limited to SNF data.  Generate this now.*/
+%Agg_Claims(
+	IncStart=&inc_start.
+	,IncEnd=&inc_end.
+	,PaidThru=&paid_thru.
+	,Time_Slice=&time_period.
+	,Med_Rx=Med
+	,Ongoing_Util_Basis=Discharge
+	,Dimensions=providerID~member_ID~prm_line
+	,Suffix_Output=all
+    );
+
+
+
+/*Merge the newly created table with the member roster table.*/
+
+/*Calculate percent of SNF stays over 21 days*/
+
 
 /*Determine if there are readmissions within 30 days (still needs work)*/
 data claims_with_readmit;
