@@ -6,8 +6,6 @@
 	hospital groups for each discharge code and provider name.
 
 ### DEVELOPER NOTES:
-  1) Only use beneficiaries that didn't opt out, weren't excluded, and didn't opt back in.
-  2) Create "categ" for use when summarizing paid amount, number of admits, and number of days admitted by discharge code and ACO.
 
 */
 
@@ -17,10 +15,10 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
-
-/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 libname post008 "&post008." access = readonly;
 libname post020 "&post020.";
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
 /*Pull out the start/end dates from the time windows dataset*/
