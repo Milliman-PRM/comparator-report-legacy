@@ -54,30 +54,50 @@ proc sql noprint;
 	create table all_cases_table as
 	select A.*
 	from agg_claims_med as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID)
-	order by time_slice caseadmitid;
+	order by time_slice, caseadmitid;
 quit;
 
-/*Calculate the total risk score and total member months of the institution from the member roster.*/
+/*Calculate the average risk score and total member months of the institution from the member roster.
+  (needed for a couple of the metrics)*/
 data mem_risk_scr_times_memmos;
 	set Post008.Members;
 	risk_scr_times_memmos = memmos * riskscr_1;
 	keep time_period member_id memmos riskscr_1 risk_scr_times_memmos;
 run;
 
-proc summary nway missing data = Post008.Members;
-	vars memmos riskscr_1;
+proc summary nway missing data = Mem_risk_scr_times_memmos;
+	vars memmos risk_scr_times_memmos;
 	class time_period;
-	output out = Total_memmos_riskscr (drop = _TYPE_ _FREQ_ rename=(memmos=memmos_total riskscr_1=risk_scr_total)) sum=;
+	output out = Total_memmos_total_riskscr (drop = _TYPE_ _FREQ_ rename=(memmos=memmos_total risk_scr_times_memmos=risk_scr_total)) sum=;
+run;
+
+data Total_memmos_av_riskscr;
+	set Total_memmos_total_riskscr;
+	average_risk_score = risk_scr_total / memmos_total;
+	keep memmos_total average_risk_score;
+run;
+
+/*Sum the PRM costs (needed for one of the metrics).*/
+proc summary nway missing data=All_cases_table;
+	vars PRM_Costs;
+	class time_slice;
+	output out = Total_PRM_Costs (drop = _TYPE_ _FREQ_ rename=(PRM_Costs = PRM_Costs_total)) sum=;
+run;
+
+/*Now limit the cases to SNF cases only, so we can calculate the SNF metrics*/
+data SNF_cases_table;
+	set All_cases_table;
+	where PRM_Line = "I31";
 run;
 
 /*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
 proc sql noprint;
 	create table Number_NPIs as
 	select time_slice, count(distinct ProviderID) as NPI_Count
-	from Mem_prov_with_risk_scr
+	from SNF_cases_table
 	group by time_slice;
 quit;
-	
+
 /*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
 proc summary nway missing data = Mem_prov_with_risk_scr;
 	vars RowCnt MemMos;
