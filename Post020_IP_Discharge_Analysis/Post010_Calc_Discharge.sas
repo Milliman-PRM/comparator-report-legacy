@@ -54,24 +54,14 @@ quit;
 	
 );
 
-*Calculate the total admits by period;
-proc sql noprint;
-	select sum(admits)
-	into :curr_obssum
+*Calculate the total admits by each time_slice;
+proc sql;
+	create table obssum_by_period as
+	select time_slice, sum(admits) as obssum
 	from Agg_claims_med
-	where upcase(time_slice) = "CURRENT"
+	group by time_slice
 ;
 quit;
-%put sum = &curr_obssum;
-
-proc sql noprint;
-	select sum(admits)
-	into :prior_obssum
-	from Agg_claims_med
-	where upcase(time_slice) = "PRIOR"
-;
-quit;
-%put sum = &prior_obssum;
 
 /*Add in discharge status description;*/
 data disch_xwalk;
@@ -109,10 +99,7 @@ proc sql;
 			,src.DischargeStatus
 			,Discharge_Desc
 			,src.Admits
-			,Case when upcase(src.time_slice) = "CURRENT" then (src.admits /&curr_obssum.)
-				  when upcase(src.time_slice) = "PRIOR" then (src.admits/&prior_obssum.)
-				  else 0
-			 END as Admits_pct
+			,coalesce((src.admits/obs.obssum),0) as Admits_pct
 			,src.PRM_Costs
 			,"&name_client." as name_client
 
@@ -121,11 +108,14 @@ proc sql;
 		 inner join Post008.Members as memb on
 		 		src.member_ID = memb.member_ID
 			and src.time_slice = memb.time_period
+
+		 left join Obssum_by_period as obs 
+		 	on src.time_slice = obs.time_slice
 ;
 quit;
 
 proc sql;
-	create table post020.DRG_Discharge_totals as
+	create table post020.DRG_Discharge_totals_1 as
 		select
 			"Discharge" as Metric
 			,src.time_period
@@ -141,7 +131,7 @@ proc sql;
 quit;
 
 proc sql;
-	create table post020.Discharge_totals as
+	create table post020.Discharge_totals_1 as
 		select
 			"Discharge" as Metric
 			,src.time_period
