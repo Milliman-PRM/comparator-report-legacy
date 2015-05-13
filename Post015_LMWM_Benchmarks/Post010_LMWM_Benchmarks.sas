@@ -88,17 +88,17 @@ quit;
 
 /*Stack the loosley-managed and the well-managed benchmarks*/
 data stacked_benchmarks;
-	set Risk_adj_loose_man_bench (in= a)
-		cart_prod_well_man_benchmarks (in=b);
+	set Risk_adj_loose_man_bench (in= loose)
+		cart_prod_well_man_benchmarks (in= well);
 
 	format name_client $60. type_benchmark $8.;
 	
 	name_client = &assign_name_client.;
 	
-	if a then type_benchmark = "Loose";
-		else if b then type_benchmark = "Well";
+	if loose then type_benchmark = "Loose";
+		else if well then type_benchmark = "Well";
 	
 run;
 
-
+%put System Return Code = &syscc.;
 
