@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Create a centralized list of members who were assigned
@@ -11,6 +11,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
 
 /* Libnames */
@@ -89,30 +90,31 @@ proc sql noprint;
 		,inc_end format = 12.
 		,paid_thru format = 12.
 		,time_period format = $12.
-	into :time_period separated by "~"
-		,:inc_start separated by "~"
-		,:inc_end separated by "~"
-		,:paid_thru separated by "~"
-		,:time_period separated by "~"
+	into :list_time_period_hcc separated by "~"
+		,:list_inc_start_hcc separated by "~"
+		,:list_inc_end_hcc separated by "~"
+		,:list_paid_thru_hcc separated by "~"
+		,:list_time_period_hcc separated by "~"
 	from post008.Time_windows
 	;
 quit;
 
 
-%run_hcc_wrap_prm(&inc_start.
-		,&inc_end.
-		,&paid_thru.
-		,&time_period.
+%run_hcc_wrap_prm(&list_inc_start_hcc.
+		,&list_inc_end_hcc.
+		,&list_paid_thru_hcc.
+		,&list_time_period_hcc.
 		,post008
 		)
 
 
 
-/*Pull in member months to append to the member roster*/
-%agg_memmos(&inc_start.
-		,&inc_end.
+/*Pull in member months to append to the member roster
+	This utilizes potentially different time periods from risk scores above.*/
+%agg_memmos(&list_inc_start.
+		,&list_inc_end.
 		,member_id
-		,&time_period.
+		,&list_time_period.
 		)
 
 /*Decorate roster with information from member that may be needed
