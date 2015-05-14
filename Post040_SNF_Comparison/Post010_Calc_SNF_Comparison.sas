@@ -74,7 +74,7 @@ run;
 data Total_memmos_av_riskscr;
 	set Total_memmos_total_riskscr;
 	average_risk_score = risk_scr_total / memmos_total;
-	keep memmos_total average_risk_score;
+	keep time_period memmos_total average_risk_score;
 run;
 
 /*Sum the PRM costs (needed for one of the metrics).*/
@@ -90,7 +90,7 @@ data SNF_cases_table;
 	where PRM_Line = "I31";
 run;
 
-/*Calculate the number of distinct SNFs for the current time slice and the prior time slice.*/
+/*Calculate the number of distinct SNFs for all time slices.*/
 proc sql noprint;
 	create table Number_NPIs as
 	select time_slice, count(distinct ProviderID) as NPI_Count
@@ -98,49 +98,39 @@ proc sql noprint;
 	group by time_slice;
 quit;
 
-/*Find the number of SNF Admissions per 1000 for the current and prior time slice*/
-proc summary nway missing data = Mem_prov_with_risk_scr;
-	vars RowCnt MemMos;
+/*Find the number of SNF Admissions per 1000 for all time periods (including risk adjusted)*/
+proc summary nway missing data = SNF_cases_table;
+	vars RowCnt;
 	class time_slice;
-	output out = Total_adm_memmos (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms MemMos=total_mem_mos)) sum=;
+	output out = Total_SNF_admin (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms )) sum=;
 run;
 
-data Admissions_per_thou;
-	set Total_adm_memmos;
-	adm_per_k_years = total_num_of_adms / (total_mem_mos / 12000);
-	keep time_slice adm_per_k_years;
+data SNF_Admissions_per_thou;
+	merge Total_snf_admin Total_memmos_av_riskscr;
+	Adm_per_mem_k_years = (total_num_of_adms / memmos_total) * 12000;
+	Adm_per_mem_k_years_rsk_adj = Adm_per_mem_k_years / average_risk_score;
+	keep time_slice adm_per_mem_k_years Adm_per_mem_k_years_rsk_adj;
 run;
 
-/*Find the risk adjusted SNF Admissions per 1000 for the current and prior periods.*/
-data mem_risk_scr_times_memmos;
-	set Mem_prov_with_risk_scr;
-	risk_scr_times_memmos = MemMos * riskscr_1;
-	keep time_slice member_id ProviderID memmos risk_scr_times_memmos;
-run;
-
-proc summary nway missing data = mem_risk_scr_times_memmos;
-	vars risk_scr_times_memmos memmos;
+/*Calculate % Cost Contribution to Total Spend*/
+proc summary nway missing data = SNF_cases_table;
+	vars PRM_Costs;
 	class time_slice;
-	output out = total_rsk_scr_tms_memmos (drop = _TYPE_ _FREQ_) sum=;
+	output out = Total_SNF_costs (drop = _TYPE_ _FREQ_ rename=(PRM_Costs = Total_SNF_costs)) sum=;
 run;
 
-data average_risk_score;
-	set total_rsk_scr_tms_memmos;
-	average_risk_score = risk_scr_times_memmos / memmos;
-	keep time_slice average_risk_score;
-run;
-
-data risk_adj_adm_per_1000;
-	merge admissions_per_thou average_risk_score;
-	risk_adj_adm_per_thou = adm_per_k_years / average_risk_score;
-	keep time_slice risk_adj_adm_per_thou;
+data perc_contr_total_spend;
+	merge total_snf_costs total_prm_costs;
+	perc_SNF_total_spend = Total_SNF_costs / PRM_Costs_total;
+	keep time_slice perc_SNF_total_spend;
 run; 
-	
-/*Calculate the SNF ALOS (Average Length of Stay) for the current and prior periods.*/
-proc summary nway missing data = Mem_prov_with_risk_scr;
-	vars PRM_Util RowCnt;
+
+/*Calculate the SNF ALOS (Average Length of Stay) for all time periods.*/
+proc summary nway missing data = SNF_cases_table;
+	vars PRM_Util Discharges;
 	class time_slice;
-	output out = Total_days_stays (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days RowCnt=total_stays)) sum=;
+	where Discharges = 1;
+	output out = Total_days_stays (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days Discharges=total_stays)) sum=;
 run;
 
 data ALOS;
@@ -150,7 +140,7 @@ data ALOS;
 run;
 
 /*Calculate Average Paid Per Day in SNF.*/
-proc summary nway missing data = Mem_prov_with_risk_scr;
+proc summary nway missing data = SNF_cases_table;
 	vars Paid PRM_Util;
 	class time_slice;
 	output out = Total_paid_days (drop = _TYPE_ _FREQ_ rename=(Paid=total_paid PRM_Util=total_days)) sum=;
@@ -163,9 +153,10 @@ data Average_paid_per_day;
 run;
 
 /*Calculate Average Paid Per SNF Discharge.*/
-proc summary nway missing data = Mem_prov_with_risk_scr;
+proc summary nway missing data = SNF_cases_table;
 	vars Paid Discharges;
 	class time_slice;
+	where Discharges = 1;
 	output out = Total_paid_discharges (drop = _TYPE_ _FREQ_ rename=(Paid=total_paid Discharges=total_discharges)) sum=;
 run;
 
@@ -175,6 +166,20 @@ data Average_paid_per_discharge;
 	keep time_slice Avg_paid_per_disch;
 run;
 
+/*Calculate % of SNF stays over 21 days*/
+proc summary nway missing data = SNF_cases_table;
+	vars Discharges;
+	class time_slice;
+	where Discharges = 1 and PRM_Util gt 21;
+	output out = Num_disch_over_21_days (drop = _TYPE_ _FREQ_ rename=(Discharges=total_discharges_over_21)) sum=;
+run;
+
+data percent_disch_over_21_days;
+	merge Num_disch_over_21_days Total_paid_discharges;
+	percent_over_21 = total_discharges_over_21 / total_discharges;
+	keep time_slice percent_over_21;
+run;
+	
 /*In order to calculate % Cost Contribution to Total Spend, we need a table with all data, not limited to SNF data.  Generate this now.*/
 %Agg_Claims(
 	IncStart=&inc_start.
