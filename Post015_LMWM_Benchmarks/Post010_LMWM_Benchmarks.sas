@@ -10,6 +10,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
@@ -26,59 +27,6 @@ libname post015 "&post015.";
 %let name_module = Post015_LMWM_Benchmarks;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-
-
-
-/***** METADATA AND CODEGEN *****/
-%build_metadata_table(
-	&name_datamart_target.
-	,name_dset_out=metadata_target
-	)
-
-%macro generate_codegen_variables(name_table);
-	%global &name_table._fields
-		&name_table._cgfrmt
-		;
-	proc sql noprint;
-		select
-			name_field
-			,catx(
-				" "
-				,name_field
-				,sas_format
-				)
-		into :&name_table._fields separated by " "
-		,:&name_table._cgfrmt separated by " "
-		from metadata_target
-		where upcase(name_table) eq "%upcase(&name_table.)"
-		;
-	quit;
-	%put &name_table._fields = &&&name_table._fields.;
-	%put &name_table._cgfrmt = &&&name_table._cgfrmt.;
-%mend generate_codegen_variables;
-/*
-%generate_codegen_variables(cost_util_benchmark)
-*/
-
-proc sql;
-	create table tables_target as
-	select distinct
-		name_table
-	from metadata_target
-	;
-quit;
-
-data _null_;
-	set tables_target;
-	call execute(
-		cats(
-			'%nrstr(%generate_codegen_variables(name_table='
-			,name_table
-			,'))'
-			)
-		);
-run;
-
 
 
 /*Compute the average risk score across all combinations of 
@@ -144,7 +92,7 @@ quit;
 
 
 /*Stack the loosley-managed and the well-managed benchmarks*/
-data Post015.cost_util_benchmark (keep=&cost_util_benchmark_fields.);
+data Post015.cost_util_benchmark (keep=&cost_util_benchmark_cgflds.);
 
 	format &cost_util_benchmark_cgfrmt.;
 
