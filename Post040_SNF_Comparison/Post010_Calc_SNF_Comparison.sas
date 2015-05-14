@@ -56,32 +56,28 @@ proc sql noprint;
 	order by time_slice, caseadmitid;
 quit;
 
-/*Calculate the average risk score and total member months of the institution from the member roster.
-  (needed for a couple of the metrics)*/
-data mem_risk_scr_times_memmos;
-	set Post008.Members;
-	risk_scr_times_memmos = memmos * riskscr_1;
-	keep time_period member_id memmos riskscr_1 risk_scr_times_memmos;
-run;
-
-proc summary nway missing data = Mem_risk_scr_times_memmos;
-	vars memmos risk_scr_times_memmos;
-	class time_period;
-	output out = Total_memmos_total_riskscr (drop = _TYPE_ _FREQ_ rename=(memmos=memmos_total risk_scr_times_memmos=risk_scr_total)) sum=;
-run;
-
-data Total_memmos_av_riskscr;
-	set Total_memmos_total_riskscr;
-	average_risk_score = risk_scr_total / memmos_total;
-	keep time_period memmos_total average_risk_score;
-run;
-
 /*Sum the PRM costs (needed for one of the metrics).*/
 proc summary nway missing data=All_cases_table;
 	vars PRM_Costs;
 	class time_slice;
 	output out = Total_PRM_Costs (drop = _TYPE_ _FREQ_ rename=(PRM_Costs = PRM_Costs_total)) sum=;
 run;
+
+/*Calculate the average risk score and total member months of the institution from the member roster.
+  (needed for a couple of the metrics)*/
+proc sql;
+	create table mems_summary as
+	select
+		mems.time_period
+		,sum(mems.memmos) as total_memmos
+		,sum(mems.riskscr_1*memmos) as tot_risk_scr
+		,cost.PRM_Costs_total as total_costs
+	from post008.members as mems
+	left join Total_PRM_Costs as cost
+		on mems.time_period = cost.time_slice
+	group by time_period, PRM_Costs_total
+	;
+quit;
 
 /*Now limit the cases to SNF cases only.*/
 proc sql;
@@ -107,6 +103,37 @@ proc summary nway missing data=claims_SNF;
 	var cnt_discharges_snf sum_days_snf sum_costs_snf;
 	output out=details_snf (drop = _TYPE_ _FREQ_) sum=;
 run;
+
+/*Calculate the requested measures*/
+proc sql;
+	create table measures as
+	select
+		detail.name_client
+		,detail.time_period
+		,"SNF" as metric_category
+		,count(distinct detail.prv_id_snf) 
+			as distinct_SNFs label="Number of Distinct SNFs utilized in past 12 month period."
+		,sum(detail.cnt_discharges_snf)/(mems.total_memmos / 12000)
+			as SNF_adm_per_1000_mem_yrs label="SNF Admissions per 1000"
+		,(sum(detail.cnt_discharges_snf)/(mems.total_memmos / 12000))/(mems.tot_risk_scr/mems.total_memmos)
+			as SNF_adm_per_1000_rsk_adj label="SNF Admissions per 1000, Risk Adjusted"
+		,sum(detail.sum_costs_snf)/mems.total_costs
+			as perc_cost_total_spend label="% Cost Contribution to Total Spend"
+		,sum(detail.sum_days_snf)/sum(detail.cnt_discharges_snf)
+			as alos label="SNF ALOS"
+		,sum(detail.sum_costs_snf)/sum(detail.sum_days_snf)
+			as av_paid_per_day label="Average Paid Per Day in SNF"
+		,sum(detail.sum_costs_snf)/sum(detail.cnt_discharges_snf)
+			as av_paid_per_disch label="Average Paid Per SNF Discharge"
+		,sum(case when detail.los_snf > 21 then cnt_discharges_snf else 0 end)/sum(cnt_discharges_snf)
+			as percent_stays_over_21 label="% of SNF stays over 21 days"
+	from details_SNF as detail
+	left join mems_summary as mems
+		on detail.time_period = mems.time_period
+	group by detail.time_period, detail.name_client, metric_category, mems.total_memmos, mems.total_costs, mems.tot_risk_scr
+	;
+quit;
+
 
 /*Calculate the number of distinct SNFs for all time slices.*/
 proc sql noprint;
