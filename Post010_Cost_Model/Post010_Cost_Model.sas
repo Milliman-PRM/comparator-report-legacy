@@ -12,7 +12,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(0)supp010_shared_code.sas";
 %include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
