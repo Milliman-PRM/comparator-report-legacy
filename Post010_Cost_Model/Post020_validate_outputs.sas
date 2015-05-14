@@ -20,10 +20,10 @@ libname post010 "&post010.";
 
 
 
-
-%ValidateAgainstTemplate(
+/*TODO: Re-enable when we can validate only those tables that are present.*/
+/*%ValidateAgainstTemplate(
 	validate_libname=post010
 	,validate_template=&name_datamart_target.
-	)
+	)*/
 
 %put System Return Code = &syscc.;
