@@ -34,8 +34,8 @@ libname post010 "&post010.";
 	)
 
 %macro generate_codegen_variables(name_table);
-	%global &name_table._fields_space
-		&name_table._codegen_format
+	%global &name_table._cgflds
+		&name_table._cgfrmt
 		;
 	proc sql noprint;
 		select
@@ -45,14 +45,14 @@ libname post010 "&post010.";
 				,name_field
 				,sas_format
 				)
-		into :&name_table._fields_space separated by " "
-		,:&name_table._codegen_format separated by " "
+		into :&name_table._cgflds separated by " "
+		,:&name_table._cgfrmt separated by " "
 		from metadata_target
 		where upcase(name_table) eq "%upcase(&name_table.)"
 		;
 	quit;
-	%put &name_table._fields_space = &&&name_table._fields_space.;
-	%put &name_table._codegen_format = &&&name_table._codegen_format.;
+	%put &name_table._cgflds = &&&name_table._cgflds.;
+	%put &name_table._cgfrmt = &&&name_table._cgfrmt.;
 %mend generate_codegen_variables;
 /*
 %generate_codegen_variables(memmos)
@@ -163,7 +163,7 @@ run;
 
 /***** CREATE FINAL OUTPUTS *****/
 data post010.cost_util;
-	format &cost_util_codegen_format.;
+	format &cost_util_cgfrmt.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
 	if lowcase(prm_line) eq: "i" then prm_discharges = Discharges;
@@ -173,7 +173,7 @@ data post010.cost_util;
 	prm_allowed = Allowed;
 	prm_paid = paid;
 	PRM_Coverage_Type = 'Medical';
-	keep &cost_util_fields_space.;
+	keep &cost_util_cgflds.;
 run;
 %LabelDataSet(post010.cost_util)
 
@@ -222,23 +222,23 @@ proc transpose
 run;
 
 data post010.memmos;
-	format &memmos_codegen_format.;
+	format &memmos_cgfrmt.;
 	set agg_memmos_long (rename = (time_slice = time_period));
 	&assign_name_client.;
 	prm_memmos = memmos1;
 	prm_coverage_type = propcase(scan(Coverage_Type_Raw, 2 ,"_"));
-	keep &memmos_fields_space.;
+	keep &memmos_cgflds.;
 run;
 %LabelDataSet(post010.memmos)
 
 data post010.ref_prm_line;
-	format &ref_prm_line_codegen_format.;
+	format &ref_prm_line_cgfrmt.;
 	set M015_out.mr_line_info;
 	&assign_name_client.;
 	prm_line = mr_line;
 	prm_line_category = prm_line_desc1;
 	prm_util_type = costmodel_util;
-	keep &ref_prm_line_fields_space.;
+	keep &ref_prm_line_cgflds.;
 run;
 %LabelDataSet(post010.ref_prm_line)
 
