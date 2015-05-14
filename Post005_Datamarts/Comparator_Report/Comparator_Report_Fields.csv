@@ -33,13 +33,14 @@ drg_version_inpatient,,char,5,N,,N,,DRG Version for these stays.
 acute_yn,,char,1,N,Y~N,N,,Were these stays at an acute facility?
 medical_surgical,,char,8,N,Medical~Surgical,N,,What type of services did these stays contain (i.e. Medical or Surgical)?
 inpatient_pqi_yn,,char,1,N,Y~N,N,,Were these stays for a PQI?
+inpatient_discharge_to_snf_yn,,char,1,N,Y~N,N,,Where these inpatient stays discarged to a SNF?
+inpatient_readmit_yn,,char,1,N,Y~N,N,,Was there a readmission troublingly soon after this discharge?
 preference_sensitive_yn,,char,1,N,Y~N,N,,Were these stays for a Preference Sensitive reason?
 los_inpatient,,integer,,N,,N,,What was the Length of Stay for these stays?
 cnt_discharges_inpatient,,integer,,N,,N,,Count of discharges for these stays.
 sum_days_inpatient,,integer,,N,,N,,Sum of days for these stays.
 sum_costs_inpatient,,float,,N,,N,,Sum of costs for these stays.
 prv_id_snf,,varchar,40,N,,N,,Provider ID of the corresponding SNF.
-snf_from_ip_yn,,char,1,N,Y~N,N,,Did these stays begin with a transfer from an inpatient facility?
 snf_readmit_yn,,char,1,N,Y~N,N,,Were these troublingly short stays that ended with an admission to an inpatient facility?
 los_snf,,integer,,N,,N,,What was the Length of Stay for these stays?
 cnt_discharges_snf,,integer,,N,,N,,Count of discharges for these stays.
