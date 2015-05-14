@@ -1,7 +1,7 @@
 name_field,name_table,key_table,key_global
 name_client,cost_util,Y,N
 time_period,cost_util,Y,N
-prm_line,cost_util,Y,N
+mcrm_line,cost_util,Y,N
 elig_status_1,cost_util,Y,N
 prv_net_aco_yn,cost_util,Y,N
 prm_discharges,cost_util,N,N
@@ -24,7 +24,7 @@ prm_util_type,ref_prm_line,N,N
 prm_coverage_type,ref_prm_line,N,N
 name_client,cost_util_benchmark,Y,N
 time_period,cost_util_benchmark,Y,N
-prm_line,cost_util_benchmark,Y,N
+mcrm_line,cost_util_benchmark,Y,N
 elig_status_1,cost_util_benchmark,Y,N
 type_benchmark,cost_util_benchmark,Y,N
 benchmark_discharges_per1k,cost_util_benchmark,N,N
