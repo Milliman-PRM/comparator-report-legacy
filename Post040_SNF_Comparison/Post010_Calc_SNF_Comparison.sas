@@ -2,8 +2,7 @@
 ### CODE OWNERS: Michael Menser 
 
 ### OBJECTIVE:
-	Calculate the ACO Member Skilled Nursing Facility Metrics.  
-    (See S:/PHI/NYP/Attachment A Core PACT Reports by Milliman for Premier.xlsx)
+	Use the PRM outputs to create the Admission / Readmission report for NYP.
 
 ### DEVELOPER NOTES:
 */
@@ -84,10 +83,29 @@ proc summary nway missing data=All_cases_table;
 	output out = Total_PRM_Costs (drop = _TYPE_ _FREQ_ rename=(PRM_Costs = PRM_Costs_total)) sum=;
 run;
 
-/*Now limit the cases to SNF cases only, so we can calculate the SNF metrics*/
-data SNF_cases_table;
-	set All_cases_table;
-	where PRM_Line = "I31";
+/*Now limit the cases to SNF cases only.*/
+proc sql;
+	create table claims_SNF as
+	select
+		"&name_client." as name_client
+		,time_slice as time_period
+		,member_id
+		,ProviderID as prv_id_snf
+		,'N' as snf_readmit_yn
+		,PRM_Util as los_snf
+		,Discharges as cnt_discharges_snf
+		,PRM_Util as sum_days_snf
+		,PRM_Costs as sum_costs_snf
+	from All_cases_table
+	where prm_line = "I31"
+	;
+quit;
+
+/*Aggregate the SNF claims table to the datamart format.*/
+proc summary nway missing data=claims_SNF;
+	class name_client time_period prv_id_snf snf_readmit_yn los_snf;
+	var cnt_discharges_snf sum_days_snf sum_costs_snf;
+	output out=details_snf (drop = _TYPE_ _FREQ_) sum=;
 run;
 
 /*Calculate the number of distinct SNFs for all time slices.*/
