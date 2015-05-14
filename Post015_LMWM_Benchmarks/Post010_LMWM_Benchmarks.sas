@@ -22,7 +22,64 @@ libname post015 "&post015.";
 %let assign_name_client = name_client = "&name_client.";
 %put assign_name_client = &assign_name_client.;
 
+%let name_datamart_target = comparator_report;
+%let name_module = Post015_LMWM_Benchmarks;
+
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
+/***** METADATA AND CODEGEN *****/
+%build_metadata_table(
+	&name_datamart_target.
+	,name_dset_out=metadata_target
+	)
+
+%macro generate_codegen_variables(name_table);
+	%global &name_table._fields_space
+		&name_table._codegen_format
+		;
+	proc sql noprint;
+		select
+			name_field
+			,catx(
+				" "
+				,name_field
+				,sas_format
+				)
+		into :&name_table._fields_space separated by " "
+		,:&name_table._codegen_format separated by " "
+		from metadata_target
+		where upcase(name_table) eq "%upcase(&name_table.)"
+		;
+	quit;
+	%put &name_table._fields_space = &&&name_table._fields_space.;
+	%put &name_table._codegen_format = &&&name_table._codegen_format.;
+%mend generate_codegen_variables;
+/*
+%generate_codegen_variables(cost_util_benchmark)
+*/
+
+proc sql;
+	create table tables_target as
+	select distinct
+		name_table
+	from metadata_target
+	;
+quit;
+
+data _null_;
+	set tables_target;
+	call execute(
+		cats(
+			'%nrstr(%generate_codegen_variables(name_table='
+			,name_table
+			,'))'
+			)
+		);
+run;
+
+
 
 /*Compute the average risk score across all combinations of 
   beneficiary status and time period*/
