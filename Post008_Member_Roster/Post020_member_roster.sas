@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Create a centralized list of members who were assigned
@@ -11,10 +11,13 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
 
 /* Libnames */
 libname M035_Out "&M035_Out." access = readonly;
 libname post008 "&post008.";
+
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -59,10 +62,6 @@ data member_roster;
 		prv_name_align
 		);
 	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
-		and (
-			upcase(cover_medical) eq "Y"
-				or upcase(cover_rx) eq "Y"
-			) /*Must have actually had coverage (gets rid of any "zombie periods")*/
 		;
 
 	/*Only output the windows that include then ending boundary of our time period.*/
@@ -82,6 +81,41 @@ run;
 	,member_id time_period
 	,ReturnMessage=Multiple time windows assigned for a given time period.
 	)
+
+/*Calculate Risk Scores to add to the member table*/
+proc sql noprint;
+	select 
+		time_period
+		,inc_start format = 12.
+		,inc_end format = 12.
+		,paid_thru format = 12.
+		,time_period format = $12.
+	into :list_time_period_hcc separated by "~"
+		,:list_inc_start_hcc separated by "~"
+		,:list_inc_end_hcc separated by "~"
+		,:list_paid_thru_hcc separated by "~"
+		,:list_time_period_hcc separated by "~"
+	from post008.Time_windows
+	;
+quit;
+
+
+%run_hcc_wrap_prm(&list_inc_start_hcc.
+		,&list_inc_end_hcc.
+		,&list_paid_thru_hcc.
+		,&list_time_period_hcc.
+		,post008
+		)
+
+
+
+/*Pull in member months to append to the member roster
+	This utilizes potentially different time periods from risk scores above.*/
+%agg_memmos(&list_inc_start.
+		,&list_inc_end.
+		,member_id
+		,&list_time_period.
+		)
 
 /*Decorate roster with information from member that may be needed
   for subsequent analyses (e.g. risk scoring)*/
@@ -104,16 +138,24 @@ proc sql;
 					)
 				)
 			end as age
+		,coalesce(memmos.memmos_medical,0) as memmos
+		,riskscr.score_community as riskscr_1
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
+	left join post008.hcc_results as riskscr
+		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
+	left join agg_memmos as memmos
+		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
 	order by
 		roster.member_id
 		,roster.time_period
 	;
 quit;
 %LabelDataSet(post008.members)
+
+%assertthat(%getrecordcount(member_roster),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
 
 %put System Return Code = &syscc.;
