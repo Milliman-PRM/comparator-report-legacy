@@ -24,7 +24,37 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 
 
+/**** AGG_CLAIMS PARMATERS ****/
+
+%let Post_Ongoing_Util_Basis = Discharge;
+%let Post_Force_Util = N;
+
+libname temp008 "&post008." access=readonly;
+
+proc sql noprint;
+	select
+		time_period
+		,inc_start format = best12.
+		,inc_end format = best12.
+		,paid_thru format = best12.
+	into :list_time_period separated by "~"
+		,:list_inc_start separated by "~"
+		,:list_inc_end separated by "~"
+		,:list_paid_thru separated by "~"
+	from temp008.time_windows
+	;
+quit;
+%put list_time_period = &list_time_period.;
+%put list_inc_start = &list_inc_start.;
+%put list_inc_end = &list_inc_end.;
+%put list_paid_thru = &list_paid_thru.;
+
+libname temp008 clear;
+
+
+
 /***** METADATA AND CODEGEN *****/
+
 %build_metadata_table(
 	&name_datamart_target.
 	,name_dset_out=metadata_target
