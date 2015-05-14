@@ -1,0 +1,81 @@
+/*
+### CODE OWNERS: Kyle Baird, Shea Parkes, Jason Altieri
+
+### OBJECTIVE:
+	Centralize postboarding code to avoid duplication.
+
+### DEVELOPER NOTES:
+	Likely intended to be %included() in most postboarding work.
+	Intentionally left metadata_target in `work` library for potential downstream uses.
+*/
+
+/* DEVELOPMENT AID ONLY
+options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+*/
+%include "&M008_cde.func06_build_metadata_table.sas";
+
+%let name_datamart_target = Comparator_Report;
+
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
+
+/***** METADATA AND CODEGEN *****/
+%build_metadata_table(
+	&name_datamart_target.
+	,name_dset_out=metadata_target
+	)
+
+%macro generate_codegen_variables(name_table);
+	%global &name_table._cgflds
+		&name_table._cgfrmt
+		;
+	proc sql noprint;
+		select
+			name_field
+			,catx(
+				" "
+				,name_field
+				,sas_format
+				)
+		into :&name_table._cgflds separated by " "
+		,:&name_table._cgfrmt separated by " "
+		from metadata_target
+		where upcase(name_table) eq "%upcase(&name_table.)"
+		;
+	quit;
+	%put &name_table._cgflds = &&&name_table._cgflds.;
+	%put &name_table._cgfrmt = &&&name_table._cgfrmt.;
+%mend generate_codegen_variables;
+/*
+%generate_codegen_variables(memmos)
+*/
+
+proc sql;
+	create table tables_target as
+	select distinct
+		name_table
+	from metadata_target
+	;
+quit;
+
+data _null_;
+	set tables_target;
+	call execute(
+		cats(
+			'%nrstr(%generate_codegen_variables(name_table='
+			,name_table
+			,'))'
+			)
+		);
+run;
+
+proc sql;
+	drop table tables_target;
+quit;
+
+%put System Return Code = &syscc.;
