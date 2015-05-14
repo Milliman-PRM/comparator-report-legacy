@@ -1,22 +1,27 @@
 /*
-### CODE OWNERS: Jason Altieri
+### CODE OWNERS: Jason Altieri, Shea Parkes
 
 ### OBJECTIVE:
 	Use the PRM outputs to create the Admissiion/Readmission report for NYP.
 
 ### DEVELOPER NOTES:
+	Indend to create a "details" table and then individual metrics.
 */
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "&M073_Cde.pudd_methods\*.sas";
-%include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
+%include "&M008_Cde.Func06_build_metadata_table.sas";
 %include "&M002_cde.supp01_validation_functions.sas";
 
 /*Libnames*/
-libname post008 "&post008.";
+libname post008 "&post008." access=readonly;
 libname post025 "&post025.";
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
 
 /*Create macro variables to be used in developing the metrics*/
 proc sql noprint;
@@ -38,8 +43,6 @@ quit;
 %put inc_end = &inc_end.;
 %put paid_thru = &paid_thru.;
 
-/*Used Ongoing_Util_Basis=Discharge and Force_Util=No to match the cost model program*/
-/*Import inpatient claims excluding SNF for the "Current" time period*/
 %agg_claims(
 		IncStart=&inc_start.
 		,IncEnd=&inc_end.
