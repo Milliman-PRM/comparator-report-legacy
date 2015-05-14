@@ -36,8 +36,8 @@ libname post015 "&post015.";
 	)
 
 %macro generate_codegen_variables(name_table);
-	%global &name_table._fields_space
-		&name_table._codegen_format
+	%global &name_table._fields
+		&name_table._cgfrmt
 		;
 	proc sql noprint;
 		select
@@ -47,14 +47,14 @@ libname post015 "&post015.";
 				,name_field
 				,sas_format
 				)
-		into :&name_table._fields_space separated by " "
-		,:&name_table._codegen_format separated by " "
+		into :&name_table._fields separated by " "
+		,:&name_table._cgfrmt separated by " "
 		from metadata_target
 		where upcase(name_table) eq "%upcase(&name_table.)"
 		;
 	quit;
-	%put &name_table._fields_space = &&&name_table._fields_space.;
-	%put &name_table._codegen_format = &&&name_table._codegen_format.;
+	%put &name_table._fields = &&&name_table._fields.;
+	%put &name_table._cgfrmt = &&&name_table._cgfrmt.;
 %mend generate_codegen_variables;
 /*
 %generate_codegen_variables(cost_util_benchmark)
@@ -98,7 +98,7 @@ proc sql noprint;
 				,scores.elig_status_1
 
 				/*Calculate risk-adjusted benchmarks*/
-				,(loose.admits_per_1000 * scores.Avg_Risk_Score) 
+				,coalesce((loose.admits_per_1000 * scores.Avg_Risk_Score), 0) 
 					as benchmark_discharges_per1k
 
 				,case when upcase(loose.annual_util_type) = "DAYS" 
@@ -108,7 +108,7 @@ proc sql noprint;
 					end
 					as benchmark_days_per1k
 
-				,(loose.annual_util_per_1000 * scores.Avg_Risk_Score) 
+				,coalesce((loose.annual_util_per_1000 * scores.Avg_Risk_Score), 0) 
 					as benchmark_util_per1k
 
 	from grouped_avg_risk_scrores as scores
@@ -125,7 +125,7 @@ proc sql noprint;
 		select groups.time_period
 				,well.mcrm_line
 				,groups.elig_status_1
-				,well.admits_per_1000 as benchmark_discharges_per1k
+				,coalesce(well.admits_per_1000,0) as benchmark_discharges_per1k
 				
 				,case when upcase(well.annual_util_type) = "DAYS" 
 					then
@@ -134,7 +134,7 @@ proc sql noprint;
 					end
 					as benchmark_days_per1k
 
-				,well.annual_util_per_1000 as benchmark_util_per1k
+				,coalesce(well.annual_util_per_1000,0) as benchmark_util_per1k
 
 	from grouped_avg_risk_scrores as groups
 	cross join
@@ -144,11 +144,13 @@ quit;
 
 
 /*Stack the loosley-managed and the well-managed benchmarks*/
-data stacked_benchmarks;
+data Post015.cost_util_benchmark (keep=&cost_util_benchmark_fields.);
+
+	format &cost_util_benchmark_cgfrmt.;
+
 	set Risk_adj_loose_man_bench (in= loose)
 		cart_prod_well_man_benchmarks (in= well);
 
-	format name_client $60. type_benchmark $8.;
 	
 	&assign_name_client.;
 	
@@ -157,6 +159,7 @@ data stacked_benchmarks;
 	
 run;
 
+%LabelDataset(Post015.cost_util_benchmark);
 
 
 %put System Return Code = &syscc.;
