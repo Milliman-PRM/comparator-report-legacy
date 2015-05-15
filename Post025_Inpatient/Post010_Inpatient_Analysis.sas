@@ -121,7 +121,7 @@ proc sql;
 			when claims.dischargestatus = '03' then 'Y'
 			else 'N'
 			end as inpatient_discharge_to_snf_yn
-		,'N' as preference_sensitive_yn
+		,'N' as preference_sensitive_yn /*TODO: Fill with real logic when available.*/
 	from claims_members as claims
 	left join disch_xwalk on
 		claims.dischargestatus eq disch_xwalk.disch_code
