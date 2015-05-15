@@ -98,26 +98,52 @@ proc sql;
 		detail.name_client
 		,detail.time_period
 		,"SNF" as metric_category
+
 		,count(distinct detail.prv_id_snf) 
 			as distinct_SNFs label="Number of Distinct SNFs utilized in past 12 month period."
-		,sum(detail.cnt_discharges_snf)/(mems.total_memmos / 12000)
-			as SNF_adm_per_1000_mem_yrs label="SNF Admissions per 1000"
-		,(sum(detail.cnt_discharges_snf)/(mems.total_memmos / 12000))/(mems.tot_risk_scr/mems.total_memmos)
-			as SNF_adm_per_1000_rsk_adj label="SNF Admissions per 1000, Risk Adjusted"
-		,sum(detail.sum_costs_snf)/mems.total_costs
-			as perc_cost_total_spend label="% Cost Contribution to Total Spend"
-		,sum(detail.sum_days_snf)/sum(detail.cnt_discharges_snf)
-			as alos label="SNF ALOS"
-		,sum(detail.sum_costs_snf)/sum(detail.sum_days_snf)
+
+		,sum(detail.cnt_discharges_snf)
+			/mems.total_memmos * 12000
+			as SNF_per1k label="SNF Discharges per 1000"
+
+		,sum(detail.cnt_discharges_snf)
+			/mems.tot_risk_scr * 12000
+			as SNF_per1k_rskadj label="SNF Admissions per 1000 Risk Adjusted"
+
+		,sum(detail.sum_costs_snf)
+			/mems.total_costs
+			as pct_SNF_costs label="SNF Costs as a Percentage of Total Costs"
+
+		,sum(detail.sum_days_snf)
+			/sum(detail.cnt_discharges_snf)
+			as alos label="SNF Average Length of Stay"
+
+		,sum(detail.sum_costs_snf)
+			/sum(detail.sum_days_snf)
 			as av_paid_per_day label="Average Paid Per Day in SNF"
-		,sum(detail.sum_costs_snf)/sum(detail.cnt_discharges_snf)
+
+		,sum(detail.sum_costs_snf)
+			/sum(detail.cnt_discharges_snf)
 			as av_paid_per_disch label="Average Paid Per SNF Discharge"
-		,sum(case when detail.los_snf > 21 then cnt_discharges_snf else 0 end)/sum(cnt_discharges_snf)
-			as percent_stays_over_21 label="% of SNF stays over 21 days"
+
+		,sum(case when detail.los_snf > 21 then detail.cnt_discharges_snf else 0 end)
+			/sum(detail.cnt_discharges_snf)
+			as percent_stays_over_21 label="Percentage of SNF stays over 21 days"
+
+		,sum(case when detail.snf_readmit_yn = 'Y' then detail.cnt_discharges_snf else 0 end)
+			/sum(detail.cnt_discharges_snf)
+			as SNF_readmit label="Percentage of IP Readmits Within 30 Days of SNF Discharge"
+
 	from details_SNF as detail
 	left join mems_summary as mems
 		on detail.time_period = mems.time_period
-	group by detail.time_period, detail.name_client, metric_category, mems.total_memmos, mems.total_costs, mems.tot_risk_scr
+	group by 
+			detail.time_period
+			,detail.name_client
+			,metric_category
+			,mems.total_memmos
+			,mems.total_costs
+			,mems.tot_risk_scr
 	;
 quit;
 
