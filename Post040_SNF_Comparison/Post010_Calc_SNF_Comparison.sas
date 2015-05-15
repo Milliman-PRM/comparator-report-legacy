@@ -27,8 +27,9 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Med_Rx=Med
-	,Ongoing_Util_Basis=Discharge
+	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Force_Util=&post_force_util.
     );
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
