@@ -1,0 +1,6 @@
+discharge_code,discharge_desc
+01,Discharged to Home
+62,Discharged to IRF
+03,Discharged to SNF
+06,Discharged to Home Health Care
+20,Died
