@@ -12,7 +12,6 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 libname post008 "&post008.";
 
@@ -26,7 +25,7 @@ proc sql;
 		,time_period
 		,member_id
 		,elig_status_1
-		,'N' as deceased_yn
+		,'N' as deceased_yn /*TODO: Append with Decedent/End of Life information when available*/ 
 		,'N' as deceased_hospital_yn
 		,'N' as deceased_chemo_yn
 		,0 as final_hospice_days
