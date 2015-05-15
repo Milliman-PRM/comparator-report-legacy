@@ -2,6 +2,7 @@ name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,requir
 name_client,,varchar,256,N,,N,,Client Name
 time_period,,varchar,32,N,,N,,Period for the information
 prm_line,,varchar,4,N,,N,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category; Refer to the [MR_Line] tab in the Code Sets workbook for a complete list.","Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
+mcrm_line,,varchar,5,N,,N,This is the service category needed to roll up the information from Outclaims PRM into something that will compare with the benchmarks.,
 elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
 prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
 prm_line_desc,,varchar,128,N,,N,,Detailed Service Category Description
@@ -61,3 +62,8 @@ meta_project_string,,varchar,1024,Y,,N,,"Project Metadata Value (String). One of
 meta_project_date,,date,,Y,,N,,"Project Metadata Value (Date). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
 meta_project_integer,,integer,,Y,,N,,"Project Metadata Value (Integer). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
 meta_project_notes,,varchar,256,N,,N,,Describes provided metadata.
+mcrm_line_desc_L1,,varchar,128,N,,N,,MCRM Service Category Description
+mcrm_line_desc_L2,,varchar,129,N,,N,,MCRM Service Category Description
+mcrm_line_desc_L3,,varchar,130,N,,N,,MCRM Service Category Description
+mcrm_line_desc_L4,,varchar,131,N,,N,,MCRM Service Category Description
+mcrm_line_desc_L5,,varchar,132,N,,N,,MCRM Service Category Description
