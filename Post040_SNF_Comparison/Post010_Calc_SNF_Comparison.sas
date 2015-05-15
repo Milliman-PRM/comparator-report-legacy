@@ -86,9 +86,9 @@ quit;
 
 /*Aggregate the SNF claims table to the datamart format.*/
 proc summary nway missing data=claims_SNF;
-	class name_client time_period prv_id_snf snf_readmit_yn los_snf;
+	class _character_ los_snf;
 	var cnt_discharges_snf sum_days_snf sum_costs_snf;
-	output out=details_snf (drop = _TYPE_ _FREQ_) sum=;
+	output out=details_snf (drop = _:) sum=;
 run;
 
 /*Calculate the requested measures*/
