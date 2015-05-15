@@ -18,7 +18,7 @@ prm_coverage_type,memmos,Y,N
 prm_memmos,memmos,N,N
 name_client,ref_mcrm_line,N,N
 mcrm_line,ref_mcrm_line,Y,Y
-mcrm_line_desc_L1 ,ref_mcrm_line,N,N
+mcrm_line_desc_L1,ref_mcrm_line,N,N
 mcrm_line_desc_L2,ref_mcrm_line,N,N
 mcrm_line_desc_L3,ref_mcrm_line,N,N
 mcrm_line_desc_L4,ref_mcrm_line,N,N
