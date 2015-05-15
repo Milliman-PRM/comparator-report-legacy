@@ -10,7 +10,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
@@ -47,12 +46,14 @@ data agg_claims_med_coalesce;
 	set agg_claims_med_member;
 	elig_status_1 = coalescec(elig_status_1,"Unknown");
 	rename time_slice = time_period;
+	&assign_name_client.;
 run;
 
 proc sql;
 	create table costs_sum_all_services  as
 	select
-			src.time_period
+			src.name_client
+			,src.time_period
 			,src.elig_status_1
 			,sum(src.prm_costs) as PRM_costs
 			,sum(src.discharges) as Discharges
@@ -65,21 +66,23 @@ proc sql;
 			and src.time_period eq limit.time_period
 
 	group by 
-			src.time_period
+			src.name_client
+			,src.time_period
 			,src.elig_status_1
 	;
 quit;
 
 
 proc sql;
-	create table time_period_aggregates as
+	create table post010.quantity_aggregation as
 		select
-				cost.time_period
+				cost.name_client
+				,cost.time_period
 				,cost.elig_status_1
 				,sum(mems.memmos) as memmos_sum
-				,sum(mems.riskscr_1 * mems.memmos) as memmos_sum_riskadj
-				,sum(cost.PRM_costs) as PRM_costs
-				,sum(cost.discharges) as Discharges
+				,avg(mems.riskscr_1) as riskscr_1_avg
+				,sum(cost.PRM_costs) as prm_costs_sum_all_services
+				,sum(cost.discharges) as discharges_sum_all_services
 
 	from post008.members as mems
 	left join 
@@ -88,10 +91,12 @@ proc sql;
 			and mems.elig_status_1 = cost.elig_status_1
 
 	group by
-			cost.time_period
+			cost.name_client
+			,cost.time_period
 			,cost.elig_status_1
 	;
 quit;
 
+%LabelDataSet(post010.quantity_aggregation)
 
 %put System Return Code = &syscc.;
