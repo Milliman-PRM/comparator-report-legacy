@@ -12,6 +12,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
 libname post008 "&post008." access = readonly;
 libname post010 "&post010.";
@@ -134,138 +135,11 @@ proc sql;
 	;
 quit;
 
-
-/*Calculate the number of distinct SNFs for all time slices.*/
-proc sql noprint;
-	create table Number_NPIs as
-	select time_slice, count(distinct ProviderID) as NPI_Count
-	from SNF_cases_table
-	group by time_slice;
-quit;
-
-/*Find the number of SNF Admissions per 1000 for all time periods (including risk adjusted)*/
-proc summary nway missing data = SNF_cases_table;
-	vars RowCnt;
-	class time_slice;
-	output out = Total_SNF_admin (drop = _TYPE_ _FREQ_ rename=(RowCnt=total_num_of_adms )) sum=;
-run;
-
-data SNF_Admissions_per_thou;
-	merge Total_snf_admin Total_memmos_av_riskscr;
-	Adm_per_mem_k_years = (total_num_of_adms / memmos_total) * 12000;
-	Adm_per_mem_k_years_rsk_adj = Adm_per_mem_k_years / average_risk_score;
-	keep time_slice adm_per_mem_k_years Adm_per_mem_k_years_rsk_adj;
-run;
-
-/*Calculate % Cost Contribution to Total Spend*/
-proc summary nway missing data = SNF_cases_table;
-	vars PRM_Costs;
-	class time_slice;
-	output out = Total_SNF_costs (drop = _TYPE_ _FREQ_ rename=(PRM_Costs = Total_SNF_costs)) sum=;
-run;
-
-data perc_contr_total_spend;
-	merge total_snf_costs total_prm_costs;
-	perc_SNF_total_spend = Total_SNF_costs / PRM_Costs_total;
-	keep time_slice perc_SNF_total_spend;
-run; 
-
-/*Calculate the SNF ALOS (Average Length of Stay) for all time periods.*/
-proc summary nway missing data = SNF_cases_table;
-	vars PRM_Util Discharges;
-	class time_slice;
-	where Discharges = 1;
-	output out = Total_days_stays (drop = _TYPE_ _FREQ_ rename=(PRM_Util=total_days Discharges=total_stays)) sum=;
-run;
-
-data ALOS;
-	set Total_days_stays;
-	ALOS = total_days / total_stays;
-	keep time_slice ALOS;
-run;
-
-/*Calculate Average Paid Per Day in SNF.*/
-proc summary nway missing data = SNF_cases_table;
-	vars Paid PRM_Util;
-	class time_slice;
-	output out = Total_paid_days (drop = _TYPE_ _FREQ_ rename=(Paid=total_paid PRM_Util=total_days)) sum=;
-run;
-
-data Average_paid_per_day;
-	set Total_paid_days;
-	Avg_paid_per_day = total_paid / total_days;
-	keep time_slice Avg_paid_per_day;
-run;
-
-/*Calculate Average Paid Per SNF Discharge.*/
-proc summary nway missing data = SNF_cases_table;
-	vars Paid Discharges;
-	class time_slice;
-	where Discharges = 1;
-	output out = Total_paid_discharges (drop = _TYPE_ _FREQ_ rename=(Paid=total_paid Discharges=total_discharges)) sum=;
-run;
-
-data Average_paid_per_discharge;
-	set Total_paid_discharges;
-	Avg_paid_per_disch = total_paid / total_discharges;
-	keep time_slice Avg_paid_per_disch;
-run;
-
-/*Calculate % of SNF stays over 21 days*/
-proc summary nway missing data = SNF_cases_table;
-	vars Discharges;
-	class time_slice;
-	where Discharges = 1 and PRM_Util gt 21;
-	output out = Num_disch_over_21_days (drop = _TYPE_ _FREQ_ rename=(Discharges=total_discharges_over_21)) sum=;
-run;
-
-data percent_disch_over_21_days;
-	merge Num_disch_over_21_days Total_paid_discharges;
-	percent_over_21 = total_discharges_over_21 / total_discharges;
-	keep time_slice percent_over_21;
-run;
-	
-/*In order to calculate % Cost Contribution to Total Spend, we need a table with all data, not limited to SNF data.  Generate this now.*/
-%Agg_Claims(
-	IncStart=&inc_start.
-	,IncEnd=&inc_end.
-	,PaidThru=&paid_thru.
-	,Time_Slice=&time_period.
-	,Med_Rx=Med
-	,Ongoing_Util_Basis=Discharge
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid
-	,Where_Claims=outclaims_prm.prm_line eq "I31"
-	,Suffix_Output=all
-    );
-
-
-
-/*Merge the newly created table with the member roster table.*/
-
-/*Calculate percent of SNF stays over 21 days*/
-
-
-/*Determine if there are readmissions within 30 days (still needs work)*/
-data claims_with_readmit;
-	set Agg_claims_med;
-	by member_id;
-
-	format
-		prev_discharge yymmddd10.
-		prev_time_period $12.
-		Readmit $1.
-		;
-
-	if first.member_id then do;
-		prev_discharge = date_case_latest;
-		prev_time_period = time_slice;
-	end;
-	if date_case_earliest-prev_discharge le 30
-		and date_case_earliest-prev_discharge gt 0
-		and prev_time_period = time_slice then do;
-		Readmit = 'Y';
-		prev_discharge = date_case_latest;
-	end;
-	else Readmit = 'N';
+/*Transpose the dataset to get the data into a long format*/
+proc transpose data=measures
+		out=metrics_transpose(rename=(COL1 = metric_value))
+		name=metric_id
+		label=metric_name;
+	by name_client time_period metric_category;
 run;
 
