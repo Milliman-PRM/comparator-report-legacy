@@ -177,6 +177,6 @@ data post010.ref_mcrm_line;
 	prm_util_type = costmodel_util;
 	keep &ref_mcrm_line_cgflds.;
 run;
-%LabelDataSet(post010.ref_prm_line)
+%LabelDataSet(post010.ref_mcrm_line)
 
 %put System Return Code = &syscc.;
