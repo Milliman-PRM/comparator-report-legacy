@@ -35,8 +35,11 @@ libname post040 "&post040.";
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
 proc sql noprint;
 	create table all_cases_table as
-	select A.*
-	from agg_claims_med as A inner join post008.members as B on (A.time_slice = B.time_period and A.member_ID = B.member_ID)
+	select 
+		A.*
+	from agg_claims_med as A 
+	inner join post008.members as B 
+		on (A.time_slice = B.time_period and A.member_ID = B.member_ID)
 	order by time_slice, caseadmitid;
 quit;
 
