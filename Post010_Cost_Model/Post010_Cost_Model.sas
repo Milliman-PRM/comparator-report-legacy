@@ -16,6 +16,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
+libname M015_Out "&M015_Out." access=readonly;
 libname post008 "&post008." access=readonly;
 libname post010 "&post010.";
 
@@ -56,10 +57,14 @@ proc sql;
 	create table agg_claims_med_limited as
 	select
 		src.*
+		,mrl.mcrm_line
+
 	from agg_claims_med_coalesce as src
 	inner join post008.members as limit on
 		src.member_id eq limit.member_id
 			and src.time_period eq limit.time_period
+	left join M015_Out.mr_line_info as mrl on
+		src.prm_line = mrl.mr_line
 	;
 quit;
 
@@ -82,7 +87,7 @@ proc means noprint
 	data = agg_claims_med_limited
 	;
 	class time_period
-		prm_line
+		mcrm_line
 		elig_status_1
 		prv_net_aco_yn
 		;
@@ -100,9 +105,9 @@ data post010.cost_util;
 	format &cost_util_cgfrmt.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
-	if lowcase(prm_line) eq: "i" then prm_discharges = Discharges;
+	if lowcase(mcrm_line) eq: "i" then prm_discharges = Discharges;
 	else prm_discharges = 0;
-	if lowcase(prm_line) eq: "i" then prm_days = prm_util;
+	if lowcase(mcrm_line) eq: "i" then prm_days = prm_util;
 	else prm_days = 0;
 	prm_allowed = Allowed;
 	prm_paid = paid;
