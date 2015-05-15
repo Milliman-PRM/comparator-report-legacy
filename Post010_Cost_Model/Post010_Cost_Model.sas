@@ -174,8 +174,6 @@ data post010.ref_prm_line;
 	format &ref_prm_line_cgfrmt.;
 	set M015_out.mr_line_info;
 	&assign_name_client.;
-	prm_line = mr_line;
-	prm_line_category = prm_line_desc1;
 	prm_util_type = costmodel_util;
 	keep &ref_prm_line_cgflds.;
 run;
