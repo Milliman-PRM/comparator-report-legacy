@@ -47,7 +47,7 @@ quit;
 proc summary nway missing data=All_cases_table;
 	vars PRM_Costs;
 	class time_slice;
-	output out = Total_PRM_Costs (drop = _TYPE_ _FREQ_ rename=(PRM_Costs = PRM_Costs_total)) sum=;
+	output out = Total_PRM_Costs (drop = _:) sum=PRM_Costs_total;
 run;
 
 /*Calculate the average risk score and total member months of the institution from the member roster.
