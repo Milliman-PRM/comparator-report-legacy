@@ -22,20 +22,20 @@ libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
+
+
+
 %agg_claims(
 		IncStart=&list_inc_start.
 		,IncEnd=&list_inc_end.
 		,PaidThru=&list_paid_thru.
-		,Med_Rx=Med
 		,Ongoing_Util_Basis=&post_ongoing_util_basis.
 		,Force_Util=&post_force_util.
 		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&list_time_period.
-		,Where_Claims=
-		,Where_Elig=
-		,Date_DateTime=
-		,Suffix_Output=
 		)
+
+
 
 proc sql;
 	create table claims_members as
@@ -67,40 +67,6 @@ proc sql;
 	;
 quit;
 
-/*Limit acute IP stays by removing the following prm_lines:
-	I11b--Medical - Rehabilitation
-	I13a--Psychiatric - Hospital
-	I13b--Psychiatric - Residential
-
-	Exclude pqi02 from the count because it is not part of the composite PQI score.
-*/
-proc sql;
-	create table claims_elig as
-	select
-		"&name_client." as name_client
-		,time_slice as time_period
-		,member_id
-		,providerid as prv_id_inpatient
-		,discharges
-		,dischargestatus as discharge_status_code
-		,prm_util as days
-		,prm_util as los_inpatient
-		,prm_costs as costs
-		,prm_drg as drg_inpatient
-		,prm_drgversion as drg_version_inpatient
-		,(case when prm_line not in ('I11b', 'I13a', 'I13b') then 'Y' else 'N' end) as acute_yn
-		,(case when prm_line in ('I11a', 'I11b') then 'Medical' 
-			  when prm_line = 'I12' then 'Surgical' else 'N/A' end) as medical_surgical
-		,prm_readmit_all_cause_yn as inpatient_readmit_yn
-		,(case when prm_ahrq_pqi in('None', 'pqi02') then 'N' else 'Y' end) as inpatient_pqi_yn
-		,(case when dischargestatus = '03' then 'Y' else 'N' end) as inpatient_discharge_to_snf_yn
-		,'N' as preference_sensitive_yn
-	from claims_members
-	where %str(substr(prm_line,1,1) eq "I" and prm_line ne "I31")
-	;
-quit;
-
-/*Add in discharge status description*/
 data disch_xwalk;
 	infile "%GetParentFolder(0)Discharge_status_xwalk.csv"
 		lrecl=2048
@@ -114,20 +80,60 @@ data disch_xwalk;
 		disch_desc :$32.
 		;
 run;
-	
+
 proc sql;
-	create table claims_w_desc as
+	create table claims_elig as
 	select
-		claims.*
-		,coalesce(xwalk.disch_desc,'Other') as discharge_status_desc format $256. 
-	from claims_elig as claims
-	left join disch_xwalk as xwalk on
-		claims.discharge_status_code = xwalk.disch_code
+		"&name_client." as name_client
+		,claims.time_slice as time_period
+		,claims.member_id
+		,claims.providerid as prv_id_inpatient
+		,claims.discharges
+		,claims.dischargestatus as discharge_status_code
+		,coalesce(disch_xwalk.disch_desc, 'Unknown') as discharge_status_desc format=$256.
+		,claims.prm_util as days
+		,claims.prm_util as los_inpatient
+		,claims.prm_costs as costs
+		,claims.prm_drg as drg_inpatient
+		,claims.prm_drgversion as drg_version_inpatient
+		,case
+			when claims.prm_line not in (
+				'I11b' /* Medical - Rehabilitation */
+				,'I13a' /* Psychiatric - Hospital */
+				,'I13b' /* Psychiatric - Residential */
+				) then 'Y'
+			else 'N'
+			end as acute_yn
+		,case
+			when claims.prm_line in ('I11a', 'I11b') then 'Medical' 
+			when claims.prm_line = 'I12' then 'Surgical'
+			else 'None'
+			end as medical_surgical
+		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) in(
+				'NONE'
+				,'PQI02' /* PQI02 is not part of the composite PQI score */
+				) then 'N'
+			else 'Y'
+			end as inpatient_pqi_yn
+		,case
+			when claims.dischargestatus = '03' then 'Y'
+			else 'N'
+			end as inpatient_discharge_to_snf_yn
+		,'N' as preference_sensitive_yn
+	from claims_members as claims
+	left join disch_xwalk on
+		claims.dischargestatus eq disch_xwalk.disch_code
+	where 
+		upcase(claims.prm_line) eqt "I"
+		and lowcase(claims.prm_line) ne "i31"
 	;
 quit;
 
-/*Aggreate the table to the datamart format*/
-proc summary nway missing data=claims_w_desc;
+
+/*Aggregate the table to the datamart format*/
+proc summary nway missing data=claims_elig;
 class name_client time_period prv_id_inpatient discharge_status_code discharge_status_desc drg_inpatient drg_version_inpatient
 	  acute_yn medical_surgical inpatient_pqi_yn preference_sensitive_yn inpatient_readmit_yn los_inpatient inpatient_discharge_to_snf_yn;
 var discharges days costs;
