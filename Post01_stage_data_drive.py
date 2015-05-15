@@ -103,6 +103,11 @@ if __name__ == '__main__':
             datetime.datetime.now(),
             ))
 
+        fh_codegen.write('%let path_postboarding_data_root = {}{};\n'.format(
+            str(PATH_PROJECT_DATA),
+            os.sep,
+            ))
+
         print('BEGINNING SCAN OF {}\n\n'.format(PATH_CURRENT))
         for path_ in PATH_CURRENT.iterdir():
             try:

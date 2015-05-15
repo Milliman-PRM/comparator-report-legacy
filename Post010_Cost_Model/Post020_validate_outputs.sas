@@ -11,7 +11,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
-%include "%GetParentFolder(0)supp010_shared_code.sas";
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M002_cde.supp01_validation_functions.sas";
 
 libname post010 "&post010.";
@@ -20,10 +20,10 @@ libname post010 "&post010.";
 
 
 
-
-%ValidateAgainstTemplate(
+/*TODO: Re-enable when we can validate only those tables that are present.*/
+/*%ValidateAgainstTemplate(
 	validate_libname=post010
 	,validate_template=&name_datamart_target.
-	)
+	)*/
 
 %put System Return Code = &syscc.;
