@@ -22,10 +22,10 @@ libname post040 "&post040.";
 
 /*Create the current and prior data sets summarized at the case level (all cases, not just SNF).*/
 %Agg_Claims(
-	IncStart=&inc_start.
-	,IncEnd=&inc_end.
-	,PaidThru=&paid_thru.
-	,Time_Slice=&time_period.
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
+	,Time_Slice=&list_time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=Discharge
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
