@@ -170,13 +170,26 @@ data post010.memmos;
 run;
 %LabelDataSet(post010.memmos)
 
-data post010.ref_mcrm_line;
+data ref_mcrm_line_dups;
 	format &ref_mcrm_line_cgfrmt.;
 	set M015_out.mr_line_info;
 	&assign_name_client.;
 	prm_util_type = costmodel_util;
 	keep &ref_mcrm_line_cgflds.;
 run;
+
+proc sql;
+	create table post010.ref_mcrm_line as
+	select distinct
+		*
+	from ref_mcrm_line_dups
+	;
+quit;
 %LabelDataSet(post010.ref_mcrm_line)
+%AssertNoDuplicates(
+	post010.ref_mcrm_line
+	,name_client mcrm_line
+	,ReturnMessage=MCRM lines are not properly de-duplicated.
+	)
 
 %put System Return Code = &syscc.;
