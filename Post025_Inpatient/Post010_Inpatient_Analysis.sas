@@ -145,35 +145,67 @@ proc sql;
 	select
 		detail.name_client
 		,detail.time_period
-		,"Admissions" as metric_category
-		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)/mems.memmos_sum*12000 
-			  as acute_per_1000 label="Acute Admits per 1000"
-		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)/(mems.tot_risk_scr)*12000
-			  as acute_adj_1000 label="Acute Admits per 1000 Risk Adjusted"
-		,sum(case when detail.medical_surgical = 'Surgical' then detail.cnt_discharges_inpatient else 0 end)/mems.memmos_sum*12000 
-			  as surg_per_1000 label="Surgical Admits per 1000"
-		,sum(case when detail.medical_surgical = 'Surgical' then detail.cnt_discharges_inpatient else 0 end)/(mems.tot_risk_scr)*12000
-			  as surg_adj_1000 label="Surgical Admits per 1000 Risk Adjusted"
-		,sum(case when detail.medical_surgical = 'Medical' then detail.cnt_discharges_inpatient else 0 end)/mems.memmos_sum*12000
-			  as med_per_1000 label="Medical Admits per 1000"
-		,sum(case when detail.medical_surgical = 'Medical' then detail.cnt_discharges_inpatient else 0 end)/(mems.tot_risk_scr)*12000
-			  as med_adj_1000 label="Medical Admits per 1000 Risk Adjusted"
-		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)/mems.memmos_sum*12000
-			  as pqi label="PQI Combined (Chronic and Acute)"
-		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)/mems.memmos_sum*12000
-			  as pref_sens_per_1000 label="Preference Sensitive Admits per 1000"
-		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)/sum(detail.cnt_discharges_inpatient)
-			  as pct_1_day_LOS label="One Day LOS as a Percent of Total Admits"
-		,sum(detail.sum_costs_inpatient)/mems.costs_sum_all_services as pct_acute_IP_costs label="Acute Inpatient Costs as a Percentage of Total Costs"
-		,sum(case when detail.inpatient_discharge_to_snf_yn = 'Y' then 1 else 0 end)/sum(detail.cnt_discharges_inpatient) as IP_to_SNF_pct label="Percentage of IP Stays Discharged to SNF"
+		,"Inpatient" as metric_category
+
+		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.memmos_sum * 12000
+			as acute_per1k label="Acute Discharges per 1000"
+
+		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.tot_risk_scr * 12000
+			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
+
+		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.memmos_sum * 12000
+			as surgical_per1k label="Surgical Discharges per 1000"
+
+		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.tot_risk_scr * 12000
+			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
+
+		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.memmos_sum * 12000
+			as medical_per1k label="Medical Discharges per 1000"
+
+		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.tot_risk_scr * 12000
+			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
+
+		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.memmos_sum * 12000
+			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
+
+		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ mems.memmos_sum * 12000
+			as pref_sens_per1k label="Preference Sensitive Admits per 1000"
+
+		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
+			/ sum(detail.cnt_discharges_inpatient)
+			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
+
+		,sum(case when detail.acute_yn = 'Y' then detail.sum_costs_inpatient else 0 end)
+			/ mems.costs_sum_all_services
+			as pct_acute_IP_costs label="Acute Inpatient Costs as a Percentage of Total Costs"
+
+		,sum(case when detail.inpatient_discharge_to_snf_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ sum(detail.cnt_discharges_inpatient)
+			as pct_IP_disch_to_SNF label="Percentage of IP Stays Discharged to SNF"
+
 	from details_inpatient as detail
 	left join mems_summary as mems
 		on detail.time_period = mems.time_period
-	group by detail.time_period, detail.name_client, metric_category, mems.memmos_sum, mems.costs_sum_all_services, mems.tot_risk_scr
+	group by 
+		detail.time_period
+		,detail.name_client
+		,mems.memmos_sum
+		,mems.costs_sum_all_services
+		,mems.tot_risk_scr
 	;
 quit;
 
-/*Transpose the dataset to get the data into a long format*/
+
+
+/*Munge to target formats*/
 proc transpose data=measures 
 				out=metrics_transpose(rename=(COL1 = metric_value))
 				name=metric_id
