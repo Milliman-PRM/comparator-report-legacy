@@ -28,6 +28,7 @@ libname post015 "&post015.";
 proc means missing nway noprint data=Post008.members;
 	class time_period elig_status_1;
 	var riskscr_1;
+	weight memmos;
 	output out= grouped_avg_risk_scrores (drop= _:) mean(riskscr_1) = Avg_Risk_Score;
 run;
 
