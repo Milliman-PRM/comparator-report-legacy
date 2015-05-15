@@ -173,109 +173,20 @@ proc transpose data=measures
 				out=metrics_transpose(rename=(COL1 = metric_value))
 				name=metric_id
 				label=metric_name;
-by name_client time_period metric_category;
+	by name_client time_period metric_category;
 run;
-
-/*Codegen the output format for details_inpatient and metrics_key_value*/
-data table_to_field;
-	infile "%getparentfolder(1)\Post005_Datamarts\Comparator_Report\Comparator_Report_Tables.csv"
-			lrecl=32767
-			missover
-			dsd
-			firstobs=2
-			delimiter=','
-			;
-	input
-			name_field :$32.
-			name_table :$32.
-			key_table  :$1.
-			key_global :$1.
-			;
-run; 
-
-data target_formats;
-	infile "%getparentfolder(1)\Post005_Datamarts\Comparator_Report\Comparator_Report_Fields.csv"
-			lrecl=32767
-			missover
-			dsd
-			firstobs=2
-			delimiter=','
-			;
-	input
-			name_field 					:$32.
-			label      					:$32.
-			data_type  					:$10.
-			data_size  					:3.
-			allow_nulls					:$1.
-			whitelist_nonull_values		:$128.
-			require_label_ifnotallnull  :$1.
-			notes_develop				:$220.
-			notes_client				:$220.
-			;
-	format SAS_Format SAS_Length $12.;
-	select (upcase(data_type));
-			when ("CHAR") SAS_Format = cats("$", put(data_size,12.),".");
-			when ("VARCHAR") SAS_Format = cats("$", put(data_size,12.),".");
-			otherwise SAS_Format = ".";
-			end;
-
-	SAS_Length = compress(SAS_Format, ".");
-run; 
-
-proc sql noprint;
-	select 
-		catx(" "
-				,a.name_field
-				,cats(" ",SAS_Length)
-			)
-		,catx(" "
-				,a.name_field
-				,cats(" ",SAS_Format)
-			)
-		into :details_length separated by " "
-			,:details_format separated by " "
-		from Target_formats as a
-		left join table_to_field as b
-			on a.name_field = b.name_field
-		where upcase(b.name_table) eq "DETAILS_INPATIENT" and SAS_Format ne "."
-	;
-quit;
-%put details_length = &details_length.;
-%put details_format = &details_format.;
-
-proc sql noprint;
-	select 
-		catx(" "
-				,a.name_field
-				,cats(" ",SAS_Length)
-			)
-		,catx(" "
-				,a.name_field
-				,cats(" ",SAS_Format)
-			)
-		into :metrics_length separated by " "
-			,:metrics_format separated by " "
-		from Target_formats as a
-		left join table_to_field as b
-			on a.name_field = b.name_field
-		where upcase(b.name_table) eq "METRICS_KEY_VALUE" and SAS_Format ne "."
-	;
-quit;
-%put metrics_length = &metrics_length.;
-%put metrics_format = &metrics_format.;
 
 data post025.details_inpatient;
-length &details_length.;
-set details_inpatient;
-format &details_format.;
+	format &details_inpatient_cgfrmt.;
+	set details_inpatient;
+	keep &details_inpatient_cgflds.;
 run;
 
-/*Re-label the transposed variables with useful names and export*/
-data post025.metrics_key_value;
-length &metrics_length.;
-set metrics_transpose;
-format &metrics_format.;
-label metric_id=metric_id metric_name=metric_name;
+data post025.metrics_inpatient;
+	format &metrics_key_value_cgfrmt.;
+	set metrics_transpose;
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
 run;
 
 %put return_code = &syscc.;
