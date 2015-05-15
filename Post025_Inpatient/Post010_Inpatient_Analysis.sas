@@ -134,8 +134,7 @@ quit;
 
 /*Aggregate the table to the datamart format*/
 proc summary nway missing data=claims_elig;
-class name_client time_period prv_id_inpatient discharge_status_code discharge_status_desc drg_inpatient drg_version_inpatient
-	  acute_yn medical_surgical inpatient_pqi_yn preference_sensitive_yn inpatient_readmit_yn los_inpatient inpatient_discharge_to_snf_yn;
+class _character_ los_inpatient;
 var discharges days costs;
 output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
 run;
