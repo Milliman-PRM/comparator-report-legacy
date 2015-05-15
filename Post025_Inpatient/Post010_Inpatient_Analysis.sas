@@ -13,8 +13,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M073_Cde.pudd_methods\*.sas";
-%include "&M008_Cde.Func06_build_metadata_table.sas";
-%include "&M002_cde.supp01_validation_functions.sas";
 
 /*Libnames*/
 libname post008 "&post008." access=readonly;
