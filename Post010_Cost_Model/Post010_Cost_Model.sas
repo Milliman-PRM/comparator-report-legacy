@@ -170,12 +170,12 @@ data post010.memmos;
 run;
 %LabelDataSet(post010.memmos)
 
-data post010.ref_prm_line;
-	format &ref_prm_line_cgfrmt.;
+data post010.ref_mcrm_line;
+	format &ref_mcrm_line_cgfrmt.;
 	set M015_out.mr_line_info;
 	&assign_name_client.;
 	prm_util_type = costmodel_util;
-	keep &ref_prm_line_cgflds.;
+	keep &ref_mcrm_line_cgflds.;
 run;
 %LabelDataSet(post010.ref_prm_line)
 
