@@ -23,9 +23,6 @@ libname post015 "&post015.";
 %let assign_name_client = name_client = "&name_client.";
 %put assign_name_client = &assign_name_client.;
 
-%let name_datamart_target = comparator_report;
-%let name_module = Post015_LMWM_Benchmarks;
-
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
