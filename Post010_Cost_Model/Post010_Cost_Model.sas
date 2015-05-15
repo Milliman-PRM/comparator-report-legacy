@@ -11,7 +11,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
-%include "%GetParentFolder(0)supp010_shared_code.sas";
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
@@ -27,82 +27,16 @@ libname post010 "&post010.";
 
 
 
-/***** METADATA AND CODEGEN *****/
-%build_metadata_table(
-	&name_datamart_target.
-	,name_dset_out=metadata_target
-	)
-
-%macro generate_codegen_variables(name_table);
-	%global &name_table._fields_space
-		&name_table._codegen_format
-		;
-	proc sql noprint;
-		select
-			name_field
-			,catx(
-				" "
-				,name_field
-				,sas_format
-				)
-		into :&name_table._fields_space separated by " "
-		,:&name_table._codegen_format separated by " "
-		from metadata_target
-		where upcase(name_table) eq "%upcase(&name_table.)"
-		;
-	quit;
-	%put &name_table._fields_space = &&&name_table._fields_space.;
-	%put &name_table._codegen_format = &&&name_table._codegen_format.;
-%mend generate_codegen_variables;
-/*
-%generate_codegen_variables(memmos)
-*/
-
-proc sql;
-	create table tables_target as
-	select distinct
-		name_table
-	from metadata_target
-	;
-quit;
-
-data _null_;
-	set tables_target;
-	call execute(
-		cats(
-			'%nrstr(%generate_codegen_variables(name_table='
-			,name_table
-			,'))'
-			)
-		);
-run;
 
 /***** GENERATE RAW SOURCE DATA *****/
-proc sql noprint;
-	select
-		time_period
-		,inc_start format = best12.
-		,inc_end format = best12.
-		,paid_thru format = best12.
-	into :list_time_period separated by "~"
-		,:list_inc_start separated by "~"
-		,:list_inc_end separated by "~"
-		,:list_paid_thru separated by "~"
-	from post008.time_windows
-	;
-quit;
-%put list_time_period = &list_time_period.;
-%put list_inc_start = &list_inc_start.;
-%put list_inc_end = &list_inc_end.;
-%put list_paid_thru = &list_paid_thru.;
 
 %agg_claims(
 	IncStart=&list_inc_start.
 	,IncEnd=&list_inc_end.
 	,PaidThru=&list_paid_thru.
 	,Med_Rx=Med
-	,Ongoing_Util_Basis=Discharge
-	,Force_Util=N
+	,Ongoing_Util_Basis=&post_ongoing_util_basis.
+	,Force_Util=&post_force_util.
 	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn
 	,Time_Slice=&list_time_period.
 	,Where_Claims=
@@ -163,7 +97,7 @@ run;
 
 /***** CREATE FINAL OUTPUTS *****/
 data post010.cost_util;
-	format &cost_util_codegen_format.;
+	format &cost_util_cgfrmt.;
 	set agg_claims_med_reagg;
 	&assign_name_client.;
 	if lowcase(prm_line) eq: "i" then prm_discharges = Discharges;
@@ -173,7 +107,7 @@ data post010.cost_util;
 	prm_allowed = Allowed;
 	prm_paid = paid;
 	PRM_Coverage_Type = 'Medical';
-	keep &cost_util_fields_space.;
+	keep &cost_util_cgflds.;
 run;
 %LabelDataSet(post010.cost_util)
 
@@ -222,23 +156,23 @@ proc transpose
 run;
 
 data post010.memmos;
-	format &memmos_codegen_format.;
+	format &memmos_cgfrmt.;
 	set agg_memmos_long (rename = (time_slice = time_period));
 	&assign_name_client.;
 	prm_memmos = memmos1;
 	prm_coverage_type = propcase(scan(Coverage_Type_Raw, 2 ,"_"));
-	keep &memmos_fields_space.;
+	keep &memmos_cgflds.;
 run;
 %LabelDataSet(post010.memmos)
 
 data post010.ref_prm_line;
-	format &ref_prm_line_codegen_format.;
+	format &ref_prm_line_cgfrmt.;
 	set M015_out.mr_line_info;
 	&assign_name_client.;
 	prm_line = mr_line;
 	prm_line_category = prm_line_desc1;
 	prm_util_type = costmodel_util;
-	keep &ref_prm_line_fields_space.;
+	keep &ref_prm_line_cgflds.;
 run;
 %LabelDataSet(post010.ref_prm_line)
 
