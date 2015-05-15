@@ -11,6 +11,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M073_Cde.pudd_methods\*.sas";
 %include "&M008_Cde.Func06_build_metadata_table.sas";
 %include "&M002_cde.supp01_validation_functions.sas";
@@ -21,37 +22,15 @@ libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
-
-/*Create macro variables to be used in developing the metrics*/
-proc sql noprint;
-	select 
-		time_period
-		,inc_start format = 12.
-		,inc_end format = 12.
-		,paid_thru format = 12.
-	into :time_period separated by "~"
-		,:inc_start separated by "~"
-		,:inc_end separated by "~"
-		,:paid_thru separated by "~"
-	from post008.Time_windows
-	;
-quit;
-
-%put time_period = &time_period.;
-%put inc_start = &inc_start.;
-%put inc_end = &inc_end.;
-%put paid_thru = &paid_thru.;
-
 %agg_claims(
-		IncStart=&inc_start.
-		,IncEnd=&inc_end.
-		,PaidThru=&paid_thru.
+		IncStart=&list_inc_start.
+		,IncEnd=&list_inc_end.
+		,PaidThru=&list_paid_thru.
 		,Med_Rx=Med
-		,Ongoing_Util_Basis=Discharge
-		,Force_Util=N
+		,Ongoing_Util_Basis=&post_ongoing_util_basis.
+		,Force_Util=&post_force_util.
 		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
-		,Time_Slice=&time_period.
+		,Time_Slice=&list_time_period.
 		,Where_Claims=
 		,Where_Elig=
 		,Date_DateTime=
