@@ -56,7 +56,11 @@ proc sql noprint;
 
 	from grouped_avg_risk_scrores as scores
 	cross join 
-		M015_out.loosely_managed_benchmarks as loose	
+		M015_out.loosely_managed_benchmarks as loose
+	order by
+		scores.time_period
+		,loose.mcrm_line
+		,scores.elig_status_1
 	;
 quit;
 
@@ -82,6 +86,10 @@ proc sql noprint;
 	from grouped_avg_risk_scrores as groups
 	cross join
 		M015_Out.well_managed_benchmarks as well
+	order by
+		groups.time_period
+		,well.mcrm_line
+		,groups.elig_status_1
 	;
 quit;
 
@@ -93,7 +101,11 @@ data Post015.cost_util_benchmark (keep=&cost_util_benchmark_cgflds.);
 
 	set Risk_adj_loose_man_bench (in= loose)
 		cart_prod_well_man_benchmarks (in= well);
-
+	by
+		time_period
+		mcrm_line
+		elig_status_1
+		;
 	
 	&assign_name_client.;
 	
