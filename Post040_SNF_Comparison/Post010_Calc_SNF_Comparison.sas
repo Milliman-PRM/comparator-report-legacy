@@ -5,38 +5,20 @@
 	Use the PRM outputs to create the Admission / Readmission report for NYP.
 
 ### DEVELOPER NOTES:
+	This program creates a details table and then individual metrics.
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
 options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 libname post008 "&post008." access = readonly;
-libname post010 "&post010.";
+libname post040 "&post040.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-
-/*Store the start and end dates from the time windows dataset in variables for later use.*/
-proc sql noprint;
-	select
-		time_period
-		,inc_start format = 12.
-		,inc_end format = 12.
-		,paid_thru format = 12.
-	into :time_period separated by "~"
-	    ,:inc_start separated by "~"
-		,:inc_end separated by "~"
-		,:paid_thru separated by "~"
-	from post008.Time_Windows
-	;
-quit;
-%put time_period = &time_period.;
-%put inc_start = &inc_start.;
-%put inc_end = &inc_end.;
-%put paid_thru = &paid_thru.;
 
 /*Create the current and prior data sets summarized at the case level (all cases, not just SNF).*/
 %Agg_Claims(
@@ -143,3 +125,18 @@ proc transpose data=measures
 	by name_client time_period metric_category;
 run;
 
+/*Write the tables out to the post040 library*/
+data post040.details_SNF;
+	format &details_SNF_cgfrmt.;
+	set details_SNF;
+	keep &details_SNF_cgflds.;
+run;
+
+data post040.metrics_SNF;
+	format &metrics_key_value_cgfrmt.;
+	set metrics_transpose;
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
+run;
+
+%put return_code = &syscc.;
