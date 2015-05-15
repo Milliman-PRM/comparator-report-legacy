@@ -11,25 +11,47 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M008_cde.func06_build_metadata_table.sas";
-%include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
-libname post008 "&post008." access=readonly;
-libname post010 "&post010." access=readonly;
-libname post015 "&post015." access=readonly;
-libname post025 "&post025." access=readonly;
-libname post040 "&post040." access=readonly;
-
+libname Post050 "&Post050.";
 
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+/*path_postboarding_data_root*/
+
+%GetFilenamesFromDir(
+					Directory=&path_project_data.postboarding
+					,Output=Files_to_Stack
+					,Keepstrings=metrics
+					,subs=yes
+					);
+
+data parsed_filenames (drop=directory filename);
+	set Files_to_stack;
+	files=scan(scan(filename,2,"\"),1,".");
+	libraries=cats(directory,"\",scan(filename,1,"\"));
+run;
+
+proc sql noprint;
+	select cats("'",libraries,"'")
+	into :libs separated by ","
+	from parsed_filenames
+	;
+quit;
 
 
+libname Source (&libs.);
 
+proc sql noprint;
+	select cats("Source",".",files)
+	into :files_stack separated by " "
+	from parsed_filenames
+	;
+quit;
 
-
-
-
+data Post050.metrics_key_value;
+	format &metrics_key_value_cgfrmt.;
+	set &files_stack.;
+run;
 
 %put System Return Code = &syscc.;
