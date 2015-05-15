@@ -1,12 +1,9 @@
 name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,require_label_ifnotallnull,notes_develop,notes_client
 name_client,,varchar,256,N,,N,,Client Name
 time_period,,varchar,32,N,,N,,Period for the information
-prm_line,,varchar,4,N,,N,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category; Refer to the [MR_Line] tab in the Code Sets workbook for a complete list.","Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
 mcrm_line,,varchar,5,N,,N,This is the service category needed to roll up the information from Outclaims PRM into something that will compare with the benchmarks.,
 elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
 prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
-prm_line_desc,,varchar,128,N,,N,,Detailed Service Category Description
-prm_line_category,,varchar,16,N,,N,,Aggregate Service Category Description
 prm_util_type,,varchar,16,N,,N,Utilization Type,Utilization Type
 prm_discharges,,integer,,N,,N,Indicator of discharges. Should summarize to count of discharges. Only populated for Inpatient claims.,Indicates a discharges for an inpatient claim.
 prm_days,,integer,,N,,N,Count of days for an inpatient claim.,Count of days for the claim line for inpatient claims.
