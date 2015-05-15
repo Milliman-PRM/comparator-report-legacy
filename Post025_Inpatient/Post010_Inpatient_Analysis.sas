@@ -58,7 +58,7 @@ proc sql;
 	select
 		mems.time_period
 		,sum(mems.memmos) as memmos_sum
-		,sum(mems.riskscr_1*memmos) as tot_risk_scr
+		,sum(mems.riskscr_1*memmos) as memmos_sum_riskadj
 		,cost.costs_sum_all_services
 	from post008.members as mems
 	left join costs_sum_all_services as cost
@@ -152,7 +152,7 @@ proc sql;
 			as acute_per1k label="Acute Discharges per 1000"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.tot_risk_scr * 12000
+			/ mems.memmos_sum_riskadj * 12000
 			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
@@ -160,7 +160,7 @@ proc sql;
 			as surgical_per1k label="Surgical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.tot_risk_scr * 12000
+			/ mems.memmos_sum_riskadj * 12000
 			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
@@ -168,7 +168,7 @@ proc sql;
 			as medical_per1k label="Medical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.tot_risk_scr * 12000
+			/ mems.memmos_sum_riskadj * 12000
 			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
@@ -199,7 +199,7 @@ proc sql;
 		,detail.name_client
 		,mems.memmos_sum
 		,mems.costs_sum_all_services
-		,mems.tot_risk_scr
+		,mems.memmos_sum_riskadj
 	;
 quit;
 
