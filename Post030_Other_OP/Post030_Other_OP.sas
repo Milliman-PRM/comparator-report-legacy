@@ -3,51 +3,43 @@
 
 ### OBJECTIVE:
 	Calculate the Other Outpatient Metrics.  
-    (See S:/PHI/NYP/Attachment A Core PACT Reports by Milliman for Premier.xlsx)
 
 ### DEVELOPER NOTES:
 	According to CMS website, High-Tech Imaging includes CT, MRI and PET. 
+	(https://www.cms.gov/Medicare/Provider-Enrollment-and-Certification/MedicareProviderSupEnroll/AdvancedDiagnosticImagingAccreditation.html)
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
 options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "&M008_cde.func06_build_metadata_table.sas";
+%include "&M073_Cde.pudd_methods\*.sas";
 
+/*Library*/
 libname post008 "&post008." access = readonly;
 libname post010 "&post010." access = readonly;
 libname post030 "&post030.";
 
-/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+%let assign_name_client = name_client = "&name_client.";
+%put assign_name_client = &assign_name_client.;
 
-/*Store the start and end dates from the time windows dataset in variables for later use.*/
-proc sql noprint;
-	select
-		time_period
-		,inc_start format = 12.
-		,inc_end format = 12.
-		,paid_thru format = 12.
-	into :time_period separated by "~"
-	    ,:inc_start separated by "~"
-		,:inc_end separated by "~"
-		,:paid_thru separated by "~"
-	from post008.Time_Windows
-	;
-quit;
-%put time_period = &time_period.;
-%put inc_start = &inc_start.;
-%put inc_end = &inc_end.;
-%put paid_thru = &paid_thru.;
+%let name_datamart_target = comparator_report;
+%let name_module = Post030_Other_OP;
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 /*Create the current and prior dataset with only the metrics that we need and with only eligible members using the function call;*/
 %agg_claims(
-		IncStart=&inc_start.
-		,IncEnd=&inc_end.
-		,PaidThru=&paid_thru.
+		IncStart=&list_inc_start.
+		,IncEnd=&list_inc_end.
+		,PaidThru=&list_paid_thru.
 		,Med_Rx=Med
+		,Ongoing_Util_Basis=&post_ongoing_util_basis.
+		,Force_Util=&post_force_util.
 		,Dimensions=prm_line~member_id~prm_ahrq_pqi
-		,Time_Slice=&time_period.
+		,Time_Slice=&list_time_period.
 		,Where_Claims=/*%str((substr(Outclaims_prm.prm_line,1,1) eq "O") or (Outclaims_prm.prm_line in ("P32c","P32d")))*/
 		,Where_Elig=
 		,Date_DateTime=
@@ -80,13 +72,11 @@ quit;
 	
 /*Created a datail table for metrics calculation at the later process;*/ 
 proc sql;
-	create table claims_member_mod as
+	create table details_outpatient as
 		select
 			src.time_slice as time_period
 			,"&name_client." as name_client
-			,src.member_id
-			,src.prm_line
-			,src.prm_util
+			,sum(src.prm_util) as tot_util
 
 			,(case when src.prm_line in ("O14a","O14b","O14c") then "High_Tech_Imaging_Util" 
 				   when src.prm_line = "O41h" then "Obs_Stays_Util"
@@ -98,15 +88,14 @@ proc sql;
 			,(case when src.prm_line in ("P32c","P32d") then "Y" else "N" end) as outpatient_ov_yn
 
 		 from claims_members as src
+		 group by name_client
+		 		 ,time_period
+				 ,Util_Categ
+				 ,outpatient_pqi_yn
+				 ,outpatient_out_yn
+				 ,outpatient_ov_yn
 ;
 quit;
-
-/*Aggreate the table to the datamart format*/
-proc summary nway missing data=claims_member_mod;
-class name_client time_period Util_Categ outpatient_pqi_yn outpatient_out_yn outpatient_ov_yn;
-var prm_util;
-output out=details_outpatient (drop = _:)sum=tot_util;
-run;
 
 /*Calculate the requested measures*/
 proc sql;
@@ -152,15 +141,15 @@ proc transpose data=measures
 	by name_client time_period metric_category;
 run;
 
-/*data post030.details_outpatient;*/
-/*	format &details_inpatient_cgfrmt.;*/
-/*	set details_inpatient;*/
-/*	keep &details_inpatient_cgflds.;*/
-/*run;*/
-/**/
-/*data post030.metrics_outpatient;*/
-/*	format &metrics_key_value_cgfrmt.;*/
-/*	set metrics_transpose;*/
-/*	keep &metrics_key_value_cgflds.;*/
-/*	attrib _all_ label = ' ';*/
-/*run;*/
+data post030.details_outpatient;
+/*	format &details_outpatient_cgfrmt.;*/
+	set details_outpatient;
+/*	keep &details_outpatient_cgflds.;*/
+run;
+
+data post030.metrics_outpatient;
+	format &metrics_key_value_cgfrmt.;
+	set metrics_transpose;
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
+run;
