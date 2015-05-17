@@ -40,22 +40,20 @@ proc sql noprint;
 				,scores.elig_status_1
 
 				/*Calculate risk-adjusted benchmarks*/
-				,coalesce((loose.admits_per_1000 * scores.Avg_Risk_Score), 0) 
+				,case
+					when loose.admits_per_1000 is not null then loose.admits_per_1000 * scores.Avg_Risk_Score
+					else 0
+					end
 					as benchmark_discharges_per1k
-
-				,case when upcase(loose.annual_util_type) = "DAYS" 
-					then
-						(loose.annual_util_per_1000 * scores.Avg_Risk_Score) 
+				,case
+					when upcase(loose.annual_util_type) = "DAYS" then loose.annual_util_per_1000 * scores.Avg_Risk_Score
 					else 0
 					end
 					as benchmark_days_per1k
-
-				,coalesce((loose.annual_util_per_1000 * scores.Avg_Risk_Score), 0) 
-					as benchmark_util_per1k
-
+				,coalesce(loose.annual_util_per_1000,0) * scores.Avg_Risk_Score as benchmark_util_per1k
 	from grouped_avg_risk_scrores as scores
 	cross join 
-		M015_out.loosely_managed_benchmarks as loose
+		M015_out.benchmarks_loosely_managed as loose
 	order by
 		scores.time_period
 		,loose.mcrm_line
@@ -72,19 +70,15 @@ proc sql noprint;
 				,well.mcrm_line
 				,groups.elig_status_1
 				,coalesce(well.admits_per_1000,0) as benchmark_discharges_per1k
-				
-				,case when upcase(well.annual_util_type) = "DAYS" 
-					then
-						well.annual_util_per_1000 
+				,case
+					when upcase(well.annual_util_type) = "DAYS" then well.annual_util_per_1000
 					else 0
 					end
 					as benchmark_days_per1k
-
 				,coalesce(well.annual_util_per_1000,0) as benchmark_util_per1k
-
 	from grouped_avg_risk_scrores as groups
 	cross join
-		M015_Out.well_managed_benchmarks as well
+		M015_Out.benchmarks_well_managed as well
 	order by
 		groups.time_period
 		,well.mcrm_line
