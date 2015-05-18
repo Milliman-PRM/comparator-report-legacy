@@ -18,6 +18,9 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 %let name_datamart_target = Comparator_Report;
 
+%let assign_name_client = name_client = "&name_client.";
+%put assign_name_client = &assign_name_client.;
+
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
