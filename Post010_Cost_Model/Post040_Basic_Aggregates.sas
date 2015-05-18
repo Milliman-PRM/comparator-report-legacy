@@ -40,6 +40,13 @@ proc sql;
 	;
 quit;
 
+proc sql noprint;
+	select sum(prm_costs) format=32.
+	into :costs_sum_input trimmed
+	from post010.cost_util
+	;
+quit;
+%put costs_sum_input = &costs_sum_input.;
 
 proc sql;
 	create table members_aggregate as
@@ -77,6 +84,19 @@ quit;
 %LabelDataSet(post010.basic_aggs_elig_status)
 
 %AssertRecordCount(post010.basic_aggs_elig_status,eq,%GetRecordCount(members_aggregate),ReturnMessage=Unexpected cartesianing occured.)
+
+proc sql noprint;
+	select sum(prm_costs_sum_all_services) format=32.
+	into :costs_sum_output_elig_status trimmed
+	from post010.basic_aggs_elig_status
+	;
+quit;
+%put costs_sum_output_elig_status = &costs_sum_output_elig_status.;
+
+%let smape_chksum_elig_status = %sysfunc(round(%sysevalf(%sysfunc(abs(&costs_sum_output_elig_status.-&costs_sum_input.))/(%sysfunc(abs(&costs_sum_output_elig_status.))+%sysfunc(abs(&costs_sum_input.)))),0.0001));
+%put smape_chksum_elig_status = &smape_chksum_elig_status.;
+%AssertThat(&smape_chksum_elig_status.,lt,0.001,ReturnMessage=Not all costs were aggregated.)
+
 
 proc sql;
 	create table post010.basic_aggs as
