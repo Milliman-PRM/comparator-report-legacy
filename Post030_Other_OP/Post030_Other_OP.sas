@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen, 
+### CODE OWNERS: Anna Chen, Kyle Baird
 
 ### OBJECTIVE:
 	Calculate the Other Outpatient Metrics.  
@@ -18,41 +18,32 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /*Library*/
+libname M015_out "&M015_out." access=readonly;
 libname post008 "&post008." access = readonly;
-libname post010 "&post010." access = readonly;
 libname post030 "&post030.";
-
-%let assign_name_client = name_client = "&name_client.";
-%put assign_name_client = &assign_name_client.;
-
-%let name_datamart_target = comparator_report;
-%let name_module = Post030_Other_OP;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 /*Create the current and prior dataset with only the metrics that we need and with only eligible members using the function call;*/
 %agg_claims(
-		IncStart=&list_inc_start.
-		,IncEnd=&list_inc_end.
-		,PaidThru=&list_paid_thru.
-		,Med_Rx=Med
-		,Ongoing_Util_Basis=&post_ongoing_util_basis.
-		,Force_Util=&post_force_util.
-		,Dimensions=prm_line~member_id~prm_ahrq_pqi
-		,Time_Slice=&list_time_period.
-		,Where_Claims=/*%str((substr(Outclaims_prm.prm_line,1,1) eq "O") or (Outclaims_prm.prm_line in ("P32c","P32d")))*/
-		,Where_Elig=
-		,Date_DateTime=
-		,Suffix_Output=
-		)
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
+	,Med_Rx=Med
+	,Ongoing_Util_Basis=&post_ongoing_util_basis.
+	,Force_Util=&post_force_util.
+	,Dimensions=member_id~prm_line
+	,Time_Slice=&list_time_period.
+	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d"))
+	,Suffix_Output=raw
+	)
 
-/*Created a claims_member summary table from merging in Post008.Members;*/
+/*Limit members to those that apply to our time periods*/
 proc sql;
 	create table claims_members as
 	select
 		claims.*
-	   ,mems.riskscr_1
-	from agg_claims_med as claims
+	from agg_claims_med_raw as claims
 	inner join post008.members as mems
 		on claims.Member_ID = mems.Member_ID 
 		and claims.time_slice = mems.time_period
@@ -60,96 +51,126 @@ proc sql;
 quit;
 
 proc sql;
-	create table mems_summary as
+	create table agg_memmos_riskscr as
 	select
 		mems.time_period
-		,sum(mems.memmos) as total_memmos
-		,sum(mems.riskscr_1*memmos) as tot_risk_scr
+		,sum(mems.memmos) as sum_memmos
+		,sum(mems.riskscr_1*memmos) / calculated sum_memmos as avg_riskscr
 	from post008.members as mems
 	group by time_period
 	;
 quit;
-	
-/*Created a datail table for metrics calculation at the later process;*/ 
+
+/***** CALCULATE METRICS *****/
+/*** PCT OFFICE VISITS TO A PCP ***/
 proc sql;
-	create table details_outpatient as
-		select
-			src.time_slice as time_period
-			,"&name_client." as name_client
-			,sum(src.prm_util) as tot_util
-
-			,(case when src.prm_line in ("O14a","O14b","O14c") then "High_Tech_Imaging_Util" 
-				   when src.prm_line = "O41h" then "Obs_Stays_Util"
-				   when src.prm_line = "P32c" then "PCP_Office_Visits"
-				   when src.prm_line = "P32d" then "Specialist_Office_Visit" else "N/A" end) as Util_Categ
-
-			,(case when upcase(src.prm_ahrq_pqi) eq "NONE" or substr(src.prm_line,1,1) ne "O" then "N" else "Y" end) as outpatient_pqi_yn
-			,(case when substr(src.prm_line,1,1) eq "O" then "Y" else "N" end) as outpatient_out_yn
-			,(case when src.prm_line in ("P32c","P32d") then "Y" else "N" end) as outpatient_ov_yn
-
-		 from claims_members as src
-		 group by name_client
-		 		 ,time_period
-				 ,Util_Categ
-				 ,outpatient_pqi_yn
-				 ,outpatient_out_yn
-				 ,outpatient_ov_yn
-;
-quit;
-
-/*Calculate the requested measures*/
-proc sql;
-	create table measures as
+	create table pct_office_visits_pcp as
 	select
-		detail.name_client
-		,detail.time_period
-		,"OutPatient" as metric_category
-
-		,sum(case when detail.outpatient_pqi_yn = 'Y' then detail.tot_util else 0 end)/mems.total_memmos*12000
-		 	  as pqi label="PQI Combined (OutPatient)"
-
-		,sum(case when detail.Util_Categ = "High_Tech_Imaging_Util" then detail.tot_util else 0 end)/mems.total_memmos*12000 
-			  as HT_per_1000 label="High Tech Imaging Util per 1000"
-		,sum(case when detail.Util_Categ = "High_Tech_Imaging_Util" then detail.tot_util else 0 end)/mems.tot_risk_scr*12000 
-			  as HT_adj_1000 label="High Tech Imaging Util per 1000 Risk Adjusted"
-
-		,sum(case when detail.Util_Categ = "Obs_Stays_Util" then detail.tot_util else 0 end)/mems.total_memmos*12000 
-			  as Obs_per_1000 label="Observation Stays Util per 1000"
-		,sum(case when detail.Util_Categ = "Obs_Stays_Util" then detail.tot_util else 0 end)/mems.tot_risk_scr*12000 
-			  as Obs_adj_1000 label="Observation Stays Util per 1000 Risk Adjusted"
-
-		,sum(case when detail.Util_Categ = "PCP_Office_Visits" then detail.tot_util else 0 end)/
-		 sum(case when detail.outpatient_ov_yn = 'Y' then detail.tot_util else 0 end) 
-			  as pct_pcp_visits label="Percentage PCP Office Visits"
-
-	from details_outpatient as detail
-	left join mems_summary as mems
-		on detail.time_period = mems.time_period
-
-	group by detail.time_period
-			,detail.name_client
-			,mems.total_memmos
-			,mems.tot_risk_scr
+		time_slice as time_period
+		,"pct_office_visits_pcp" as metric_id length = 32 format = $32.
+		,"% Primary Care Office Visits" as metric_name length = 256 format = $256.
+		,sum(case when lowcase(prm_line) eq "p32c" then prm_util else 0 end) as _sum_visits_pcp
+		,sum(prm_util) as _sum_visits_combined
+		,calculated _sum_visits_pcp / calculated _sum_visits_combined as metric_value
+	from claims_members
+	group by time_slice
 	;
 quit;
 
-/*Munge to target formats*/
-proc transpose data=measures 
-				out=metrics_transpose(rename=(COL1 = metric_value))
-				name=metric_id
-				label=metric_name;
-	by name_client time_period metric_category;
+/*** UTILIZATION RATES (NOT RISK ADJUSTED) ***/
+data ref_service_agg;
+	set M015_out.mr_line_info (keep =
+		mr_line
+		prm_line_desc /*For reference when developing.*/
+		costmodel_util /*To check we do not mix util types*/
+		);
+	format
+		metric_id $32.
+		metric_name $256.
+		;
+	if lowcase(mr_line) in ("o14a","o14b","o14c") then do;
+		metric_id = "high_tech_imaging_per1k";
+		metric_name = "High Tech Imaging Utilization per 1000";
+	end;
+	else if lowcase(mr_line) eq "o41h" then do;
+		metric_id = "observation_stays_per1k";
+		metric_name = "Observation Stays Utilization per 1000";
+	end;
+	else delete;
 run;
 
-data post030.details_outpatient;
-/*	format &details_outpatient_cgfrmt.;*/
-	set details_outpatient;
-/*	keep &details_outpatient_cgflds.;*/
+proc sql noprint;
+	select
+		max(cnt_distinct_util_types)
+	into :max_cnt_distinct_util_types trimmed
+	from (
+		select
+			metric_id
+			,count(distinct costmodel_util) as cnt_distinct_util_types
+			from ref_service_agg
+			group by metric_id
+		)
+	;
+quit;
+%put max_cnt_distinct_util_types = &max_cnt_distinct_util_types.;
+%AssertThat(
+	&max_cnt_distinct_util_types.
+	,eq
+	,1
+	,ReturnMessage=Requested aggregate categories contain a mix of utilization types.
+	)
+
+proc sql;
+	create table agg_util as
+	select
+		claims.time_slice as time_period
+		,ref_service_agg.metric_id
+		,ref_service_agg.metric_name
+		,sum(prm_util) as _sum_prm_util
+	from claims_members as claims
+	inner join ref_service_agg as ref_service_agg
+		on claims.prm_line eq ref_service_agg.mr_line
+	group by
+		claims.time_slice
+		,ref_service_agg.metric_id
+		,ref_service_agg.metric_name
+	;
+quit;
+
+proc sql;
+	create table util_rates as
+	select
+		agg_util.*
+		,memmos_riskscr.sum_memmos as _sum_memmos
+		,memmos_riskscr.avg_riskscr as _avg_riskscr
+		,_sum_prm_util * (1 / memmos_riskscr.sum_memmos) * 12 * 1000 as metric_value
+	from agg_util as agg_util
+	left join agg_memmos_riskscr as memmos_riskscr
+		on agg_util.time_period eq memmos_riskscr.time_period
+	;
+quit;
+
+/*** UTILIZATION RATES (RISK ADJUSTED) ***/
+data util_rates_riskadj;
+	set util_rates;
+	metric_id = catx("_",metric_id,"riskadj");
+	metric_name = catx(", ",metric_name,"Risk Adjusted");
+	metric_value = metric_value * _avg_riskscr;
 run;
 
+/*** COMBINE THE RESULTS ***/
 data post030.metrics_outpatient;
 	format &metrics_key_value_cgfrmt.;
-	set metrics_transpose;
+	set util_rates
+		util_rates_riskadj
+		pct_office_visits_pcp
+		;
+	by time_period;
+	&assign_name_client.;
+	metric_category = "outpatient";
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+%LabelDataSet(post030.metrics_outpatient);
+
+%put System Return Code = &syscc.;
