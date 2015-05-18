@@ -74,13 +74,13 @@ quit;
 
 
 proc sql;
-	create table post010.quantity_aggregation as
+	create table post010.metrics_basic as
 		select
 				cost.name_client
 				,cost.time_period
 				,cost.elig_status_1
 				,sum(mems.memmos) as memmos_sum
-				,avg(mems.riskscr_1) as riskscr_1_avg
+				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg
 				,sum(cost.PRM_costs) as prm_costs_sum_all_services
 				,sum(cost.discharges) as discharges_sum_all_services
 
@@ -97,6 +97,6 @@ proc sql;
 	;
 quit;
 
-%LabelDataSet(post010.quantity_aggregation)
+%LabelDataSet(post010.metrics_basic)
 
 %put System Return Code = &syscc.;
