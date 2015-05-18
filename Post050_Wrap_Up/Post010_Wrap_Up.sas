@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jason Altieri
+### CODE OWNERS: Jason Altieri, Aaron Hoch
 
 ### OBJECTIVE:
 	Take the metrics and stack them together.
@@ -23,6 +23,7 @@ libname Post050 "&Post050.";
 					Directory=&path_project_data.postboarding
 					,Output=Files_to_Stack
 					,Keepstrings=metrics
+					,ExcludeStrings=metrics_key_value
 					,subs=yes
 					);
 
