@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Aaron Hoch
+### CODE OWNERS: Aaron Hoch, Shea Parkes
 
 ### OBJECTIVE:
 	Centralize common aggregated items such as average risk scores, total costs, member counts, etc.
@@ -10,14 +10,11 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M073_Cde.pudd_methods\*.sas";
 
 /* Libnames */
 libname post008 "&post008." access=readonly;
 libname post010 "&post010.";
 
-%let assign_name_client = name_client = "&name_client.";
-%put assign_name_client = &assign_name_client.;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -25,107 +22,82 @@ libname post010 "&post010.";
 
 
 
-/***** GENERATE RAW SOURCE DATA *****/
-
-%agg_claims(
-	IncStart=&list_inc_start.
-	,IncEnd=&list_inc_end.
-	,PaidThru=&list_paid_thru.
-	,Med_Rx=Med
-	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Force_Util=&post_force_util.
-	,Dimensions=member_id~elig_status_1
-	,Time_Slice=&list_time_period.
-	,Where_Claims=
-	,Where_Elig=
-	,Date_DateTime=
-	,Suffix_Output=member
-	)
-
-data agg_claims_med_coalesce;
-	set agg_claims_med_member;
-	elig_status_1 = coalescec(elig_status_1,"Unknown");
-	rename time_slice = time_period;
-	&assign_name_client.;
-run;
+/**** STAGE EXISTING SUMMARIES ****/
 
 proc sql;
 	create table costs_sum_all_services  as
 	select
-			src.name_client
-			,src.time_period
-			,src.elig_status_1
-			,sum(src.prm_costs) as PRM_costs
-			,sum(src.discharges) as Discharges
-
-	from agg_claims_med_coalesce as src
-	inner join 
-		post008.members as limit 
-			on
-			src.member_id eq limit.member_id
-			and src.time_period eq limit.time_period
-
+			name_client
+			,time_period
+			,elig_status_1
+			,sum(prm_costs) as PRM_costs_sum
+			,sum(prm_discharges) as PRM_Discharges_sum
+	from post010.cost_util
 	group by 
-			src.name_client
-			,src.time_period
-			,src.elig_status_1
+			name_client
+			,time_period
+			,elig_status_1
 	;
 quit;
 
 
 proc sql;
-	create table post010.basic_aggregation_elig_status as
-		select
-				cost.name_client
-				,cost.time_period
-				,coalescec("Basic") as metric_category label= "Metric Category"
-				,cost.elig_status_1 label= "Beneficiary Status"
-				,sum(mems.memmos) as memmos_sum label= "Sum of Member Months"
-				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg label= "Average Risk Score"
-				,sum(cost.PRM_costs) as prm_costs_sum_all_services label= "Sum of PRM Costs"
-				,sum(cost.discharges) as discharges_sum_all_services label= "Sum of Discharges"
-
-	from post008.members as mems
-	left join 
-		costs_sum_all_services as cost
-			on mems.time_period = cost.time_period
-			and mems.elig_status_1 = cost.elig_status_1
-
+	create table members_aggregate as
+	select
+		"&Name_Client." as name_client
+		,time_period
+		,elig_status_1
+		,sum(memmos) as memmos_sum
+		,sum(memmos * riskscr_1) as memmos_sum_riskadj
+		,sum(memmos * riskscr_1) / sum(memmos) as riskscr_1_avg
+	from post008.members
 	group by
-			cost.name_client
-			,cost.time_period
-			,cost.elig_status_1
+		time_period
+		,elig_status_1
 	;
 quit;
 
-%LabelDataSet(post010.basic_aggregation_elig_status)
+
+
+/**** BRING TOGETHER IN MULTIPLE WIDE AND LONG FORMATS ****/
 
 proc sql;
-	create table post010.basic_aggregation as
-		select
-				cost.name_client
-				,cost.time_period
-				,coalescec("Basic") as metric_category label= "Metric Category"
-				,sum(mems.memmos) as memmos_sum label= "Sum of Member Months"
-				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg label= "Avgerage Risk Score"
-				,sum(cost.PRM_costs) as prm_costs_sum_all_services label= "Sum of PRM Costs"
-				,sum(cost.discharges) as discharges_sum_all_services label= "Sum of Discharges"
+	create table post010.basic_aggs_elig_status as
+	select
+		mem.*
+		,coalesce(costs.prm_costs_sum, 0) as prm_costs_sum
+		,coalesce(costs.prm_discharges_sum, 0) as prm_discharges_sum
+	from members_aggregate as mem
+	left join costs_sum_all_services as costs on
+		mem.name_client eq costs.name_client
+		and mem.time_period eq costs.time_period
+		and mem.elig_status_1 eq costs.elig_status_1
+	;
+quit;
+%LabelDataSet(post010.basic_aggs_elig_status)
 
-	from post008.members as mems
-	left join 
-		costs_sum_all_services as cost
-			on mems.time_period = cost.time_period
-
+proc sql;
+	create table post010.basic_aggs as
+	select
+		name_client
+		,time_period
+		,"Basic" as metric_category
+		,sum(memmos_sum) as memmos_sum label= "Total Member Months"
+		,sum(memmos_sum_riskadj) as memmos_sum_riskadj label= "Total Member Months (Risk Adjusted)"
+		,sum(riskscr_1_avg * memmos_sum)/sum(memmos_sum) as riskscr_1_avg label= "Avgerage Risk Score"
+		,sum(PRM_costs_sum) as prm_costs_sum_all_services label= "Total PRM Costs (All Services)"
+		,sum(PRM_discharges_Sum) as discharges_sum_all_services label= "Total Discharges"
+	from post010.basic_aggs_elig_status
 	group by
-			cost.name_client
-			,cost.time_period
+		name_client
+		,time_period
 	;
 quit;
 
-%LabelDataSet(post010.basic_aggregation)
+%LabelDataSet(post010.basic_aggs)
 
 
-proc transpose data=post010.basic_aggregation 
+proc transpose data=post010.basic_aggs 
 		out=metrics_transpose (rename=(COL1 = metric_value))
 		name=metric_id
 		label=metric_name;	
