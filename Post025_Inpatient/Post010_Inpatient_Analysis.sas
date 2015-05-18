@@ -171,8 +171,10 @@ proc sql;
 			as pct_IP_disch_to_SNF label="Percentage of IP Stays Discharged to SNF"
 
 	from details_inpatient as detail
-	left join post010.basic_aggs as aggs
-		on detail.time_period = aggs.time_period
+	left join
+		post010.basic_aggs as aggs	
+			on detail.name_client = aggs.name_client
+			and detail.time_period = aggs.time_period
 	group by 
 		detail.time_period
 		,detail.name_client
