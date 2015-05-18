@@ -20,6 +20,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 /*Library*/
 libname M015_out "&M015_out." access=readonly;
 libname post008 "&post008." access = readonly;
+libname post010 "&post010." access = readonly;
 libname post030 "&post030.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -47,17 +48,6 @@ proc sql;
 	inner join post008.members as mems
 		on claims.Member_ID = mems.Member_ID 
 		and claims.time_slice = mems.time_period
-	;
-quit;
-
-proc sql;
-	create table agg_memmos_riskscr as
-	select
-		mems.time_period
-		,sum(mems.memmos) as sum_memmos
-		,sum(mems.riskscr_1*memmos) / calculated sum_memmos as avg_riskscr
-	from post008.members as mems
-	group by time_period
 	;
 quit;
 
@@ -137,15 +127,27 @@ proc sql;
 	;
 quit;
 
+proc transpose data = post010.metrics_basic
+	out = memmos_riskscr (drop = _:)
+	;
+	where lowcase(metric_id) in (
+		"riskscr_1_avg"
+		,"memmos_sum"
+		);
+	by time_period;
+	var metric_value;
+	id metric_id;
+run;
+
 proc sql;
 	create table util_rates as
 	select
 		agg_util.*
-		,memmos_riskscr.sum_memmos as _sum_memmos
-		,memmos_riskscr.avg_riskscr as _avg_riskscr
-		,_sum_prm_util * (1 / memmos_riskscr.sum_memmos) * 12 * 1000 as metric_value
+		,memmos_riskscr.memmos_sum as _sum_memmos
+		,memmos_riskscr.riskscr_1_avg as _avg_riskscr
+		,_sum_prm_util * (1 / memmos_riskscr.memmos_sum) * 12 * 1000 as metric_value
 	from agg_util as agg_util
-	left join agg_memmos_riskscr as memmos_riskscr
+	left join memmos_riskscr as memmos_riskscr
 		on agg_util.time_period eq memmos_riskscr.time_period
 	;
 quit;
