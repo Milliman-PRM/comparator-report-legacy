@@ -74,10 +74,11 @@ quit;
 
 
 proc sql;
-	create table post010.metrics_basic as
+	create table post010.quantity_aggregation as
 		select
 				cost.name_client
 				,cost.time_period
+				,coalescec("Basic") as metric_category
 				,cost.elig_status_1
 				,sum(mems.memmos) as memmos_sum
 				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg
@@ -96,6 +97,23 @@ proc sql;
 			,cost.elig_status_1
 	;
 quit;
+
+%LabelDataSet(post010.quantity_aggregation)
+
+
+proc transpose data=post010.quantity_aggregation
+		out=metrics_transpose (rename=(COL1 = metric_value))
+		name=metric_id
+		label=metric_name;	
+	by name_client time_period metric_category elig_status_1;
+run;
+
+data post010.metrics_basic;
+	format &metrics_key_value_cgfrmt.;
+	set metrics_transpose;
+	keep &metrics_key_value_cgflds.;
+	where upcase(elig_status_1) = "AGED NON-DUAL";
+run;
 
 %LabelDataSet(post010.metrics_basic)
 
