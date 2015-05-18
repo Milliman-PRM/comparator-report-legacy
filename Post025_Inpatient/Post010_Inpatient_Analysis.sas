@@ -16,6 +16,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /*Libnames*/
 libname post008 "&post008." access=readonly;
+libname post010 "&post010." access=readonly;
 libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -31,6 +32,7 @@ libname post025 "&post025.";
 		,Force_Util=&post_force_util.
 		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&list_time_period.
+		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and upcase(outclaims_prm.prm_line) ne "I31")
 		)
 
 
@@ -42,26 +44,6 @@ proc sql;
 	from agg_claims_med as claims
 	inner join post008.members as mems
 		on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period
-	;
-quit;
-
-proc summary nway missing data=claims_members;
-	class time_slice;
-	var PRM_Costs;
-	output out=costs_sum_all_services (drop=_:)sum=costs_sum_all_services;
-run;
-
-proc sql;
-	create table mems_summary as
-	select
-		mems.time_period
-		,sum(mems.memmos) as memmos_sum
-		,sum(mems.riskscr_1*memmos) as memmos_sum_riskadj
-		,cost.costs_sum_all_services
-	from post008.members as mems
-	left join costs_sum_all_services as cost
-		on mems.time_period = cost.time_slice
-	group by time_period, costs_sum_all_services
 	;
 quit;
 
@@ -123,9 +105,6 @@ proc sql;
 	from claims_members as claims
 	left join disch_xwalk on
 		claims.dischargestatus eq disch_xwalk.disch_code
-	where 
-		upcase(claims.prm_line) eqt "I"
-		and lowcase(claims.prm_line) ne "i31"
 	;
 quit;
 
@@ -146,35 +125,35 @@ proc sql;
 		,"Inpatient" as metric_category
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum * 12000
+			/ aggs.memmos_sum * 12000
 			as acute_per1k label="Acute Discharges per 1000"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum_riskadj * 12000
+			/ aggs.memmos_sum_riskadj * 12000
 			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum * 12000
+			/ aggs.memmos_sum * 12000
 			as surgical_per1k label="Surgical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum_riskadj * 12000
+			/ aggs.memmos_sum_riskadj * 12000
 			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum * 12000
+			/ aggs.memmos_sum * 12000
 			as medical_per1k label="Medical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum_riskadj * 12000
+			/ aggs.memmos_sum_riskadj * 12000
 			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum * 12000
+			/ aggs.memmos_sum * 12000
 			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
 
 		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ mems.memmos_sum * 12000
+			/ aggs.memmos_sum * 12000
 			as pref_sens_per1k label="Preference Sensitive Admits per 1000"
 
 		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
@@ -182,7 +161,7 @@ proc sql;
 			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.sum_costs_inpatient else 0 end)
-			/ mems.costs_sum_all_services
+			/ aggs.prm_costs_sum_all_services
 			as pct_acute_IP_costs label="Acute Inpatient Costs as a Percentage of Total Costs"
 
 		,sum(case when detail.inpatient_discharge_to_snf_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
@@ -190,14 +169,16 @@ proc sql;
 			as pct_IP_disch_to_SNF label="Percentage of IP Stays Discharged to SNF"
 
 	from details_inpatient as detail
-	left join mems_summary as mems
-		on detail.time_period = mems.time_period
+	left join
+		post010.basic_aggs as aggs	
+			on detail.name_client = aggs.name_client
+			and detail.time_period = aggs.time_period
 	group by 
 		detail.time_period
 		,detail.name_client
-		,mems.memmos_sum
-		,mems.costs_sum_all_services
-		,mems.memmos_sum_riskadj
+		,aggs.memmos_sum
+		,aggs.prm_costs_sum_all_services
+		,aggs.memmos_sum_riskadj
 	;
 quit;
 
