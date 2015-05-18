@@ -41,7 +41,7 @@ proc sql noprint;
 					end
 					as benchmark_days_per1k
 				,coalesce(loose.annual_util_per_1000,0) * scores.riskscr_1_avg as benchmark_util_per1k
-	from post010.basic_aggregation_elig_status as scores
+	from post010.basic_aggs_elig_status as scores
 	cross join 
 		M015_out.benchmarks_loosely_managed as loose
 	order by
@@ -66,7 +66,7 @@ proc sql noprint;
 					end
 					as benchmark_days_per1k
 				,coalesce(well.annual_util_per_1000,0) as benchmark_util_per1k
-	from post010.basic_aggregation_elig_status as groups
+	from post010.basic_aggs_elig_status as groups
 	cross join
 		M015_Out.benchmarks_well_managed as well
 	order by
