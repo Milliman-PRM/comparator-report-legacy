@@ -74,16 +74,16 @@ quit;
 
 
 proc sql;
-	create table post010.quantity_aggregation as
+	create table post010.basic_aggregation_elig_status as
 		select
 				cost.name_client
 				,cost.time_period
-				,coalescec("Basic") as metric_category
-				,cost.elig_status_1
-				,sum(mems.memmos) as memmos_sum
-				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg
-				,sum(cost.PRM_costs) as prm_costs_sum_all_services
-				,sum(cost.discharges) as discharges_sum_all_services
+				,coalescec("Basic") as metric_category label= "Metric Category"
+				,cost.elig_status_1 label= "Beneficiary Status"
+				,sum(mems.memmos) as memmos_sum label= "Sum of Member Months"
+				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg label= "Average Risk Score"
+				,sum(cost.PRM_costs) as prm_costs_sum_all_services label= "Sum of PRM Costs"
+				,sum(cost.discharges) as discharges_sum_all_services label= "Sum of Discharges"
 
 	from post008.members as mems
 	left join 
@@ -98,21 +98,45 @@ proc sql;
 	;
 quit;
 
-%LabelDataSet(post010.quantity_aggregation)
+%LabelDataSet(post010.basic_aggregation_elig_status)
+
+proc sql;
+	create table post010.basic_aggregation as
+		select
+				cost.name_client
+				,cost.time_period
+				,coalescec("Basic") as metric_category label= "Metric Category"
+				,sum(mems.memmos) as memmos_sum label= "Sum of Member Months"
+				,sum(mems.riskscr_1 * mems.memmos)/sum(mems.memmos) as riskscr_1_avg label= "Avgerage Risk Score"
+				,sum(cost.PRM_costs) as prm_costs_sum_all_services label= "Sum of PRM Costs"
+				,sum(cost.discharges) as discharges_sum_all_services label= "Sum of Discharges"
+
+	from post008.members as mems
+	left join 
+		costs_sum_all_services as cost
+			on mems.time_period = cost.time_period
+
+	group by
+			cost.name_client
+			,cost.time_period
+	;
+quit;
+
+%LabelDataSet(post010.basic_aggregation)
 
 
-proc transpose data=post010.quantity_aggregation
+proc transpose data=post010.basic_aggregation 
 		out=metrics_transpose (rename=(COL1 = metric_value))
 		name=metric_id
 		label=metric_name;	
-	by name_client time_period metric_category elig_status_1;
+	by name_client time_period metric_category;
 run;
 
 data post010.metrics_basic;
 	format &metrics_key_value_cgfrmt.;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
-	where upcase(elig_status_1) = "AGED NON-DUAL";
+	attrib _all_ label = ' ';
 run;
 
 %LabelDataSet(post010.metrics_basic)
