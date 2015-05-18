@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Michael Menser 
+### CODE OWNERS: Michael Menser, Shea Parkes
 
 ### OBJECTIVE:
 	Create the memcnt table from the member roster.
