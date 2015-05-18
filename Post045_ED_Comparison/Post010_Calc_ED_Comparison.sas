@@ -5,7 +5,7 @@
 	Use the PRM outputs to create the Admission / Readmission report for NYP.
 
 ### DEVELOPER NOTES:
-	This program creates a details table and then individual metrics.
+	This program creates a table with the individual metrics for ED Comparison.
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
@@ -16,6 +16,6 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 libname post008 "&post008." access = readonly;
-libname post040 "&post040.";
+libname post045 "&post045.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
