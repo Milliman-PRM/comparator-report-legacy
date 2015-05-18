@@ -63,6 +63,7 @@ proc sql;
 		,sum(prm_util) as _sum_visits_combined
 		,calculated _sum_visits_pcp / calculated _sum_visits_combined as metric_value
 	from claims_members
+	where lowcase(prm_line) in ("p32c","p32d")
 	group by time_slice
 	;
 quit;
