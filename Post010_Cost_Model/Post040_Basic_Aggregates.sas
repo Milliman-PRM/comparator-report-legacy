@@ -65,8 +65,8 @@ proc sql;
 	create table post010.basic_aggs_elig_status as
 	select
 		mem.*
-		,coalesce(costs.prm_costs_sum, 0) as prm_costs_sum
-		,coalesce(costs.prm_discharges_sum, 0) as prm_discharges_sum
+		,coalesce(costs.prm_costs_sum, 0) as prm_costs_sum_all_services
+		,coalesce(costs.prm_discharges_sum, 0) as discharges_sum_all_services
 	from members_aggregate as mem
 	left join costs_sum_all_services as costs on
 		mem.name_client eq costs.name_client
@@ -87,8 +87,8 @@ proc sql;
 		,sum(memmos_sum) as memmos_sum label= "Total Member Months"
 		,sum(memmos_sum_riskadj) as memmos_sum_riskadj label= "Total Member Months (Risk Adjusted)"
 		,sum(riskscr_1_avg * memmos_sum)/sum(memmos_sum) as riskscr_1_avg label= "Avgerage Risk Score"
-		,sum(PRM_costs_sum) as prm_costs_sum_all_services label= "Total PRM Costs (All Services)"
-		,sum(PRM_discharges_Sum) as discharges_sum_all_services label= "Total Discharges"
+		,sum(prm_costs_sum_all_services) as prm_costs_sum_all_services label= "Total Costs (All Services)"
+		,sum(discharges_sum_all_services) as discharges_sum_all_services label= "Total Discharges"
 	from post010.basic_aggs_elig_status
 	group by
 		name_client
