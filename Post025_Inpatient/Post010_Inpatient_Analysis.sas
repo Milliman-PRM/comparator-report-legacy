@@ -104,9 +104,6 @@ proc sql;
 	from claims_members as claims
 	left join disch_xwalk on
 		claims.dischargestatus eq disch_xwalk.disch_code
-	where 
-		upcase(claims.prm_line) eqt "I"
-		and lowcase(claims.prm_line) ne "i31"
 	;
 quit;
 
