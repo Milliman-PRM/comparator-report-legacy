@@ -35,11 +35,12 @@ proc sql;
 	;
 quit;
 
-/*Write the memcnt table out to the post008 library*/
 data post008.memcnt;
 	format &memcnt_cgfrmt.;
 	set memcnt_to_export;
 	keep &memcnt_cgflds.;
 run;
+
+%LabelDataSet(post008.memcnt);
 
 %put return_code = &syscc.;
