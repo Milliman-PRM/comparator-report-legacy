@@ -16,6 +16,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /*Libnames*/
 libname post008 "&post008." access=readonly;
+libname post010 "&post010." access=readonly;
 libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -42,26 +43,6 @@ proc sql;
 	from agg_claims_med as claims
 	inner join post008.members as mems
 		on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period
-	;
-quit;
-
-proc summary nway missing data=claims_members;
-	class time_slice;
-	var PRM_Costs;
-	output out=costs_sum_all_services (drop=_:)sum=costs_sum_all_services;
-run;
-
-proc sql;
-	create table mems_summary as
-	select
-		mems.time_period
-		,sum(mems.memmos) as memmos_sum
-		,sum(mems.riskscr_1*memmos) as memmos_sum_riskadj
-		,cost.costs_sum_all_services
-	from post008.members as mems
-	left join costs_sum_all_services as cost
-		on mems.time_period = cost.time_slice
-	group by time_period, costs_sum_all_services
 	;
 quit;
 
@@ -182,7 +163,7 @@ proc sql;
 			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.sum_costs_inpatient else 0 end)
-			/ mems.costs_sum_all_services
+			/ mems.prm_costs_sum_all_services
 			as pct_acute_IP_costs label="Acute Inpatient Costs as a Percentage of Total Costs"
 
 		,sum(case when detail.inpatient_discharge_to_snf_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
@@ -190,13 +171,13 @@ proc sql;
 			as pct_IP_disch_to_SNF label="Percentage of IP Stays Discharged to SNF"
 
 	from details_inpatient as detail
-	left join mems_summary as mems
+	left join post010.basic_aggs as mems
 		on detail.time_period = mems.time_period
 	group by 
 		detail.time_period
 		,detail.name_client
 		,mems.memmos_sum
-		,mems.costs_sum_all_services
+		,mems.prm_costs_sum_all_services
 		,mems.memmos_sum_riskadj
 	;
 quit;
