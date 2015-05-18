@@ -76,6 +76,8 @@ proc sql;
 quit;
 %LabelDataSet(post010.basic_aggs_elig_status)
 
+%AssertRecordCount(post010.basic_aggs_elig_status,eq,%GetRecordCount(members_aggregate),ReturnMessage=Unexpected cartesianing occured.)
+
 proc sql;
 	create table post010.basic_aggs as
 	select
