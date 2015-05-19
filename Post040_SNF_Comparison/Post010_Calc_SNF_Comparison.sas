@@ -32,6 +32,7 @@ libname post040 "&post040.";
 	,Force_Util=&post_force_util.
     );
 
+/*Limit the claims to only those members who are included in our centralized member roster.*/
 proc sql noprint;
 	create table Agg_med_cases_limited as
 	select 
