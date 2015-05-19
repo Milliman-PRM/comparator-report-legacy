@@ -11,7 +11,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M008_cde.func06_build_metadata_table.sas";
 
 /* Libnames */
 libname M015_Out "&M015_Out." access=readonly;
@@ -21,15 +20,6 @@ libname post015 "&post015.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
-/*Compute the average risk score across all combinations of 
-  beneficiary status and time period*/
-proc means missing nway noprint data=Post008.members;
-	class time_period elig_status_1;
-	var riskscr_1;
-	weight memmos;
-	output out= grouped_avg_risk_scrores (drop= _:) mean(riskscr_1) = Avg_Risk_Score;
-run;
 
 /*Perform the risk-adjustment on the loosely-managed benchmarks
   across all combinations of time period and beneficiary status.*/
@@ -41,17 +31,17 @@ proc sql noprint;
 
 				/*Calculate risk-adjusted benchmarks*/
 				,case
-					when loose.admits_per_1000 is not null then loose.admits_per_1000 * scores.Avg_Risk_Score
+					when loose.admits_per_1000 is not null then loose.admits_per_1000 * scores.riskscr_1_avg
 					else 0
 					end
 					as benchmark_discharges_per1k
 				,case
-					when upcase(loose.annual_util_type) = "DAYS" then loose.annual_util_per_1000 * scores.Avg_Risk_Score
+					when upcase(loose.annual_util_type) = "DAYS" then loose.annual_util_per_1000 * scores.riskscr_1_avg
 					else 0
 					end
 					as benchmark_days_per1k
-				,coalesce(loose.annual_util_per_1000,0) * scores.Avg_Risk_Score as benchmark_util_per1k
-	from grouped_avg_risk_scrores as scores
+				,coalesce(loose.annual_util_per_1000,0) * scores.riskscr_1_avg as benchmark_util_per1k
+	from post010.basic_aggs_elig_status as scores
 	cross join 
 		M015_out.benchmarks_loosely_managed as loose
 	order by
@@ -76,7 +66,7 @@ proc sql noprint;
 					end
 					as benchmark_days_per1k
 				,coalesce(well.annual_util_per_1000,0) as benchmark_util_per1k
-	from grouped_avg_risk_scrores as groups
+	from post010.basic_aggs_elig_status as groups
 	cross join
 		M015_Out.benchmarks_well_managed as well
 	order by
