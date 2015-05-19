@@ -16,6 +16,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 libname post008 "&post008." access = readonly;
+libname post010 "&post010." access = readonly;
 libname post040 "&post040.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -30,15 +31,17 @@ libname post040 "&post040.";
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
 	,Force_Util=&post_force_util.
+	,where_clause= %str(lowcase(outclaims_prm.prm_line) eq "i31")
     );
 
 /*Limit the claims to only those members who are included in our centralized member roster.*/
 proc sql noprint;
 	create table Agg_med_cases_limited as
-	select 
-		claims.*
+		select 
+			claims.*
 	from agg_claims_med as claims 
-	inner join post008.members as mems 
+	inner join 
+		post008.members as mems 
 		on claims.time_slice = mems.time_period 
 		and claims.member_ID = mems.member_ID
 	order by
@@ -46,28 +49,6 @@ proc sql noprint;
 		,claims.caseadmitid;
 quit;
 
-/*Sum the PRM costs (needed for one of the metrics).*/
-proc summary nway missing data=Agg_med_cases_limited;
-	vars PRM_Costs;
-	class time_slice;
-	output out = Total_PRM_Costs (drop = _:) sum=PRM_Costs_total;
-run;
-
-/*Calculate the average risk score and total member months of the institution from the member roster.
-  (needed for a couple of the metrics)*/
-proc sql;
-	create table mems_summary as
-	select
-		mems.time_period
-		,sum(mems.memmos) as total_memmos
-		,sum(mems.riskscr_1*memmos) as tot_risk_scr
-		,cost.PRM_Costs_total as total_costs
-	from post008.members as mems
-	left join Total_PRM_Costs as cost
-		on mems.time_period = cost.time_slice
-	group by time_period, PRM_Costs_total
-	;
-quit;
 
 /*Now limit the cases to SNF cases only.*/
 proc sql;
@@ -82,8 +63,7 @@ proc sql;
 		,Discharges as cnt_discharges_snf
 		,PRM_Util as sum_days_snf
 		,PRM_Costs as sum_costs_snf
-	from All_cases_table
-	where prm_line = "I31"
+	from Agg_med_cases_limited
 	;
 quit;
 
@@ -106,15 +86,15 @@ proc sql;
 			as distinct_SNFs label="Number of Distinct SNFs utilized in past 12 month period."
 
 		,sum(detail.cnt_discharges_snf)
-			/mems.total_memmos * 12000
+			/aggs.memmos_sum * 12000
 			as SNF_per1k label="SNF Discharges per 1000"
 
 		,sum(detail.cnt_discharges_snf)
-			/mems.tot_risk_scr * 12000
+			/aggs.memmos_sum_riskadj * 12000
 			as SNF_per1k_rskadj label="SNF Admissions per 1000 Risk Adjusted"
 
 		,sum(detail.sum_costs_snf)
-			/mems.total_costs
+			/aggs.prm_costs_sum_all_services
 			as pct_SNF_costs label="SNF Costs as a Percentage of Total Costs"
 
 		,sum(detail.sum_days_snf)
@@ -138,15 +118,14 @@ proc sql;
 			as SNF_readmit label="Percentage of IP Readmits Within 30 Days of SNF Discharge"
 
 	from details_SNF as detail
-	left join mems_summary as mems
-		on detail.time_period = mems.time_period
+	left join
+		post010.basic_aggs as aggs
+		on detail.name_client = aggs.name_client
+		and detail.time_period = aggs.time_period
+
 	group by 
-			detail.time_period
-			,detail.name_client
-			,metric_category
-			,mems.total_memmos
-			,mems.total_costs
-			,mems.tot_risk_scr
+			aggs.time_period
+			,aggs.name_client
 	;
 quit;
 
