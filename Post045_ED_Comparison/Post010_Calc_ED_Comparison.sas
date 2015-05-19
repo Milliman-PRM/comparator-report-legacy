@@ -28,8 +28,9 @@ libname post045 "&post045.";
 	,Time_Slice=&list_time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Dimensions=member_ID~caseadmitid
 	,Force_Util=&post_force_util.
+	,Where_Claims = %str(upcase(outclaims_prm.prm_line) in ("O11A", "O11B"))
     );
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
