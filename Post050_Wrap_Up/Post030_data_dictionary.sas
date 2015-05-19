@@ -23,13 +23,6 @@ libname post050 "&post050." access=readonly;
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
-
-
-%build_metadata_table(
-	&name_datamart_target.
-	,name_dset_out=metadata_target
-	)
-
 %build_metadata_table(
 	_recursive_template
 	,name_dset_out=metadata_recursive
