@@ -78,7 +78,7 @@ proc sql;
 		,date_case_earliest
 		,date_case_latest
 	from Agg_claims_med
-	where upcase(prm_line) eqt "I" and upcase(prm_line) not in ('I11b', 'I13a', 'I13b')
+	where lowcase(prm_line) eqt "i" and lowcase(prm_line) not in ('i11b', 'i13a', 'i13b')
 	;
 quit;
 		
