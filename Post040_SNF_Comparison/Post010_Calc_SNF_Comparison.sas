@@ -79,12 +79,9 @@ proc sql;
 		,date_case_latest
 	from Agg_claims_med
 	where lowcase(prm_line) eqt "i" and lowcase(prm_line) not in ('i11b', 'i13a', 'i13b')
+	order by member_id, time_slice, date_case_earliest desc, date_case_latest
 	;
 quit;
-		
-proc sort data=readmit_SNF;
-	by member_id time_slice descending date_case_earliest date_case_latest;
-run;
 
 /*Do this backwards so we hang the readmit on to the SNF stay rather than the IP readmit*/
 data SNF_w_readmit (drop=next_admit prev_time_period);
