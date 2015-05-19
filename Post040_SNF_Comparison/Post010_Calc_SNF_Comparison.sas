@@ -66,20 +66,79 @@ proc sql;
 	;
 quit;
 
+/*Author readmission logic
+ I11b, I13a, and I13b excluded to match Acute IP definition from the admission program*/
+proc sql;
+	create table readmit_SNF as
+	select 
+		member_id
+		,caseadmitid
+		,time_slice
+		,case when upcase(PRM_Line) eq 'I31' then "SNF" else "Other IP" end as Service_type
+		,date_case_earliest
+		,date_case_latest
+	from Agg_claims_med
+	where upcase(prm_line) eqt "I" and upcase(prm_line) not in ('I11b', 'I13a', 'I13b')
+	;
+quit;
+		
+proc sort data=readmit_SNF;
+	by member_id time_slice descending date_case_earliest date_case_latest;
+run;
+
+/*Do this backwards so we hang the readmit on to the SNF stay rather than the IP readmit*/
+data SNF_w_readmit (drop=next_admit prev_time_period);
+	set readmit_snf;
+	by member_id;
+	
+	format
+	
+		next_admit yymmddd10.
+		prev_time_period $32.
+		Readmit $1.
+		;
+
+		retain next_admit prev_time_period prev_service_type;
+			if first.member_id then do;
+				next_admit = date_case_earliest;
+				prev_time_period = time_slice;
+				prev_service_type = Service_type;
+			end;
+			else do;
+				Readmit = 'N';
+			end;
+			if next_admit-date_case_latest le 30
+					and next_admit-date_case_latest ge 2
+					and prev_time_period = time_slice
+					and prev_service_type = 'Other IP'
+					and Service_type = 'SNF' then do;
+					Readmit = 'Y';
+					next_admit = date_case_earliest;
+			end;
+			else Readmit = 'N';
+			     next_admit = date_case_earliest;
+
+	where service_type = 'SNF';
+
+run;
+
+
 /*Now limit the cases to SNF cases only.*/
 proc sql;
 	create table claims_SNF as
 	select
 		"&name_client." as name_client
-		,time_slice as time_period
-		,member_id
-		,ProviderID as prv_id_snf
-		,'N' as snf_readmit_yn
-		,PRM_Util as los_snf
-		,Discharges as cnt_discharges_snf
-		,PRM_Util as sum_days_snf
-		,PRM_Costs as sum_costs_snf
-	from All_cases_table
+		,a.time_slice as time_period
+		,a.member_id
+		,a.ProviderID as prv_id_snf
+		,b.readmit as snf_readmit_yn
+		,a.PRM_Util as los_snf
+		,a.Discharges as cnt_discharges_snf
+		,a.PRM_Util as sum_days_snf
+		,a.PRM_Costs as sum_costs_snf
+	from All_cases_table as a
+	left join snf_w_readmit as b
+		on a.member_id = b.member_id and a.time_slice = b.time_slice
 	where prm_line = "I31"
 	;
 quit;
