@@ -21,7 +21,7 @@ libname post045 "&post045.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Create the current and prior data sets summarized at the case level (all cases, not just ED).*/
+/*Create the current and prior data sets summarized at the case level (ED cases only).*/
 %Agg_Claims(
 	IncStart=&list_inc_start.
 	,IncEnd=&list_inc_end.
@@ -31,7 +31,7 @@ libname post045 "&post045.";
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=member_ID~caseadmitid
 	,Force_Util=&post_force_util.
-	,Where_Claims = %str(upcase(outclaims_prm.prm_line) in ("O11A", "O11B") and prm_nyu_included_yn = "Y")
+	,Where_Claims = %str(prm_nyu_included_yn = "Y")
     );
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
@@ -50,39 +50,39 @@ proc sql;
 	create table measures as
 	select 
 		"&name_client." as name_client
-        ,"&list_time_period." as time_period
+        ,aggs.time_period as time_period
 		,"ED" as metric_category
 
-		,count(cases.*)
+		,count(cases.CaseAdmitID)
 			/aggs.memmos_sum * 12000
 			as ED_per1k label="ED visits per 1000"
 
-		,(count(cases.*) / aggs.memmos_sum * 12000)
+		,calculated ED_per1k
 		    /aggs.riskscr_1_avg
 			as ED_per1k_rskadj label="ED visits per 1000 Risk Adjusted"
 
 		,sum(cases.prm_nyu_emergent_non_avoidable)
-			/count(cases.*)
+			/count(cases.CaseAdmitID)
 			as ED_emer_nec label="% of ED visits Emergent Necessary (NYU logic)"
 
 		,sum(cases.prm_nyu_emergent_avoidable)
-			/count(cases.*)
+			/count(cases.CaseAdmitID)
 			as ED_emer_prev label="% of ED visits Emergent Preventable (NYU logic)"
 
 		,sum(cases.prm_nyu_emergent_primary_care)
-			/count(cases.*)
+			/count(cases.CaseAdmitID)
 			as ED_emer_pricare	label="% of ED visits Emergent Primary Care Treatable (NYU logic)"
 
 		,sum(cases.prm_nyu_injury)
-			/count(cases.*)
+			/count(cases.CaseAdmitID)
 			as ED_injury label="% of ED visits Injury (NYU logic)"
 
 		,sum(cases.prm_nyu_nonemergent)
-			/count(cases.*)
+			/count(cases.CaseAdmitID)
 			as ED_nonemer label="% of ED visits Non Emergent (NYU logic)"
 
 		,sum(cases.prm_nyu_unclassified)
-			/count(cases.*)
+			/count(cases.CaseAdmitID)
 			as ED_other label="% of ED visits other (NYU logic)"
 
 	from Ed_cases_table as cases
