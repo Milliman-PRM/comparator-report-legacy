@@ -16,7 +16,7 @@ libname log "&path_onboarding_logs.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
-
+%CreateFolder(&M020_Log.CCLF\)
 
 %RunProductionPrograms(
 	dir_program_src=&M020_Cde.CCLF\
