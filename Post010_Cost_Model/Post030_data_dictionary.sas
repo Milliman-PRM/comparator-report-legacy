@@ -15,7 +15,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 
-%let path_file_output = &post050.Data Dictionary.xlsx;
+%let path_file_output = &post010.Data Dictionary.xlsx;
 %put path_file_output = &path_file_output.;
 
 libname post010 "&post010." access=readonly;
