@@ -66,9 +66,9 @@ proc sql;
 	;
 quit;
 
-/*Author readmission logic
- I11b, I13a, and I13b excluded to match Acute IP definition from the admission program*/
-proc sql;
+
+/* SNF Readmission Logic */
+ proc sql;
 	create table readmit_SNF as
 	select 
 		member_id
@@ -78,46 +78,53 @@ proc sql;
 		,date_case_earliest
 		,date_case_latest
 	from Agg_claims_med
+	/*I11b, I13a, and I13b excluded to match Acute IP definition from the admission program*/
 	where lowcase(prm_line) eqt "i" and lowcase(prm_line) not in ('i11b', 'i13a', 'i13b')
 	order by member_id, time_slice, date_case_earliest desc, date_case_latest
 	;
 quit;
 
-/*Do this backwards so we hang the readmit on to the SNF stay rather than the IP readmit*/
-data SNF_w_readmit (drop=next_admit prev_time_period);
-	set readmit_snf;
-	by member_id;
-	
-	format
-	
-		next_admit yymmddd10.
-		prev_time_period $32.
-		Readmit $1.
-		;
 
-		retain next_admit prev_time_period prev_service_type;
-			if first.member_id then do;
-				next_admit = date_case_earliest;
-				prev_time_period = time_slice;
-				prev_service_type = Service_type;
-			end;
-			else do;
-				Readmit = 'N';
-			end;
-			if next_admit-date_case_latest le 30
-					and next_admit-date_case_latest ge 2
-					and prev_time_period = time_slice
-					and prev_service_type = 'Other IP'
-					and Service_type = 'SNF' then do;
-					Readmit = 'Y';
-					next_admit = date_case_earliest;
-			end;
-			else Readmit = 'N';
-			     next_admit = date_case_earliest;
+proc sql;
+	create table readmit_SNF as
+	select distinct
+		snf.time_slice
+		,snf.member_id
+		,snf.caseadmitid
+	from (
+		select
+			time_slice
+			,member_id
+			,caseadmitid
+			,max(date_case_latest) as date_snf_discharge
+		from Agg_claims_med
+		where lowcase(prm_line) eq "i31"
+		group by
+			time_slice
+			,member_id
+			,caseadmitid
+		) as snf
+	inner join (
+		select
+			time_slice
+			,member_id
+			,caseadmitid
+			,max(date_case_easliest) as date_acute_admit
+		from Agg_claims_med
+		where lowcase(prm_line) ne "i31"
+		group by
+			time_slice
+			,member_id
+			,caseadmitid
+		) as acute on
+		snf.time_slice = acute.time_slice
+		and snf.member_id = acute.member_id
+		and snf.caseadmitid = acute.caseadmitid
+		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
+	;
+quit;
 
-	where service_type = 'SNF';
 
-run;
 
 
 /*Now limit the cases to SNF cases only.*/
@@ -128,14 +135,19 @@ proc sql;
 		,all_snf.time_slice as time_period
 		,all_snf.member_id
 		,all_snf.ProviderID as prv_id_snf
-		,readmits.readmit as snf_readmit_yn
+		,case
+			when snf.member_id is null then 'N'
+			else 'Y'
+			end as snf_readmit_yn
 		,all_snf.PRM_Util as los_snf
 		,all_snf.Discharges as cnt_discharges_snf
 		,all_snf.PRM_Util as sum_days_snf
 		,all_snf.PRM_Costs as sum_costs_snf
 	from All_cases_table as all_snf
 	left join snf_w_readmit as readmits
-		on all_snf.member_id = readmits.member_id and all_snf.time_slice = readmits.time_slice
+		on all_snf.member_id = readmits.member_id
+		and all_snf.time_slice = readmits.time_slice
+		and all_snf.caseadmitid = readmits.caseadmitid
 	where lowcase(prm_line) = "i31"
 	;
 quit;
