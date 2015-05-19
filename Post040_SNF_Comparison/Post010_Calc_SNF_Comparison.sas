@@ -32,19 +32,21 @@ libname post040 "&post040.";
 	,Force_Util=&post_force_util.
     );
 
-/*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
 proc sql noprint;
-	create table all_cases_table as
+	create table Agg_med_cases_limited as
 	select 
-		A.*
-	from agg_claims_med as A 
-	inner join post008.members as B 
-		on (A.time_slice = B.time_period and A.member_ID = B.member_ID)
-	order by time_slice, caseadmitid;
+		claims.*
+	from agg_claims_med as claims 
+	inner join post008.members as mems 
+		on claims.time_slice = mems.time_period 
+		and claims.member_ID = mems.member_ID
+	order by
+		claims.time_slice
+		,claims.caseadmitid;
 quit;
 
 /*Sum the PRM costs (needed for one of the metrics).*/
-proc summary nway missing data=All_cases_table;
+proc summary nway missing data=Agg_med_cases_limited;
 	vars PRM_Costs;
 	class time_slice;
 	output out = Total_PRM_Costs (drop = _:) sum=PRM_Costs_total;
