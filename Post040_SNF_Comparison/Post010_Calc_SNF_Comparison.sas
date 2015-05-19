@@ -125,18 +125,18 @@ proc sql;
 	create table claims_SNF as
 	select
 		"&name_client." as name_client
-		,a.time_slice as time_period
-		,a.member_id
-		,a.ProviderID as prv_id_snf
-		,b.readmit as snf_readmit_yn
-		,a.PRM_Util as los_snf
-		,a.Discharges as cnt_discharges_snf
-		,a.PRM_Util as sum_days_snf
-		,a.PRM_Costs as sum_costs_snf
-	from All_cases_table as a
-	left join snf_w_readmit as b
-		on a.member_id = b.member_id and a.time_slice = b.time_slice
-	where prm_line = "I31"
+		,all_snf.time_slice as time_period
+		,all_snf.member_id
+		,all_snf.ProviderID as prv_id_snf
+		,readmits.readmit as snf_readmit_yn
+		,all_snf.PRM_Util as los_snf
+		,all_snf.Discharges as cnt_discharges_snf
+		,all_snf.PRM_Util as sum_days_snf
+		,all_snf.PRM_Costs as sum_costs_snf
+	from All_cases_table as all_snf
+	left join snf_w_readmit as readmits
+		on all_snf.member_id = readmits.member_id and all_snf.time_slice = readmits.time_slice
+	where lowcase(prm_line) = "i31"
 	;
 quit;
 
