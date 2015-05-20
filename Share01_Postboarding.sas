@@ -21,6 +21,12 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %let assign_name_client = name_client = "&name_client.";
 %put assign_name_client = &assign_name_client.;
 
+%let nonacute_ip_prm_line_ignore_snf = %str("i11b","i13a","i13b");
+/*
+	I11b Medical - Rehabilitation
+	I13a Psychiatric - Hospital
+	I13b Psychiatric - Residential
+*/
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
