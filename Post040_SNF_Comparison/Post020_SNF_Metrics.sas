@@ -5,7 +5,7 @@
 	Use the PRM outputs to create the Admission / Readmission report for NYP.
 
 ### DEVELOPER NOTES:
-	This program creates a details table and then individual metrics.
+	None
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
@@ -21,120 +21,52 @@ libname post040 "&post040.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Create the current and prior data sets summarized at the case level (all cases, not just SNF).*/
+
+
+
 %Agg_Claims(
 	IncStart=&list_inc_start.
 	,IncEnd=&list_inc_end.
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
-	,Med_Rx=Med
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
     );
 
-/*Limit the claims to only those members who are included in our centralized member roster.*/
-proc sql noprint;
-	create table Agg_med_cases_limited as
-		select 
-			claims.*
-	from agg_claims_med as claims 
-	inner join 
-		post008.members as mems 
-		on claims.time_slice = mems.time_period 
-		and claims.member_ID = mems.member_ID
-	order by
-		claims.time_slice
-		,claims.caseadmitid;
-quit;
-
-
 
 proc sql;
-	create table snf_windows as
-	select
-		time_slice
-		,member_id
-		,caseadmitid
-		,min(date_case_earliest) as date_snf_admit format=YYMMDDd10.
-		,max(date_case_latest) as date_snf_discharge format=YYMMDDd10.
-	from Agg_med_cases_limited
-	where lowcase(prm_line) eq "i31"
-	group by
-		time_slice
-		,member_id
-		,caseadmitid
-	;
-quit;
-
-proc sql;
-	create table readmit_SNF as
-	select distinct
-		snf.time_slice
-		,snf.member_id
-		,snf.caseadmitid
-	from snf_windows as snf
-	inner join (
-		select
-			time_slice
-			,member_id
-			,caseadmitid
-			,max(date_case_earliest) as date_acute_admit
-		from Agg_med_cases_limited
-		where lowcase(prm_line) ne "i31"
-		group by
-			time_slice
-			,member_id
-			,caseadmitid
-		) as acute on
-		snf.time_slice eq acute.time_slice
-		and snf.member_id eq acute.member_id
-		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
-	left join snf_windows as snf_interrupts on
-		snf.time_slice eq snf_interrupts.time_slice
-		and snf.member_id eq snf_interrupts.member_id
-		and snf.caseadmitid ne snf_interrupts.caseadmitid
-		/*Make sure there wasn't another SNF stay prior to the Acute admit*/
-		and snf_interrupts.date_snf_admit between snf.date_snf_discharge and acute.date_acute_admit
-	where snf_interrupts.member_id is null
-	;
-quit;
-
-
-
-
-/*Now limit the cases to SNF cases only.*/
-proc sql;
-	create table claims_SNF as
+	create table details_SNF as
 	select
 		"&name_client." as name_client
 		,all_snf.time_slice as time_period
-		,all_snf.member_id
 		,all_snf.ProviderID as prv_id_snf
 		,case
 			when readmits.member_id is null then 'N'
 			else 'Y'
 			end as snf_readmit_yn
 		,all_snf.PRM_Util as los_snf
-		,all_snf.Discharges as cnt_discharges_snf
-		,all_snf.PRM_Util as sum_days_snf
-		,all_snf.PRM_Costs as sum_costs_snf
-	from Agg_med_cases_limited as all_snf
-	left join readmit_SNF as readmits
+		,sum(all_snf.Discharges) as cnt_discharges_snf
+		,sum(all_snf.PRM_Util) as sum_days_snf
+		,sum(all_snf.PRM_Costs) as sum_costs_snf
+	from agg_claims_med as all_snf
+	/*Limit to members active in the analysis*/
+	inner join post008.members as active
+		on all_snf.time_slice = active.time_period 
+		and all_snf.member_ID = active.member_ID
+	left join Post040.SNF_Readmissions as readmits
 		on all_snf.member_id = readmits.member_id
 		and all_snf.time_slice = readmits.time_slice
 		and all_snf.caseadmitid = readmits.caseadmitid
-	where lowcase(prm_line) = "i31"
+	group by
+		all_snf.time_slice
+		,prv_id_snf
+		,calculated snf_readmit_yn
+		,los_snf
 	;
 quit;
 
-/*Aggregate the SNF claims table to the datamart format.*/
-proc summary nway missing data=claims_SNF;
-	class _character_ los_snf;
-	var cnt_discharges_snf sum_days_snf sum_costs_snf;
-	output out=details_snf (drop = _:) sum=;
-run;
 
 /*Calculate the requested measures*/
 proc sql;
@@ -186,8 +118,8 @@ proc sql;
 		and detail.time_period = aggs.time_period
 
 	group by 
-			aggs.time_period
-			,aggs.name_client
+			detail.time_period
+			,detail.name_client
 	;
 quit;
 
