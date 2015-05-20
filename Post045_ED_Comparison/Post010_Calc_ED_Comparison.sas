@@ -31,7 +31,7 @@ libname post045 "&post045.";
 	,Dimensions=member_ID~caseadmitid
 	,Force_Util=&post_force_util.
 	,Where_Claims = %str(prm_nyu_included_yn = "Y")
-    );
+	);
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
 proc sql;
@@ -49,7 +49,7 @@ proc sql;
 	create table measures as
 	select 
 		"&name_client." as name_client
-        ,aggs.time_period as time_period
+		,aggs.time_period as time_period
 		,"ED" as metric_category
 
 		,count(cases.CaseAdmitID)
@@ -57,7 +57,7 @@ proc sql;
 			as ED_per1k label="ED visits per 1000"
 
 		,calculated ED_per1k
-		    /aggs.riskscr_1_avg
+			/aggs.riskscr_1_avg
 			as ED_per1k_rskadj label="ED visits per 1000 Risk Adjusted"
 
 		,sum(cases.prm_nyu_emergent_non_avoidable)
@@ -86,12 +86,12 @@ proc sql;
 
 	from Ed_cases_table as cases
 	left join Post010.basic_aggs as aggs
-     	on cases.time_slice = aggs.time_period
-    group by
+		on cases.time_slice = aggs.time_period
+	group by
 		name_client
-        ,time_period
-        ,metric_category
-        ,aggs.memmos_sum
+		,time_period
+		,metric_category
+		,aggs.memmos_sum
 		,aggs.riskscr_1_avg
 	;
 quit; 
