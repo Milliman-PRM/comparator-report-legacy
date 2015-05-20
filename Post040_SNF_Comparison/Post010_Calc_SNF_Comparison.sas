@@ -67,6 +67,22 @@ proc sql;
 quit;
 
 
+proc sql;
+	create table snf_windows as
+	select
+		time_slice
+		,member_id
+		,caseadmitid
+		,min(date_case_earliest) as date_snf_admit format=YYMMDDd10.
+		,max(date_case_latest) as date_snf_discharge format=YYMMDDd10.
+	from Agg_claims_med
+	where lowcase(prm_line) eq "i31"
+	group by
+		time_slice
+		,member_id
+		,caseadmitid
+	;
+quit;
 
 proc sql;
 	create table readmit_SNF as
@@ -74,19 +90,7 @@ proc sql;
 		snf.time_slice
 		,snf.member_id
 		,snf.caseadmitid
-	from (
-		select
-			time_slice
-			,member_id
-			,caseadmitid
-			,max(date_case_latest) as date_snf_discharge
-		from Agg_claims_med
-		where lowcase(prm_line) eq "i31"
-		group by
-			time_slice
-			,member_id
-			,caseadmitid
-		) as snf
+	from snf_windows as snf
 	inner join (
 		select
 			time_slice
@@ -103,6 +107,13 @@ proc sql;
 		snf.time_slice eq acute.time_slice
 		and snf.member_id eq acute.member_id
 		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
+	left join snf_windows as snf_interrupts on
+		snf.time_slice eq snf_interrupts.time_slice
+		and snf.member_id eq snf_interrupts.member_id
+		and snf.caseadmitid ne snf_interrupts.caseadmitid
+		/*Make sure there wasn't another SNF stay prior to the Acute admit*/
+		and snf_interrupts.date_snf_admit between snf.date_snf_discharge and acute.date_acute_admit
+	where snf_interrupts.member_id is null
 	;
 quit;
 
@@ -118,7 +129,7 @@ proc sql;
 		,all_snf.member_id
 		,all_snf.ProviderID as prv_id_snf
 		,case
-			when snf.member_id is null then 'N'
+			when readmits.member_id is null then 'N'
 			else 'Y'
 			end as snf_readmit_yn
 		,all_snf.PRM_Util as los_snf
@@ -126,7 +137,7 @@ proc sql;
 		,all_snf.PRM_Util as sum_days_snf
 		,all_snf.PRM_Costs as sum_costs_snf
 	from All_cases_table as all_snf
-	left join snf_w_readmit as readmits
+	left join readmit_SNF as readmits
 		on all_snf.member_id = readmits.member_id
 		and all_snf.time_slice = readmits.time_slice
 		and all_snf.caseadmitid = readmits.caseadmitid
@@ -190,7 +201,6 @@ proc sql;
 	group by 
 			detail.time_period
 			,detail.name_client
-			,metric_category
 			,mems.total_memmos
 			,mems.total_costs
 			,mems.tot_risk_scr
