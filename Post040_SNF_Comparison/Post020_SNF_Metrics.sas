@@ -76,62 +76,51 @@ proc sql;
 		,detail.time_period
 		,"SNF" as metric_category
 
-		,detail.distinct_SNFs label="Number of Distinct SNFs Utilized"
+		,count(distinct detail.prv_id_snf) as distinct_SNFs label="Number of Distinct SNFs Utilized"
 
-		,detail.sum_discharges_snf
+		,sum(detail.cnt_discharges_snf)
 			/aggs.memmos_sum * 12000
 			as SNF_per1k label="SNF Discharges per 1000"
 
-		,detail.sum_discharges_snf
+		,sum(detail.cnt_discharges_snf)
 			/aggs.memmos_sum_riskadj * 12000
 			as SNF_per1k_rskadj label="SNF Admissions per 1000 Risk Adjusted"
 
-		,detail.sum_costs_snf
+		,sum(detail.sum_costs_snf)
 			/aggs.prm_costs_sum_all_services
 			as pct_SNF_costs label="SNF Costs as a Percentage of Total Costs"
 
-		,detail.sum_days_snf
-			/detail.sum_discharges_snf
+		,sum(detail.sum_days_snf)
+			/sum(detail.cnt_discharges_snf)
 			as alos label="SNF Average Length of Stay"
 
-		,detail.sum_costs_snf
-			/detail.sum_days_snf
+		,sum(detail.sum_costs_snf)
+			/sum(detail.sum_days_snf)
 			as avg_cost_per_day label="Average Cost Per Day in SNF"
 
-		,detail.sum_costs_snf
-			/detail.sum_discharges_snf
+		,sum(detail.sum_costs_snf)
+			/sum(detail.cnt_discharges_snf)
 			as avg_cost_per_discharge label="Average Cost Per SNF Discharge"
 
-		,detail.sum_long_snf_discharges
-			/detail.sum_discharges_snf
+		,sum(case when detail.los_snf > 21 then detail.cnt_discharges_snf else 0 end)
+			/sum(detail.cnt_discharges_snf)
 			as percent_SNF_over_21_days label="Percentage of SNF stays over 21 days"
 
-		,detail.sum_snf_discharges_readmit
-			/detail.sum_discharges_snf
+		,sum(case when detail.snf_readmit_yn = 'Y' then detail.cnt_discharges_snf else 0 end)
+			/sum(detail.cnt_discharges_snf)
 			as percent_SNF_readmit label="Percentage of SNF Discharges with Actue IP Readmits Within 30 Days"
 
-	from (
-		select
-			name_client
-			,time_period
-			,count(distinct prv_id_snf) as distinct_SNFs
-			,sum(cnt_discharges_snf) as sum_discharges_snf
-			,sum(sum_costs_snf) as sum_costs_snf
-			,sum(sum_days_snf) as sum_days_snf
-			,sum(case when los_snf > 21 then cnt_discharges_snf else 0 end) as sum_long_snf_discharges
-			,sum(case when snf_readmit_yn = 'Y' then cnt_discharges_snf else 0 end) as sum_snf_discharges_readmit
-		from details_SNF
-		group by
-			name_client
-			,time_period
-		)as detail
+	from details_snf as detail
 	left join
 		post010.basic_aggs as aggs
 		on detail.name_client = aggs.name_client
 		and detail.time_period = aggs.time_period
-	order by 
+	group by 
 			detail.time_period
 			,detail.name_client
+			,aggs.memmos_sum
+			,aggs.prm_costs_sum_all_services
+			,aggs.memmos_sum_riskadj
 	;
 quit;
 
