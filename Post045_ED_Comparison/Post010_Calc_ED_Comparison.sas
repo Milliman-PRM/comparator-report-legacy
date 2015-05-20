@@ -2,10 +2,9 @@
 ### CODE OWNERS: Michael Menser 
 
 ### OBJECTIVE:
-	Use the PRM outputs to create the Admission / Readmission report for NYP.
+	This program creates a table with the individual metrics for ED Comparison.
 
 ### DEVELOPER NOTES:
-	This program creates a table with the individual metrics for ED Comparison.
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
@@ -38,10 +37,10 @@ libname post045 "&post045.";
 proc sql;
 	create table ED_cases_table as
 	select 
-		A.*
-	from agg_claims_med as A 
-	inner join post008.members as B 
-		on (A.time_slice = B.time_period and A.member_ID = B.member_ID)
+		claims.*
+	from agg_claims_med as claims 
+	inner join post008.members as mems 
+		on (claims.time_slice = mems.time_period and claims.member_ID = mems.member_ID)
 	order by time_slice, caseadmitid;
 quit;
 
