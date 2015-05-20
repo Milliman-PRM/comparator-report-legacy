@@ -67,23 +67,6 @@ proc sql;
 quit;
 
 
-/* SNF Readmission Logic */
- proc sql;
-	create table readmit_SNF as
-	select 
-		member_id
-		,caseadmitid
-		,time_slice
-		,case when upcase(PRM_Line) eq 'I31' then "SNF" else "Other IP" end as Service_type
-		,date_case_earliest
-		,date_case_latest
-	from Agg_claims_med
-	/*I11b, I13a, and I13b excluded to match Acute IP definition from the admission program*/
-	where lowcase(prm_line) eqt "i" and lowcase(prm_line) not in ('i11b', 'i13a', 'i13b')
-	order by member_id, time_slice, date_case_earliest desc, date_case_latest
-	;
-quit;
-
 
 proc sql;
 	create table readmit_SNF as
@@ -109,7 +92,7 @@ proc sql;
 			time_slice
 			,member_id
 			,caseadmitid
-			,max(date_case_easliest) as date_acute_admit
+			,max(date_case_earliest) as date_acute_admit
 		from Agg_claims_med
 		where lowcase(prm_line) ne "i31"
 		group by
@@ -117,9 +100,8 @@ proc sql;
 			,member_id
 			,caseadmitid
 		) as acute on
-		snf.time_slice = acute.time_slice
-		and snf.member_id = acute.member_id
-		and snf.caseadmitid = acute.caseadmitid
+		snf.time_slice eq acute.time_slice
+		and snf.member_id eq acute.member_id
 		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
 	;
 quit;
