@@ -82,7 +82,7 @@ proc sql;
 			else 'N'
 			end as inpatient_discharge_to_snf_yn
 		,'N' as preference_sensitive_yn /*TODO: Fill with real logic when available.*/
-	from claims_members as claims
+	from agg_claims_med as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join disch_xwalk on
