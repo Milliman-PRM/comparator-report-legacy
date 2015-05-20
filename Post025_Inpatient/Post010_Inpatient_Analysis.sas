@@ -21,9 +21,6 @@ libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
-
-
 %agg_claims(
 		IncStart=&list_inc_start.
 		,IncEnd=&list_inc_end.
@@ -34,18 +31,6 @@ libname post025 "&post025.";
 		,Time_Slice=&list_time_period.
 		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
 		)
-
-
-
-proc sql;
-	create table claims_members as
-	select
-		claims.*
-	from agg_claims_med as claims
-	inner join post008.members as mems
-		on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period
-	;
-quit;
 
 data disch_xwalk;
 	infile "%GetParentFolder(0)Discharge_status_xwalk.csv"
@@ -62,18 +47,17 @@ data disch_xwalk;
 run;
 
 proc sql;
-	create table claims_elig as
+	create table details_inpatient as
 	select
 		"&name_client." as name_client
 		,claims.time_slice as time_period
-		,claims.member_id
 		,claims.providerid as prv_id_inpatient
-		,claims.discharges
+		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
 		,coalesce(disch_xwalk.disch_desc, 'Unknown') as discharge_status_desc format=$256.
-		,claims.prm_util as days
+		,sum(claims.prm_util) as sum_days_inpatient
 		,claims.prm_util as los_inpatient
-		,claims.prm_costs as costs
+		,sum(claims.prm_costs) as sum_costs_inpatient
 		,claims.prm_drg as drg_inpatient
 		,claims.prm_drgversion as drg_version_inpatient
 		,case
@@ -99,18 +83,27 @@ proc sql;
 			end as inpatient_discharge_to_snf_yn
 		,'N' as preference_sensitive_yn /*TODO: Fill with real logic when available.*/
 	from claims_members as claims
-	left join disch_xwalk on
-		claims.dischargestatus eq disch_xwalk.disch_code
+		inner join post008.members as mems
+			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
+		left join disch_xwalk on
+			claims.dischargestatus eq disch_xwalk.disch_code
+	group by 
+		time_period
+		,prv_id_inpatient
+		,discharge_status_code
+		,discharge_status_desc
+		,los_inpatient
+		,drg_inpatient
+		,drg_version_inpatient
+		,acute_yn
+		,medical_surgical
+		,inpatient_readmit_yn
+		,inpatient_pqi_yn
+		,inpatient_discharge_to_snf_yn
+		,preference_sensitive_yn
 	;
 quit;
 
-
-/*Aggregate the table to the datamart format*/
-proc summary nway missing data=claims_elig;
-class _character_ los_inpatient;
-var discharges days costs;
-output out=details_inpatient (drop = _:)sum=cnt_discharges_inpatient sum_days_inpatient sum_costs_inpatient;
-run;
 
 /*Calculate the requested measures*/
 proc sql;
