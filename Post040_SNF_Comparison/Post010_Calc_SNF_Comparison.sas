@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Michael Menser, Aaron Hoch 
+### CODE OWNERS: Michael Menser, Aaron Hoch, Jason Altieri, Shea Parkes
 
 ### OBJECTIVE:
 	Use the PRM outputs to create the Admission / Readmission report for NYP.
@@ -31,7 +31,7 @@ libname post040 "&post040.";
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
 	,Force_Util=&post_force_util.
-	,where_clause= %str(lowcase(outclaims_prm.prm_line) eq "i31")
+	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
     );
 
 /*Limit the claims to only those members who are included in our centralized member roster.*/
@@ -50,20 +50,82 @@ proc sql noprint;
 quit;
 
 
+
+proc sql;
+	create table snf_windows as
+	select
+		time_slice
+		,member_id
+		,caseadmitid
+		,min(date_case_earliest) as date_snf_admit format=YYMMDDd10.
+		,max(date_case_latest) as date_snf_discharge format=YYMMDDd10.
+	from Agg_med_cases_limited
+	where lowcase(prm_line) eq "i31"
+	group by
+		time_slice
+		,member_id
+		,caseadmitid
+	;
+quit;
+
+proc sql;
+	create table readmit_SNF as
+	select distinct
+		snf.time_slice
+		,snf.member_id
+		,snf.caseadmitid
+	from snf_windows as snf
+	inner join (
+		select
+			time_slice
+			,member_id
+			,caseadmitid
+			,max(date_case_earliest) as date_acute_admit
+		from Agg_med_cases_limited
+		where lowcase(prm_line) ne "i31"
+		group by
+			time_slice
+			,member_id
+			,caseadmitid
+		) as acute on
+		snf.time_slice eq acute.time_slice
+		and snf.member_id eq acute.member_id
+		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
+	left join snf_windows as snf_interrupts on
+		snf.time_slice eq snf_interrupts.time_slice
+		and snf.member_id eq snf_interrupts.member_id
+		and snf.caseadmitid ne snf_interrupts.caseadmitid
+		/*Make sure there wasn't another SNF stay prior to the Acute admit*/
+		and snf_interrupts.date_snf_admit between snf.date_snf_discharge and acute.date_acute_admit
+	where snf_interrupts.member_id is null
+	;
+quit;
+
+
+
+
 /*Now limit the cases to SNF cases only.*/
 proc sql;
 	create table claims_SNF as
 	select
 		"&name_client." as name_client
-		,time_slice as time_period
-		,member_id
-		,ProviderID as prv_id_snf
-		,'N' as snf_readmit_yn
-		,PRM_Util as los_snf
-		,Discharges as cnt_discharges_snf
-		,PRM_Util as sum_days_snf
-		,PRM_Costs as sum_costs_snf
-	from Agg_med_cases_limited
+		,all_snf.time_slice as time_period
+		,all_snf.member_id
+		,all_snf.ProviderID as prv_id_snf
+		,case
+			when readmits.member_id is null then 'N'
+			else 'Y'
+			end as snf_readmit_yn
+		,all_snf.PRM_Util as los_snf
+		,all_snf.Discharges as cnt_discharges_snf
+		,all_snf.PRM_Util as sum_days_snf
+		,all_snf.PRM_Costs as sum_costs_snf
+	from Agg_med_cases_limited as all_snf
+	left join readmit_SNF as readmits
+		on all_snf.member_id = readmits.member_id
+		and all_snf.time_slice = readmits.time_slice
+		and all_snf.caseadmitid = readmits.caseadmitid
+	where lowcase(prm_line) = "i31"
 	;
 quit;
 

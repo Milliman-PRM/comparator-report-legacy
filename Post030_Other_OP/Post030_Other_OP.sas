@@ -14,12 +14,12 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M073_Cde.pudd_methods\*.sas";
 
 /*Library*/
 libname M015_out "&M015_out." access=readonly;
 libname post008 "&post008." access = readonly;
+libname post010 "&post010." access = readonly;
 libname post030 "&post030.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -50,17 +50,6 @@ proc sql;
 	;
 quit;
 
-proc sql;
-	create table agg_memmos_riskscr as
-	select
-		mems.time_period
-		,sum(mems.memmos) as sum_memmos
-		,sum(mems.riskscr_1*memmos) / calculated sum_memmos as avg_riskscr
-	from post008.members as mems
-	group by time_period
-	;
-quit;
-
 /***** CALCULATE METRICS *****/
 /*** PCT OFFICE VISITS TO A PCP ***/
 proc sql;
@@ -73,6 +62,7 @@ proc sql;
 		,sum(prm_util) as _sum_visits_combined
 		,calculated _sum_visits_pcp / calculated _sum_visits_combined as metric_value
 	from claims_members
+	where lowcase(prm_line) in ("p32c","p32d")
 	group by time_slice
 	;
 quit;
@@ -137,15 +127,27 @@ proc sql;
 	;
 quit;
 
+proc transpose data = post010.metrics_basic
+	out = memmos_riskscr (drop = _:)
+	;
+	where lowcase(metric_id) in (
+		"riskscr_1_avg"
+		,"memmos_sum"
+		);
+	by time_period;
+	var metric_value;
+	id metric_id;
+run;
+
 proc sql;
 	create table util_rates as
 	select
 		agg_util.*
-		,memmos_riskscr.sum_memmos as _sum_memmos
-		,memmos_riskscr.avg_riskscr as _avg_riskscr
-		,_sum_prm_util * (1 / memmos_riskscr.sum_memmos) * 12 * 1000 as metric_value
+		,memmos_riskscr.memmos_sum as _sum_memmos
+		,memmos_riskscr.riskscr_1_avg as _avg_riskscr
+		,_sum_prm_util * (1 / memmos_riskscr.memmos_sum) * 12 * 1000 as metric_value
 	from agg_util as agg_util
-	left join agg_memmos_riskscr as memmos_riskscr
+	left join memmos_riskscr as memmos_riskscr
 		on agg_util.time_period eq memmos_riskscr.time_period
 	;
 quit;
@@ -155,7 +157,7 @@ data util_rates_riskadj;
 	set util_rates;
 	metric_id = catx("_",metric_id,"riskadj");
 	metric_name = catx(", ",metric_name,"Risk Adjusted");
-	metric_value = metric_value * _avg_riskscr;
+	metric_value = metric_value / _avg_riskscr;
 run;
 
 /*** COMBINE THE RESULTS ***/
