@@ -77,11 +77,7 @@ proc sql;
 		,claims.prm_drg as drg_inpatient
 		,claims.prm_drgversion as drg_version_inpatient
 		,case
-			when claims.prm_line not in (
-				'I11b' /* Medical - Rehabilitation */
-				,'I13a' /* Psychiatric - Hospital */
-				,'I13b' /* Psychiatric - Residential */
-				) then 'Y'
+			when lowcase(claims.prm_line) not in (&nonacute_ip_prm_line_ignore_snf.) then 'Y'
 			else 'N'
 			end as acute_yn
 		,case
