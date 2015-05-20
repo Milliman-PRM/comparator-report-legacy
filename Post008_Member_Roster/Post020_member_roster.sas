@@ -17,7 +17,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname M035_Out "&M035_Out." access = readonly;
 libname post008 "&post008.";
-
+libname M073_Tmp "&M073_Tmp.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
