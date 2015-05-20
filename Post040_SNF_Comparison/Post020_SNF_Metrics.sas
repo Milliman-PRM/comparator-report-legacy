@@ -68,7 +68,7 @@ proc sql;
 quit;
 
 
-/*Calculate the requested measures*/
+
 proc sql;
 	create table measures as
 	select
@@ -76,48 +76,60 @@ proc sql;
 		,detail.time_period
 		,"SNF" as metric_category
 
-		,count(distinct detail.prv_id_snf) 
-			as distinct_SNFs label="Number of Distinct SNFs utilized in past 12 month period."
+		,detail.distinct_SNFs label="Number of Distinct SNFs Utilized"
 
-		,sum(detail.cnt_discharges_snf)
+		,detail.sum_discharges_snf
 			/aggs.memmos_sum * 12000
 			as SNF_per1k label="SNF Discharges per 1000"
 
-		,sum(detail.cnt_discharges_snf)
+		,detail.sum_discharges_snf
 			/aggs.memmos_sum_riskadj * 12000
 			as SNF_per1k_rskadj label="SNF Admissions per 1000 Risk Adjusted"
 
-		,sum(detail.sum_costs_snf)
+		,detail.sum_costs_snf
 			/aggs.prm_costs_sum_all_services
 			as pct_SNF_costs label="SNF Costs as a Percentage of Total Costs"
 
-		,sum(detail.sum_days_snf)
-			/sum(detail.cnt_discharges_snf)
+		,detail.sum_days_snf
+			/detail.sum_discharges_snf
 			as alos label="SNF Average Length of Stay"
 
-		,sum(detail.sum_costs_snf)
-			/sum(detail.sum_days_snf)
-			as av_paid_per_day label="Average Paid Per Day in SNF"
+		,detail.sum_costs_snf
+			/detail.sum_days_snf
+			as avg_cost_per_day label="Average Cost Per Day in SNF"
 
-		,sum(detail.sum_costs_snf)
-			/sum(detail.cnt_discharges_snf)
-			as av_paid_per_disch label="Average Paid Per SNF Discharge"
+		,detail.sum_costs_snf
+			/detail.sum_discharges_snf
+			as avg_cost_per_discharge label="Average Cost Per SNF Discharge"
 
-		,sum(case when detail.los_snf > 21 then detail.cnt_discharges_snf else 0 end)
-			/sum(detail.cnt_discharges_snf)
-			as percent_stays_over_21 label="Percentage of SNF stays over 21 days"
+		,detail.sum_long_snf_discharges
+			/detail.sum_discharges_snf
+			as percent_SNF_over_21_days label="Percentage of SNF stays over 21 days"
 
-		,sum(case when detail.snf_readmit_yn = 'Y' then detail.cnt_discharges_snf else 0 end)
-			/sum(detail.cnt_discharges_snf)
-			as SNF_readmit label="Percentage of IP Readmits Within 30 Days of SNF Discharge"
+		,detail.sum_snf_discharges_readmit
+			/detail.sum_discharges_snf
+			as percent_SNF_readmit label="Percentage of SNF Discharges with Actue IP Readmits Within 30 Days"
 
-	from details_SNF as detail
+	from (
+		select
+			name_client
+			,time_period
+			,count(distinct prv_id_snf) as distinct_SNFs
+			,sum(cnt_discharges_snf) as sum_discharges_snf
+			,sum(sum_costs_snf) as sum_costs_snf
+			,sum(sum_days_snf) as sum_days_snf
+			,sum(case when los_snf > 21 then cnt_discharges_snf else 0 end) as sum_long_snf_discharges
+			,sum(case when snf_readmit_yn = 'Y' then cnt_discharges_snf else 0 end) as sum_snf_discharges_readmit
+		from details_SNF
+		group by
+			name_client
+			,time_period
+		)as detail
 	left join
 		post010.basic_aggs as aggs
 		on detail.name_client = aggs.name_client
 		and detail.time_period = aggs.time_period
-
-	group by 
+	order by 
 			detail.time_period
 			,detail.name_client
 	;
