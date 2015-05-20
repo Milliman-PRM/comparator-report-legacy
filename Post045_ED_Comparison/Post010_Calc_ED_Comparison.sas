@@ -41,6 +41,7 @@ proc sql;
 	from agg_claims_med as claims 
 	inner join post008.members as mems 
 		on (claims.time_slice = mems.time_period and claims.member_ID = mems.member_ID)
+	where PRM_Util_Type = 'Visits'
 	order by time_slice, caseadmitid;
 quit;
 
@@ -60,28 +61,28 @@ proc sql;
 			/aggs.riskscr_1_avg
 			as ED_per1k_rskadj label="ED visits per 1000 Risk Adjusted"
 
-		,sum(cases.prm_nyu_emergent_non_avoidable)
-			/count(cases.CaseAdmitID)
+		,sum(cases.prm_nyu_emergent_non_avoidable * PRM_Util)
+			/sum(PRM_Util)
 			as ED_emer_nec label="% of ED visits Emergent Necessary (NYU logic)"
 
-		,sum(cases.prm_nyu_emergent_avoidable)
-			/count(cases.CaseAdmitID)
+		,sum(cases.prm_nyu_emergent_avoidable * PRM_Util)
+			/sum(PRM_Util)
 			as ED_emer_prev label="% of ED visits Emergent Preventable (NYU logic)"
 
-		,sum(cases.prm_nyu_emergent_primary_care)
-			/count(cases.CaseAdmitID)
+		,sum(cases.prm_nyu_emergent_primary_care * PRM_Util)
+			/sum(PRM_Util)
 			as ED_emer_pricare	label="% of ED visits Emergent Primary Care Treatable (NYU logic)"
 
-		,sum(cases.prm_nyu_injury)
-			/count(cases.CaseAdmitID)
+		,sum(cases.prm_nyu_injury * PRM_Util)
+			/sum(PRM_Util)
 			as ED_injury label="% of ED visits Injury (NYU logic)"
 
-		,sum(cases.prm_nyu_nonemergent)
-			/count(cases.CaseAdmitID)
+		,sum(cases.prm_nyu_nonemergent * PRM_Util)
+			/sum(PRM_Util)
 			as ED_nonemer label="% of ED visits Non Emergent (NYU logic)"
 
-		,sum(cases.prm_nyu_unclassified)
-			/count(cases.CaseAdmitID)
+		,sum(cases.prm_nyu_unclassified * PRM_Util)
+			/sum(PRM_Util)
 			as ED_other label="% of ED visits other (NYU logic)"
 
 	from Ed_cases_table as cases
