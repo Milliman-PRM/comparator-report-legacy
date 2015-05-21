@@ -59,6 +59,14 @@ proc sql;
 	group by &reporting_level.
 	order by discharges_sum desc
 	;
+	create table eda_discharge_status_desc as
+	select
+		discharge_status_desc
+		,sum(discharges_sum) as discharges_sum format=comma12.
+	from full_agg
+	group by discharge_status_desc
+	order by discharges_sum desc
+	;
 quit;
 
 proc sql;
@@ -70,14 +78,48 @@ proc sql;
 	where 
 		agg.discharges_sum gt 0
 		/*This limit should only do something during testing/development.*/
-		and eda.discharges_sum ge 42
+		and eda.discharges_sum ge 142
 	order by
 		agg.&reporting_level.
 		,agg.discharge_status_desc
 		,agg.drg 
 	;
 quit;
+
+
+%macro fit_one_status(
+	name_dset_input
+	,chosen_discharge_status
+	,name_dset_output
+	);
+
+	data _munge_input;
+		set &name_dset_input.;
+
+		format cnt_success comma12.;
+		if upcase(discharge_status_desc) eq "%upcase(&chosen_discharge_status.)" then cnt_success = discharges_sum;
+		else cnt_success = 0;
+	run;
+
 	
+	ods output lsmeans = &name_dset_output.;
+	proc glimmix data=_munge_input method=laplace;
+		class &reporting_level. drg;
+		model cnt_success / discharges_sum = &reporting_level.;
+		random drg;
+		lsmeans &reporting_level. / ilink;
+	run;
+	ods output close;
+
+	ods listing;
+
+	proc sql;
+		drop table _munge_input;
+	quit;
+
+%mend fit_one_status;
+
+%fit_one_status(agg_filter,Discharged to Home,testing_ouput)
 
 
 %put return_code = &syscc.;
