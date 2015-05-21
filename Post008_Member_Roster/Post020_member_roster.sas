@@ -86,8 +86,8 @@ run;
 proc sql noprint;
 	select 
 		time_period
-		,inc_start format = 12.
-		,inc_end format = 12.
+		,inc_start_riskscr_features format = 12.
+		,inc_end_riskscr_features format = 12.
 		,paid_thru format = 12.
 		,time_period format = $12.
 	into :list_time_period_hcc separated by "~"
