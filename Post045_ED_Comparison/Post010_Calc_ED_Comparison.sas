@@ -39,10 +39,16 @@ proc sql;
 	select 
 		claims.*
 	from agg_claims_med as claims 
-	inner join post008.members as mems 
-		on (claims.time_slice = mems.time_period and claims.member_ID = mems.member_ID)
+	inner join 
+		post008.members as mems 
+		on claims.time_slice = mems.time_period 
+		and claims.member_ID = mems.member_ID
+
 	where PRM_Util_Type = "Visits"
-	order by time_slice, caseadmitid;
+	order by 
+			time_slice
+			,caseadmitid
+	;
 quit;
 
 /*Calculate the requested measures*/
@@ -86,7 +92,8 @@ proc sql;
 			as ED_other label="% of ED visits other (NYU logic)"
 
 	from Ed_cases_table as cases
-	left join Post010.basic_aggs as aggs
+	left join 
+		Post010.basic_aggs as aggs
 		on cases.time_slice = aggs.time_period
 	group by
 		name_client
