@@ -10,6 +10,7 @@
 import os
 import re
 import datetime
+import json
 
 from pathlib import Path
 
@@ -69,6 +70,9 @@ class PostboardModule(object):
             os.sep,
             )
 
+    def create_module_path_dict(self):
+        return {self.abbreviation: str(self.path_data)}
+
     def __repr__(self):
         return '\n'.join([
             '',
@@ -92,7 +96,9 @@ if __name__ == '__main__':
     PATH_CURRENT = get_path_current()
 
     PATH_SAS_SETUP = PATH_PROJECT_DATA / 'postboarding_libraries.sas'
-
+    PATH_JSON_OUT = PATH_PROJECT_DATA / 'postboarding_directories.json'
+    
+    POSTBOARDING_DIRS = dict()
 
     print('BEGINNING GENERATION OF {}\n\n'.format(PATH_SAS_SETUP))
     with PATH_SAS_SETUP.open('w') as fh_codegen:
@@ -115,7 +121,18 @@ if __name__ == '__main__':
                 print(mod_)
                 mod_.make_data_dir()
                 fh_codegen.write('\n{}\n'.format(mod_.codegen_sas_macro_variable()))
+                POSTBOARDING_DIRS.update(mod_.create_module_path_dict())
             except NotAPostModuleException as exception:
                 print('\n{}\n'.format(exception.args[0]))
 
     print('\n\nFINISHED GENERATION OF {}\n\n'.format(PATH_SAS_SETUP))
+
+    print('BEGINNING GENERATION OF {}\n\n'.format(PATH_JSON_OUT))
+    with PATH_JSON_OUT.open("w") as fh_json:
+        json.dump(
+            POSTBOARDING_DIRS,
+            fh_json,
+            sort_keys=True,
+            indent=4,
+            )
+    print('\n\nFINISHED GENERATION OF {}\n\n'.format(PATH_JSON_OUT))
