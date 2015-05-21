@@ -7,6 +7,10 @@
 ### DEVELOPER NOTES:
 	Not part of production because it depends upon all ACOs' data being aggregated.
 	For testing purposes, it case-mixes at the provider level.
+	Can't directly do a multinomial due to complexity of optimization.
+		Have to do a series of one-vs-rest and normalize results.
+	Assume real reporting level will be credible enough there is no need for penalization.
+		This would mean each reporting level should have results for each discharge status.
 */
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
@@ -87,6 +91,8 @@ proc sql;
 quit;
 
 
+
+/**** DEFINE FUNCTION TO FIT SINGLE MODEL ****/
 %macro fit_one_status(
 	name_dset_input
 	,chosen_discharge_status
@@ -126,7 +132,44 @@ quit;
 
 %mend fit_one_status;
 
-%fit_one_status(agg_filter,Discharged to Home,testing_ouput)
+/* %fit_one_status(agg_filter,Discharged to Home,testing_ouput) */
+
+
+
+/**** FIT ALL THE MODELS ****/
+
+%macro loop_statuses(name_dset_input,name_dset_output);
+	%if %sysfunc(exist(&name_dset_output.)) %then %do;
+		proc sql;
+			drop table &name_dset_output.;
+		quit;
+	%end;
+
+	%local list_statuses;
+	proc sql noprint;
+		select distinct discharge_status_desc
+		into :list_statuses separated by '~'
+		from &name_dset_input.
+		order by discharge_status_desc
+		;
+	quit;
+
+	%let cnt_statuses = %eval(%sysfunc(countc(&list_statuses.,%str(~))) + 1);
+	%do i_status = 1 %to &cnt_statuses.;
+		%let current_status = %scan(&list_statuses.,&i_status.,%str(~));
+
+		%fit_one_status(&name_dset_input.,&current_status.,_results_&i_status.)
+
+		proc append base=&name_dset_output. data=_results_&i_status.;
+		run;
+
+		proc sql;
+			drop table _results_&i_status.;
+		quit;
+	%end;
+%mend loop_statuses;
+
+%loop_statuses(agg_filter,results_raw_stack)
 
 
 %put return_code = &syscc.;
