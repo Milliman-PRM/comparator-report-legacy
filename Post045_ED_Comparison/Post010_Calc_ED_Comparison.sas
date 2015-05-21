@@ -46,8 +46,8 @@ proc sql;
 
 	where PRM_Util_Type = "Visits"
 	order by 
-			time_slice
-			,caseadmitid
+			claims.time_slice
+			,claims.caseadmitid
 	;
 quit;
 
