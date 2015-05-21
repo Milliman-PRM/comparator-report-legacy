@@ -90,20 +90,20 @@ proc sql noprint;
 		,inc_end_riskscr_features format = 12.
 		,paid_thru format = 12.
 		,time_period format = $12.
-	into :list_time_period_hcc separated by "~"
-		,:list_inc_start_hcc separated by "~"
-		,:list_inc_end_hcc separated by "~"
-		,:list_paid_thru_hcc separated by "~"
-		,:list_time_period_hcc separated by "~"
+	into :list_time_period_riskscr separated by "~"
+		,:list_inc_start_riskscr separated by "~"
+		,:list_inc_end_riskscr separated by "~"
+		,:list_paid_thru_riskscr separated by "~"
+		,:list_time_period_riskscr separated by "~"
 	from post008.Time_windows
 	;
 quit;
 
 
-%run_hcc_wrap_prm(&list_inc_start_hcc.
-		,&list_inc_end_hcc.
-		,&list_paid_thru_hcc.
-		,&list_time_period_hcc.
+%run_hcc_wrap_prm(&list_inc_start_riskscr.
+		,&list_inc_end_riskscr.
+		,&list_paid_thru_riskscr.
+		,&list_time_period_riskscr.
 		,post008
 		)
 
