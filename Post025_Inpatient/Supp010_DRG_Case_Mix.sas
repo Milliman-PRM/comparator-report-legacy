@@ -96,7 +96,8 @@ quit;
 %macro fit_one_status(
 	name_dset_input
 	,chosen_discharge_status
-	,name_dset_output
+	,name_dset_output_lsmeans
+	,name_dset_output_covparms
 	);
 
 	data _munge_input;
@@ -108,7 +109,10 @@ quit;
 	run;
 
 	
-	ods output lsmeans = _single_output;
+	ods output 
+		lsmeans = _single_lsmeans
+		covparms = _single_covparms
+		;
 	proc glimmix data=_munge_input method=laplace;
 		class &reporting_level. drg;
 		model cnt_success / discharges_sum = &reporting_level.;
@@ -123,33 +127,45 @@ quit;
 		Would also be annoying because we wouldn't be able to utilize the LSMEANS functionality; would have to build from parameters.
 	*/
 
-	data &name_dset_output.;
+	data &name_dset_output_lsmeans.;
 		format &reporting_level.;
 		format
 			discharge_status_desc $256.
 			mu percent8.3
 			;
-		set _single_output(keep = &reporting_level. mu);
+		set _single_lsmeans(keep = &reporting_level. mu);
+		discharge_status_desc = "&chosen_discharge_status.";
+	run;
+
+	data &name_dset_output_covparms.;
+		format discharge_status_desc $256.;
+		set _single_covparms;
 		discharge_status_desc = "&chosen_discharge_status.";
 	run;
 
 	proc sql;
 		drop table _munge_input;
-		drop table _single_output;
+		drop table _single_lsmeans;
+		drop table _single_covparms;
 	quit;
 
 %mend fit_one_status;
 
-/* %fit_one_status(agg_filter,Discharged to Home,testing_ouput) */
+/* %fit_one_status(agg_filter,Discharged to Home,testing_ouput_lsmeans,testing_ouput_covparms) */
 
 
 
 /**** FIT ALL THE MODELS ****/
 
-%macro loop_statuses(name_dset_input,name_dset_output);
-	%if %sysfunc(exist(&name_dset_output.)) %then %do;
+%macro loop_statuses(name_dset_input,name_dset_output_lsmeans,name_dset_output_covparms);
+	%if %sysfunc(exist(&name_dset_output_lsmeans.)) %then %do;
 		proc sql;
-			drop table &name_dset_output.;
+			drop table &name_dset_output_lsmeans.;
+		quit;
+	%end;
+	%if %sysfunc(exist(&name_dset_output_covparms.)) %then %do;
+		proc sql;
+			drop table &name_dset_output_covparms.;
 		quit;
 	%end;
 
@@ -166,18 +182,20 @@ quit;
 	%do i_status = 1 %to &cnt_statuses.;
 		%let current_status = %scan(&list_statuses.,&i_status.,%str(~));
 
-		%fit_one_status(&name_dset_input.,&current_status.,_results_&i_status.)
+		%fit_one_status(&name_dset_input.,&current_status.,_lsmeans_&i_status.,_covparms_&i_status.)
 
-		proc append base=&name_dset_output. data=_results_&i_status.;
+		proc append base=&name_dset_output_lsmeans. data=_lsmeans_&i_status.;
+		proc append base=&name_dset_output_covparms. data=_covparms_&i_status.;
 		run;
 
 		proc sql;
-			drop table _results_&i_status.;
+			drop table _lsmeans_&i_status.;
+			drop table _covparms_&i_status.;
 		quit;
 	%end;
 %mend loop_statuses;
 
-%loop_statuses(agg_filter,results_sloppy)
+%loop_statuses(agg_filter,lsmeans_sloppy,covparms_sloppy)
 
 
 
@@ -224,12 +242,12 @@ proc sql;
 		,coalesce(raw.mu_raw, 0) as mu_raw format=percent8.3
 		,slop.mu as mu_slop
 		,slop.mu / agg.report_level_slop_total as mu_normalized format=percent8.3
-	from results_sloppy as slop
+	from lsmeans_sloppy as slop
 	left join (
 		select
 			&reporting_level.
 			,sum(mu) as report_level_slop_total format=percent8.3
-		from results_sloppy
+		from lsmeans_sloppy
 		group by &reporting_level.
 		) as agg on
 		slop.&reporting_level. eq agg.&reporting_level.
@@ -255,18 +273,26 @@ quit;
 proc sql;
 	create table post_distort_check as
 	select
-		discharge_status_desc
-		,discharge_status_desc_raw_cnt
-		,sum(mu_raw*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_raw format=percent12.3
-		,sum(mu_slop*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_slop format=percent12.3
-		,sum(mu_normalized*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_normalized format=percent12.3
-	from results_normalized
-	group by
-		discharge_status_desc
-		,discharge_status_desc_raw_cnt
+		agg.*
+		,cov.Estimate as cov_estimate
+		,cov.Stderr	as cov_stderr
+	from (
+		select
+			discharge_status_desc
+			,discharge_status_desc_raw_cnt
+			,sum(mu_raw*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_raw format=percent12.3
+			,sum(mu_slop*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_slop format=percent12.3
+			,sum(mu_normalized*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_normalized format=percent12.3
+		from results_normalized
+		group by
+			discharge_status_desc
+			,discharge_status_desc_raw_cnt
+	) as agg
+	left join covparms_sloppy as cov on
+		agg.discharge_status_desc eq cov.discharge_status_desc
 	order by
-		discharge_status_desc_raw_cnt desc
-		,discharge_status_desc
+		agg.discharge_status_desc_raw_cnt desc
+		,agg.discharge_status_desc
 	;
 quit;
 
