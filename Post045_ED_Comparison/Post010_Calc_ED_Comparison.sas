@@ -41,7 +41,7 @@ proc sql;
 	from agg_claims_med as claims 
 	inner join post008.members as mems 
 		on (claims.time_slice = mems.time_period and claims.member_ID = mems.member_ID)
-	where PRM_Util_Type = 'Visits'
+	where PRM_Util_Type = "Visits"
 	order by time_slice, caseadmitid;
 quit;
 
