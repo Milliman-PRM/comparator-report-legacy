@@ -88,3 +88,21 @@ proc sql;
 			,metric_category
 		;
 quit;
+
+/*Transpose the dataset to get the data into a long format*/
+proc transpose data=measures
+		out=metrics_transpose(rename=(COL1 = metric_value))
+		name=metric_id
+		label=metric_name;
+	by name_client time_period metric_category;
+run;
+
+/*Write the table out to the post035 library*/
+data post035.metrics_IP_discharge;
+	format &metrics_key_value_cgfrmt.;
+	set metrics_transpose;
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
+run;
+
+%put return_code = &syscc.;
