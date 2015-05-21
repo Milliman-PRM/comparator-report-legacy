@@ -14,6 +14,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
 libname M180_Out "&M180_Out." access=readonly;
+libname post010 "&post010." access=readonly;
 libname post008 "&post008.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -31,6 +32,7 @@ proc sql;
 		,coalesce(decedents_w_time.endoflife_numer_yn_hospicelt3day, 'N') as hospice_lt_3days
 		,coalesce(decedents_w_time.endoflife_numer_yn_hospicenever,'N') as hospice_never
 		,0 as final_hospice_days
+		,0 as costs_final_30_days
 		,count(*) as memcnt
 	from post008.Members as mems
 	left join (
@@ -80,9 +82,13 @@ proc sql;
 			sum(memcnt.memcnt) ) / aggs.riskscr_1_avg
 			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
 
-		/*PUT IN AVG COST 30 DAYS PRIOR TO DEATH*/
+		,(sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days else 0 end) /
+			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)) / aggs.riskscr_1_avg
+			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death, Risk Adjusted"
 
-		/*% of deaths in hospital*/
+		,sum(case when deceased_hospital_yn = "Y" then 1 else 0 end) /
+			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
+			as pct_death_in_hosp label = "Percentage of Deaths in Hospital"
 
 		,sum(case when deceased_chemo_yn eq "Y" then 1 else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
@@ -90,13 +96,15 @@ proc sql;
 
 		,sum(case when memcnt.hospice_lt_3days eq "Y" then 1 else 0 end)/
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_lt3days label = "Percent of Decedents Admitted to Hospice for Less Than 3 Days"
+			as pct_hospice_lt3days label = "Percentage of Decedents Admitted to Hospice for Less Than 3 Days"
 
 		,sum(case when memcnt.hospice_never eq "Y" then 1 else 0 end)/
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_never label = "Percent of Decedents Never Admitted to Hospice"
+			as pct_hospice_never label = "Percentage of Decedents Never Admitted to Hospice"
 
-		/*% of decedents admitted to hospice greater than 6 months*/
+		,sum(case when final_hospice_days gt 180 then 1 else 0 end) /
+			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
+			as pct_hospice_gt_6months label = "Percentage of Decedents in Hospice Over 6 Months"
 
 	from memcnt_to_export as memcnt
 	left join post010.basic_aggs as aggs
