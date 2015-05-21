@@ -117,7 +117,11 @@ quit;
 	run;
 	ods output close;
 
-	ods listing;
+	/*POTENTIAL TODO:
+		Change reporting_level to a random effect to account for potential rare discharge statuses causing complete separation.
+		This would cause "credibility" to be applied to the estimates.
+		Would also be annoying because we wouldn't be able to utilize the LSMEANS functionality; would have to build from parameters.
+	*/
 
 	data &name_dset_output.;
 		format &reporting_level.;
