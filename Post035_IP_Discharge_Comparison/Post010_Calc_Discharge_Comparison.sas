@@ -49,4 +49,42 @@ proc sql;
 	;
 quit;
 
-/*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
+/*Calculate the requested measures.*/
+proc sql;
+	create table measures as
+	select 
+		"&name_client." as name_client
+		,time_slice as time_period
+		,"IP Discharge" as metric_category
+
+		,sum(case when DischargeStatus = "01" then 1 else 0 end)
+			/count(caseAdmitID)
+			as Discharge_home label="Discharged to Home"
+
+		,sum(case when DischargeStatus IN ("62", "90") then 1 else 0 end)
+			/count(caseAdmitID)
+			as Discharge_irf label="Discharged to IRF"
+
+		,sum(case when DischargeStatus = "03" then 1 else 0 end)
+			/count(caseAdmitID)
+			as Discharge_snf label="Discharged to SNF"
+
+		,sum(case when DischargeStatus = "06" then 1 else 0 end)
+			/count(caseAdmitID)
+			as Discharge_homehlthcare label="Discharged to Home Health Care"
+
+		,sum(case when DischargeStatus = "20" then 1 else 0 end)
+			/count(caseAdmitID)
+			as Discharge_died label="Died"
+
+		,1.00 - calculated Discharge_home - calculated Discharge_irf - calculated Discharge_snf 
+			- calculated Discharge_homehlthcare - calculated Discharge_died
+			as Discharge_other label="Other"
+
+		from Discharge_cases_table as cases
+		group by
+			name_client
+			,time_period
+			,metric_category
+		;
+quit;
