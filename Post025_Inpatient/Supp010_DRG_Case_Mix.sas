@@ -120,7 +120,11 @@ quit;
 	ods listing;
 
 	data &name_dset_output.;
-		format discharge_status_desc $256.;
+		format &reporting_level.;
+		format
+			discharge_status_desc $256.
+			mu percent8.3
+			;
 		set _single_output(keep = &reporting_level. mu);
 		discharge_status_desc = "&chosen_discharge_status.";
 	run;
