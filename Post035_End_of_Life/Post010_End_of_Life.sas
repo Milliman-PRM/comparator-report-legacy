@@ -41,24 +41,50 @@ proc sql;
 	;
 quit;
 
-proc sql; 
-	create table end_of_life_metrics as
-	select
 
-		count distinct decedents.member_id /
+proc sql; 
+	create table metrics_end_of_life as
+	select
+		
+		"&name_client." as name_client
+		,decedents.time_period as time_period
+
+		,count (distinct decedents.member_id) /
 			sum(memcnt.memcnt)
 			as mortality_rate label = "Mortality Rate"
 
-		(count distinct decedents.member_id /
-			sum(memcnt.memcnt)) / riskscr_1_avg
-			as rsk_adj_mortality_rate = "Risk Adjusted Mortality Rate"
+		,(count (distinct decedents.member_id) /
+			sum(memcnt.memcnt) ) / aggs.riskscr_1_avg
+			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
 
 		/*PUT IN AVG COST 30 DAYS PRIOR TO DEATH*/
 
-		sum(case when endoflife_numer_yn_chemolt14days eq "Y" then 1 else 0 end) /
-			sum(case when endoflife_denom_yn_chemolt14days eq "Y" then 1 else 0 end)
-			as pct_chemo label = "Percentage of Decedents Recieving Chemotherapy within 14 days of death"
+		/*% of deaths in hospital*/
 
+		,sum(case when decedents.endoflife_numer_yn_chemolt14days eq "Y" then 1 else 0 end) /
+			sum(case when decedents.endoflife_denom_yn_chemolt14days eq "Y" then 1 else 0 end)
+			as pct_chemo label = "Percentage of Decedents Recieving Chemotherapy Within 14 Days of Death"
+
+		,sum(case when decedents.endoflife_numer_yn_hospicelt3day eq "Y" then 1 else 0 end)/
+			sum(case when decedents.endoflife_denom_yn_hospicelt3day eq "Y" then 1 else 0 end)
+			as pct_hospice_lt3days label = "Percent of Decedents Admitted to Hospice for Less Than 3 Days"
+
+		,sum(case when decedents.endoflife_numer_yn_hospicenever eq "Y" then 1 else 0 end)/
+			sum(case when decedents.endoflife_denom_yn_hospicenever eq "Y" then 1 else 0 end)
+			as pct_hospice_never label = "Percent of Decedents Never Admitted to Hospice"
+
+		/*% of decedents admitted to hospice greater than 6 months*/
+
+	from decedents_w_decorators as decedents
+	left join post010.basic_aggs as aggs
+			on decedents.time_period = aggs.time_period
+	left join post008.memcnt as memcnt
+			on decedents.time_period = memcnt.time_period
+	group by 
+			decedents.time_period
+			,aggs.riskscr_1_avg
+	;
+quit;
 
 
 
