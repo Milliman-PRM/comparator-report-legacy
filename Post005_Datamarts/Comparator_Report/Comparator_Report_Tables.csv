@@ -41,6 +41,7 @@ deceased_hospital_yn,memcnt,Y,N
 deceased_chemo_yn,memcnt,Y,N
 final_hospice_days,memcnt,Y,N
 riskscr_avg,memcnt,N,N
+riskscr_wgt,memcnt,N,N
 memcnt,memcnt,N,N
 name_client,details_inpatient,Y,N
 time_period,details_inpatient,Y,N

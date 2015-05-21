@@ -28,7 +28,8 @@ proc sql;
 		,'N' as deceased_hospital_yn
 		,'N' as deceased_chemo_yn
 		,0 as final_hospice_days
-		,sum(riskscr_1 * memmos) / sum(memmos) as riskscr_avg
+		,sum(memmos) as riskscr_wgt
+		,sum(riskscr_1 * memmos) / calculated riskscr_wgt as riskscr_avg
 		,count(*) as memcnt
 	from post008.Members
 	group by name_client, time_period, elig_status_1, deceased_yn, deceased_hospital_yn,
