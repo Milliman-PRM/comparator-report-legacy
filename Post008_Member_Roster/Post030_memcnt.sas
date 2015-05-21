@@ -13,7 +13,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
-libname M180_Out "&M180_Out.";
+libname M180_Out "&M180_Out." access=readonly;
 libname post008 "&post008.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -69,6 +69,7 @@ proc sql;
 	select
 		
 		"&name_client." as name_client
+		,"End Of Life" as metric_category
 		,memcnt.time_period as time_period
 
 		,sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end) /
@@ -107,9 +108,13 @@ proc sql;
 quit;
 
 
-
-
-
+/*Munge to target formats*/
+proc transpose data=pre_eol_metrics 
+				out=EOL_transpose(rename=(COL1 = metric_value))
+				name=metric_id
+				label=metric_name;
+	by name_client time_period metric_category;
+run;
 
 data post008.memcnt;
 	format &memcnt_cgfrmt.;
@@ -118,5 +123,14 @@ data post008.memcnt;
 run;
 
 %LabelDataSet(post008.memcnt);
+
+data post008.metrics_endoflife;
+	format &metrics_key_value_cgfrmt.;
+	set EOL_transpose;
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
+run;
+
+%LabelDataSet(post008.metrics_endoflife);
 
 %put return_code = &syscc.;
