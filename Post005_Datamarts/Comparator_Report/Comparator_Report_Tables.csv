@@ -79,6 +79,9 @@ time_period,time_windows,Y,Y
 inc_start,time_windows,N,N
 inc_end,time_windows,N,N
 paid_thru,time_windows,N,N
+inc_start_riskscr_features,time_windows,N,N
+inc_end_riskscr_features,time_windows,N,N
+riskscr_period_type,time_windows,N,N
 name_client,meta_field,Y,N
 meta_field,meta_field,Y,N
 meta_field_label,meta_field,N,N

@@ -51,6 +51,9 @@ metric_value,,float,,N,,N,,Value of the metric.
 inc_start,,date,,N,,N,,The earliest incurred date.
 inc_end,,date,,N,,N,,The latest incurred date.
 paid_thru,,date,,N,,N,,The latest paid date.
+inc_start_riskscr_features,,date,,N,,N,,The earliest incurred date considered in the risk score feature period.
+inc_end_riskscr_features,,date,,N,,N,,The latest incurred date considered in the risk score feature period.
+riskscr_period_type,,char,12,N,Prospective~Concurrent,N,,The timeline basis of the risk scores provided (e.g. Prospective or Concurrent)
 meta_field,,varchar,32,N,,N,,Field Name
 meta_field_label,,varchar,64,Y,,N,"Not the key, but no duplicates allowed!",Field Description. Primarily used to identify contents of abstracted fields (e.g. elig_status_1)
 meta_field_comment,,varchar,4096,N,,N,,Field Comment
