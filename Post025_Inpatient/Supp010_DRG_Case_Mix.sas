@@ -187,6 +187,7 @@ proc sql;
 		base.&reporting_level.
 		,base.discharge_status_desc
 		,agg.discharges_sum as report_level_raw_cnt
+		,base.report_dischstatus_raw_cnt
 		,coalesce(base.report_dischstatus_raw_cnt, 0) / agg.discharges_sum as mu_raw format=percent12.3
 	from (
 		select
@@ -214,6 +215,7 @@ proc sql;
 		,sort_report.discharges_sum as report_level_raw_cnt
 		,slop.discharge_status_desc
 		,sort_disch.discharges_sum as discharge_status_desc_raw_cnt
+		,coalesce(raw.report_dischstatus_raw_cnt, 0) as report_dischstatus_raw_cnt format=comma12.
 		,agg.report_level_slop_total
 		,coalesce(raw.mu_raw, 0) as mu_raw format=percent8.3
 		,slop.mu as mu_slop
@@ -241,6 +243,29 @@ proc sql;
 		,discharge_status_desc
 	;
 quit;
+
+
+
+/**** CHECK FOR AGGREGATE DISTORTION LEVELS ****/
+
+proc sql;
+	create table post_distort_check as
+	select
+		discharge_status_desc
+		,discharge_status_desc_raw_cnt
+		,sum(mu_raw*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_raw format=percent12.3
+		,sum(mu_slop*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_slop format=percent12.3
+		,sum(mu_normalized*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_normalized format=percent12.3
+	from results_normalized
+	group by
+		discharge_status_desc
+		,discharge_status_desc_raw_cnt
+	order by
+		discharge_status_desc_raw_cnt desc
+		,discharge_status_desc
+	;
+quit;
+
 
 
 %put return_code = &syscc.;
