@@ -298,4 +298,25 @@ quit;
 
 
 
+/* Example holistic model */
+/*
+	This is an example of reaching a solution in a single step.
+	Unfortunately, even when utilizing some covariance estimates from above,
+	the speed of optimization is likely too slow to be useful.
+	Additionally, the parameter estimates are awkward to re-combine into
+	discharge status proportions.
+*/
+/*
+ods output ParameterEstimates=coefs_reoptimize;
+proc glimmix data=agg_filter startglm inititer=42 order=internal maxopt=4;
+	class discharge_status_desc &reporting_level. drg;
+	freq discharges_sum;
+	model discharge_status_desc = &reporting_level. / link=glogit solution;
+	random drg / group=discharge_status_desc;
+	parms /  noiter parmsdata=covparms_sloppy;
+run;
+ods output close;
+*/
+
+
 %put return_code = &syscc.;
