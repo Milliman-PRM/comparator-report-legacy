@@ -173,7 +173,34 @@ quit;
 	%end;
 %mend loop_statuses;
 
-%loop_statuses(agg_filter,results_raw_stack)
+%loop_statuses(agg_filter,results_sloppy)
+
+
+
+
+/**** RE-NORMALIZE THE RESULTS ****/
+
+proc sql;
+	create table results_normalized as
+	select
+		slop.&reporting_level.
+		,slop.discharge_status_desc
+		,agg.report_level_raw_total
+		,slop.mu / agg.report_level_raw_total as mu_normalized format=percent8.3
+	from results_sloppy as slop
+	left join (
+		select
+			&reporting_level.
+			,sum(mu) as report_level_raw_total format=percent8.3
+		from results_sloppy
+		group by &reporting_level.
+		) as agg on
+		slop.&reporting_level. eq agg.&reporting_level.
+	order by 
+		slop.&reporting_level.
+		,slop.discharge_status_desc
+	;
+quit;
 
 
 %put return_code = &syscc.;
