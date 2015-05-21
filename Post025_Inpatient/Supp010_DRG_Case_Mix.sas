@@ -102,7 +102,7 @@ quit;
 	run;
 
 	
-	ods output lsmeans = &name_dset_output.;
+	ods output lsmeans = _single_output;
 	proc glimmix data=_munge_input method=laplace;
 		class &reporting_level. drg;
 		model cnt_success / discharges_sum = &reporting_level.;
@@ -113,8 +113,15 @@ quit;
 
 	ods listing;
 
+	data &name_dset_output.;
+		format discharge_status_desc $256.;
+		set _single_output(keep = &reporting_level. mu);
+		discharge_status_desc = "&chosen_discharge_status.";
+	run;
+
 	proc sql;
 		drop table _munge_input;
+		drop table _single_output;
 	quit;
 
 %mend fit_one_status;
