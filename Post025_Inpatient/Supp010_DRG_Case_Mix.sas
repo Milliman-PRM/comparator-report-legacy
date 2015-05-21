@@ -179,26 +179,66 @@ quit;
 
 
 /**** RE-NORMALIZE THE RESULTS ****/
+/*It would be best to normalize on the logistic scale, but there's no closed form calculation to accomplish that.*/
+
+proc sql;
+	create table mu_raw as
+	select
+		base.&reporting_level.
+		,base.discharge_status_desc
+		,agg.discharges_sum as report_level_raw_cnt
+		,coalesce(base.report_dischstatus_raw_cnt, 0) / agg.discharges_sum as mu_raw format=percent12.3
+	from (
+		select
+			&reporting_level.
+			,discharge_status_desc
+			,sum(discharges_sum) as report_dischstatus_raw_cnt format=comma12.
+		from agg_filter
+		group by
+			&reporting_level.
+			,discharge_status_desc
+		) as base
+	left join eda_reporting_level as agg on
+		base.&reporting_level. eq agg.&reporting_level.
+	order by
+		report_level_raw_cnt desc
+		,discharge_status_desc
+	;
+quit;
+
 
 proc sql;
 	create table results_normalized as
 	select
 		slop.&reporting_level.
+		,sort_report.discharges_sum as report_level_raw_cnt
 		,slop.discharge_status_desc
-		,agg.report_level_raw_total
-		,slop.mu / agg.report_level_raw_total as mu_normalized format=percent8.3
+		,sort_disch.discharges_sum as discharge_status_desc_raw_cnt
+		,agg.report_level_slop_total
+		,coalesce(raw.mu_raw, 0) as mu_raw format=percent8.3
+		,slop.mu as mu_slop
+		,slop.mu / agg.report_level_slop_total as mu_normalized format=percent8.3
 	from results_sloppy as slop
 	left join (
 		select
 			&reporting_level.
-			,sum(mu) as report_level_raw_total format=percent8.3
+			,sum(mu) as report_level_slop_total format=percent8.3
 		from results_sloppy
 		group by &reporting_level.
 		) as agg on
 		slop.&reporting_level. eq agg.&reporting_level.
+	left join mu_raw as raw on
+		slop.&reporting_level. eq raw.&reporting_level.
+		and slop.discharge_status_desc eq raw.discharge_status_desc
+	left join eda_reporting_level as sort_report on
+		slop.&reporting_level. eq sort_report.&reporting_level.
+	left join eda_discharge_status_desc as sort_disch on
+		slop.discharge_status_desc eq sort_disch.discharge_status_desc
 	order by 
-		slop.&reporting_level.
-		,slop.discharge_status_desc
+		report_level_raw_cnt desc
+		,&reporting_level.
+		,discharge_status_desc_raw_cnt desc
+		,discharge_status_desc
 	;
 quit;
 
