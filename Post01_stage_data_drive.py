@@ -71,6 +71,7 @@ class PostboardModule(object):
             )
 
     def create_module_path_dict(self):
+        """Return trivial dict describing this module's location"""
         return {self.abbreviation: str(self.path_data)}
 
     def __repr__(self):
@@ -97,7 +98,7 @@ if __name__ == '__main__':
 
     PATH_SAS_SETUP = PATH_PROJECT_DATA / 'postboarding_libraries.sas'
     PATH_JSON_OUT = PATH_PROJECT_DATA / 'postboarding_directories.json'
-    
+
     POSTBOARDING_DIRS = dict()
 
     print('BEGINNING GENERATION OF {}\n\n'.format(PATH_SAS_SETUP))
