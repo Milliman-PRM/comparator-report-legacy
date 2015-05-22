@@ -55,7 +55,7 @@ proc sql;
 	select 
 		"&name_client." as name_client
 		,time_slice as time_period
-		,"IP Discharge" as metric_category
+		,"discharge_status" as metric_category
 
 		,sum(case when DischargeStatus = "01" then 1 else 0 end)
 			/count(caseAdmitID)
@@ -98,11 +98,12 @@ proc transpose data=measures
 run;
 
 /*Write the table out to the post035 library*/
-data post035.metrics_IP_discharge;
+data post035.metrics_discharge_status;
 	format &metrics_key_value_cgfrmt.;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+%LabelDataSet(post035.metrics_discharge_status)
 
 %put return_code = &syscc.;
