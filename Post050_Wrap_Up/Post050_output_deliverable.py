@@ -8,6 +8,8 @@
   <none>
 """
 import json
+import hashlib
+from pathlib import Path
 
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
@@ -24,6 +26,14 @@ def load_params(path_param_json):
             return json.load(fh_input)
     return {k: Path(v) for k, v in _wrap_json_load(path_param_json).items()}
 
+def generate_file_checksum(path_file):
+    """Get the MD5 hash of the file"""
+    hsh = hashlib.md5()
+    with path_file.open("rb") as f:
+        for chunk in iter(lambda: f.read(128 * hsh.block_size), b''):
+            hsh.update(chunk)
+    return hsh.hexdigest()
+
 if __name__ == '__main__':
     import datetime
     import shutil
@@ -36,7 +46,6 @@ if __name__ == '__main__':
             )
         )
     import healthbi_env
-    from pathlib import Path
 
     PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\NYP\NewYorkMillimanShare")
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
@@ -75,6 +84,9 @@ if __name__ == '__main__':
             str(PATH_DIR_OUTPUT)
             )
         )
-    for path_ in DELIVERABLE_FILES:
-        print("Promoting {}...".format(path_.name))
-        shutil.copy(str(path_), str(PATH_DIR_OUTPUT))
+    PATH_FILE_TRIGGER = PATH_DIR_OUTPUT / "PRM_Analytics.trg"
+    with PATH_FILE_TRIGGER.open("w") as fh_trg:
+        for path_ in DELIVERABLE_FILES:
+            print("Promoting {}...".format(path_.name))
+            shutil.copy(str(path_), str(PATH_DIR_OUTPUT))
+            fh_trg.write("{}~{}\n".format(path_.name, generate_file_checksum(path_)))
