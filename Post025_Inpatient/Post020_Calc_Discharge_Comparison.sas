@@ -46,7 +46,7 @@ proc sql;
 			then "Home Health Care" 
 			else scan(inpatient.discharge_status_desc,-1,' ') 
 			end
-			as metric_id
+			as metric_id format=$32. length=32
 		,catx(" ","% of Inpatient Discharges with",calculated metric_id,"status") as metric_name
 		,sum(inpatient.cnt_discharges_inpatient)/total.total_discharges as metric_value
 	from Post025.Details_inpatient as inpatient
