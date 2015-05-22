@@ -17,10 +17,9 @@ libname Post050 "&Post050.";
 
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-/*path_postboarding_data_root*/
 
 %GetFilenamesFromDir(
-					Directory=&path_project_data.postboarding
+					Directory=&path_postboarding_data_root.
 					,Output=Files_to_Stack
 					,Keepstrings=metrics
 					,ExcludeStrings=metrics_key_value
