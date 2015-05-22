@@ -58,7 +58,8 @@ proc sql;
 		total.name_client
 		,total.time_period
 		,metric_category
-		,inpatient.discharge_status_desc
+		,metric_id
+		,metric_name
 	;
 quit;
 
