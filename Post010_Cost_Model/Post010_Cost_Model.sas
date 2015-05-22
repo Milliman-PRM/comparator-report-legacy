@@ -78,6 +78,14 @@ data agg_claims_coalesce;
 		;
 	elig_status_1 = coalescec(elig_status_1,"Unknown");
 	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
+	array
+		costs
+		allowed
+		paid
+		;
+	do over costs;
+		costs = coalesce(costs,0); *Blanket coalesce costs to zero because not all data source provide allowed/paid (mostly for Rx claims);
+	end;
 	format prm_coverage_type $8.;
 	if med then prm_coverage_type = "Medical";
 	else prm_coverage_type = "Rx";
