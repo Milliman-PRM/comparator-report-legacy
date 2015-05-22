@@ -81,7 +81,15 @@ proc sql;
 			when claims.dischargestatus = '03' then 'Y'
 			else 'N'
 			end as inpatient_discharge_to_snf_yn
-		,'N' as preference_sensitive_yn /*TODO: Fill with real logic when available.*/
+		,case
+			when upcase(claims.prm_pref_sensitive_included_yn) eq "Y" then
+				case
+					when upcase(claims.prm_pref_sensitive_category) ne "NOT PSA" then "Y"
+					else "N"
+					end
+			else "N"
+			end
+			as preference_sensitive_yn
 	from agg_claims_med as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
