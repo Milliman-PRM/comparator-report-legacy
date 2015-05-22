@@ -22,6 +22,40 @@ libname post008 "&post008.";
 
 
 
+/**** CODEGEN QUALITY METRIC WORK ****/
+
+
+/*Stuck in dataset because Proc SQL does not enjoy regex on dictionary views.*/
+data puad_quality_metrics;
+	set sashelp.vcolumn;
+	where
+		upcase(libname) eq 'M180_OUT'
+		and prxmatch("/Puad\d{2}_member_excluded/i", strip(memname))
+		and prxmatch('/endoflife_(numer|denom)_yn_/i', name)
+		;
+run;
+
+proc sql noprint;
+	select
+		catx('.', 'decedents', name)
+		,cat(
+			'coalesce('
+			,catx('.', 'decedents', name)
+			,',"N") as '
+			,strip(name)
+			)
+	into 
+		:puad_quality_metrics_select separated by ','
+		,:puad_quality_metrics_coalesce separated by ','
+	from puad_quality_metrics
+	;
+quit;
+
+%put puad_quality_metrics_select = &puad_quality_metrics_select.;
+%put puad_quality_metrics_coalesce = &puad_quality_metrics_coalesce.;
+	
+
+
 /**** DECEDENT CALCULATIONS ****/
 
 proc sql noprint;
@@ -65,7 +99,7 @@ proc sql;
 	select
 		roster.member_id
 		,roster.time_period
-		,decedents.endoflife_numer_yn_chemolt14days
+		,&puad_quality_metrics_select.
 		,case
 			when decedents.latest_hospice_date_discharge is null then 0
 			when abs(decedents.death_date_excluded - decedents.latest_hospice_date_discharge) lt 3 then /*Fuzzy match due to different source systems.*/
@@ -95,7 +129,7 @@ proc sql;
 	group by
 		roster.member_id
 		,roster.time_period
-		,decedents.endoflife_numer_yn_chemolt14days
+		,&puad_quality_metrics_select.
 		,final_hospice_days
 	order by
 		roster.member_id
@@ -118,7 +152,7 @@ proc sql;
 		,mems.elig_status_1
 		,case when decedents.member_id is not null then 'Y' else 'N' end as deceased_yn
 		,coalesce(decedents.deceased_hospital_yn, 'N') as deceased_hospital_yn
-		,coalesce(decedents.endoflife_numer_yn_chemolt14days, 'N') as deceased_chemo_yn
+		,&puad_quality_metrics_coalesce.
 		,coalesce(decedents.final_hospice_days, 0) as final_hospice_days
 		,coalesce(decedents.costs_final_30_days, 0) as costs_final_30_days
 		,sum(mems.memmos) as riskscr_wgt
@@ -133,7 +167,7 @@ proc sql;
 		,elig_status_1
 		,deceased_yn
 		,deceased_hospital_yn
-		,deceased_chemo_yn
+		,&puad_quality_metrics_select.
 		,final_hospice_days
 		,costs_final_30_days
 	;
