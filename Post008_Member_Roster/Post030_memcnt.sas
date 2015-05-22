@@ -65,65 +65,6 @@ proc sql;
 	;
 quit;
 
-
-proc sql; 
-	create table pre_eol_metrics as
-	select
-		
-		"&name_client." as name_client
-		,"End Of Life" as metric_category
-		,memcnt.time_period as time_period
-
-		,sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end) /
-			sum(memcnt.memcnt)
-			as mortality_rate label = "Mortality Rate"
-
-		,(sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end) /
-			sum(memcnt.memcnt) ) / aggs.riskscr_1_avg
-			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
-
-		,(sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)) / aggs.riskscr_1_avg
-			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death, Risk Adjusted"
-
-		,sum(case when deceased_hospital_yn = "Y" then 1 else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_death_in_hosp label = "Percentage of Deaths in Hospital"
-
-		,sum(case when deceased_chemo_yn eq "Y" then 1 else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_chemo label = "Percentage of Decedents Recieving Chemotherapy Within 14 Days of Death"
-
-		,sum(case when memcnt.hospice_lt_3days eq "Y" then 1 else 0 end)/
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_lt3days label = "Percentage of Decedents Admitted to Hospice for Less Than 3 Days"
-
-		,sum(case when memcnt.hospice_never eq "Y" then 1 else 0 end)/
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_never label = "Percentage of Decedents Never Admitted to Hospice"
-
-		,sum(case when final_hospice_days gt 180 then 1 else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_gt_6months label = "Percentage of Decedents in Hospice Over 6 Months"
-
-	from memcnt_to_export as memcnt
-	left join post010.basic_aggs as aggs
-			on memcnt.time_period = aggs.time_period
-	group by 
-			memcnt.time_period
-			,aggs.riskscr_1_avg
-	;
-quit;
-
-
-/*Munge to target formats*/
-proc transpose data=pre_eol_metrics 
-				out=EOL_transpose(rename=(COL1 = metric_value))
-				name=metric_id
-				label=metric_name;
-	by name_client time_period metric_category;
-run;
-
 data post008.memcnt;
 	format &memcnt_cgfrmt.;
 	set memcnt_to_export;
@@ -131,14 +72,5 @@ data post008.memcnt;
 run;
 
 %LabelDataSet(post008.memcnt);
-
-data post008.metrics_endoflife;
-	format &metrics_key_value_cgfrmt.;
-	set EOL_transpose;
-	keep &metrics_key_value_cgflds.;
-	attrib _all_ label = ' ';
-run;
-
-%LabelDataSet(post008.metrics_endoflife);
 
 %put return_code = &syscc.;
