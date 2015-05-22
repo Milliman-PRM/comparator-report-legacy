@@ -39,24 +39,25 @@ libname post050 "&post050.";
 			,ToDir= "&M002_cde.\&name_datamart_target."
 			)
 
-%MakeMetaFields(&name_datamart_target.
-				,Post050.meta_field
-				)
+%MakeMetaFields(
+	&name_datamart_target.
+	,local_meta_field
+	)
 
 data Post050.meta_field;
 	format &meta_field_cgfrmt.;
-	set Post050.meta_field;
+	set local_meta_field;
+	&assign_name_client.;
 	keep &meta_field_cgflds.;
 run;
 %LabelDataSet(post050.meta_field)
 
-
-
-%MakeMetaProject(post050.meta_project)
+%MakeMetaProject(local_meta_project)
 
 data Post050.meta_project;
 	format &meta_project_cgfrmt.;
-	set Post050.meta_project;
+	set local_meta_project;
+	&assign_name_client.;
 	keep &meta_project_cgflds.;
 run;
 %LabelDataSet(post050.meta_project)
