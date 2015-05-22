@@ -42,9 +42,8 @@ proc sql;
 		total.name_client as name_client
 		,total.time_period as time_period
 		,total.metric_category as metric_category
-		,reverse(left(reverse(inpatient.discharge_status_desc),
-			charindex(' ', reverse(inpatient.discharge_status_desc)) - 1)) as metric_id
-		,inpatient.discharge_status_desc as metric_name
+		,scan(inpatient.discharge_status_desc,-1,' ') as metric_id
+		,catx("% of Inpatient Discharges with",inpatient.discharge_status_desc,"status") as metric_name
 		,sum(inpatient.cnt_discharges_inpatient)/total.total_discharges as metric_value
 	from Post025.Details_inpatient as inpatient
 	inner join 
