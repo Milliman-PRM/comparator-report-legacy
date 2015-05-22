@@ -13,6 +13,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "%GetParentFolder(0)share01_postboarding_wrapup.sas" / source2;
 
 libname post050 "&post050.";
 
@@ -26,32 +27,21 @@ proc sql noprint;
 			name_table
 		into :remaining_tables separated by " "				
 		from metadata_target
-		where upcase(name_table) ne "METRICS_KEY_VALUE"		/*This table is already in the Post050 library. So it does not need moved.*/
+		where upcase(name_table) ne "METRICS_KEY_VALUE"	/*This table is already in the Post050 library. So it does not need moved.*/
 	;
 quit;
 %put remaining_tables = &remaining_tables.;
 
-
-%GetFilenamesFromDir(
-					Directory=&path_project_data.postboarding
-					,Output=deliverable_files
-					,Keepstrings=&remaining_tables.
-					,subs=yes
-					);
-
-data parsed_filenames (drop=directory filename);
-	set deliverable_files;
-	files=scan(scan(filename,2,"\"),1,".");
-	libraries=cats(directory,"\",scan(filename,1,"\"));
-run;
+%sweep_for_sas_datasets()
 
 proc sql noprint;
-	select cats("'",libraries,"'")
+	select distinct
+		quote(strip(path_directory))
 	into :libs separated by ","
 	from parsed_filenames
 	;
 quit;
-
+%put libs = &libs.;
 
 libname Source (&libs.) access=readOnly;
 
@@ -62,10 +52,5 @@ proc datasets NOLIST;
 		;
 	select &remaining_tables.;
 quit;
-
-
-	
-	
-
 
 %put System Return Code = &syscc.;
