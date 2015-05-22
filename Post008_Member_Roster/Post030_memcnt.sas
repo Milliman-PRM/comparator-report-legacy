@@ -20,63 +20,134 @@ libname post008 "&post008.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
-%agg_claims(
-				IncStart=&list_inc_start.
-				,IncEnd=&list_inc_end.
-				,PaidThru=&list_paid_thru.
-				,Ongoing_Util_Basis=&post_ongoing_util_basis.
-				,Force_Util=&post_force_util.
-				,Dimensions=member_id~dischargestatus~prm_todate
-				,Time_Slice=&list_time_period.
-				,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
-				)
 
+
+/**** DECEDENT CALCULATIONS ****/
+
+proc sql noprint;
+	select
+		time_period
+		,(inc_start - 90) format = best12. /*Reach back further for prior-to-death costs.*/
+		,inc_end format = best12.
+		,paid_thru format = best12.
+	into :eol_time_period separated by "~"
+		,:eol_inc_start separated by "~"
+		,:eol_inc_end separated by "~"
+		,:eol_paid_thru separated by "~"
+	from post008.time_windows
+	;
+quit;
+%put list_time_period = &list_time_period.;
+%put eol_time_period = &eol_time_period.;
+
+%put list_inc_start = &list_inc_start.;
+%put eol_inc_start = &eol_inc_start.;
+
+%put list_inc_end = &list_inc_end.;
+%put eol_inc_end = &eol_inc_end.;
+
+%put eol_paid_thru = &eol_paid_thru.;
+%put list_paid_thru = &list_paid_thru.;
 	
-/*Find the number of members for each combination of key variables (the memcnt table)*/
+
+%agg_claims(
+	IncStart=&eol_inc_start.
+	,IncEnd=&eol_inc_end.
+	,PaidThru=&eol_paid_thru.
+	,Ongoing_Util_Basis=&post_ongoing_util_basis.
+	,Force_Util=&post_force_util.
+	,Dimensions=member_id~dischargestatus~prm_todate~prm_line
+	,Time_Slice=&eol_time_period.
+	)
+
+proc sql;
+	create table decedents_agg_recent as
+	select
+		roster.member_id
+		,roster.time_period
+		,decedents.endoflife_numer_yn_chemolt14days
+		,case
+			when decedents.latest_hospice_date_discharge is null then 0
+			when abs(decedents.death_date_excluded - decedents.latest_hospice_date_discharge) lt 3 then /*Fuzzy match due to different source systems.*/
+				decedents.latest_hospice_date_discharge - decedents.latest_hospice_date_admit + 1
+			else 0 end as final_hospice_days
+		,coalesce(sum(claims.PRM_Costs), 0) as costs_final_30_days
+		,case
+			when max(case
+				when claims.member_id is null then 0
+				when lowcase(claims.prm_line) eq 'i31' then 0
+				when upcase(claims.prm_line) net 'I' then 0
+				when claims.DischargeStatus eq '20' then 1
+				else 0 end) eq 1 then 'Y'
+			else 'N' end as deceased_hospital_yn
+	from post008.members as roster
+	left join post008.time_windows as windows on
+		roster.time_period eq windows.time_period
+	inner join M180_Out.Puad12_member_excluded as decedents
+		on roster.member_id = decedents.member_id_excluded
+		and decedents.death_date_excluded between windows.inc_start and windows.inc_end
+	left join agg_claims_med as claims on
+		roster.time_period eq claims.time_slice
+		and roster.member_id eq claims.member_id
+		and (decedents.death_date_excluded - claims.prm_todate) between 0 and 30
+	where
+		decedents.death_date_excluded ne .
+	group by
+		roster.member_id
+		,roster.time_period
+		,decedents.endoflife_numer_yn_chemolt14days
+		,final_hospice_days
+	order by
+		roster.member_id
+		,roster.time_period
+	;
+quit;
+
+%AssertNoDuplicates(decedents_agg_recent,member_id time_period,ReturnMessage=Extra records were created.)
+
+
+
+
+/**** GENERATE CLEAN MEMCNT TABLE ****/
+	
 proc sql;
 	create table memcnt_to_export as
 	select
 		"&name_client." as name_client
 		,mems.time_period
 		,mems.elig_status_1
-		,case when decedents_w_time.member_id_excluded is not null then 'Y' else 'N' end as deceased_yn
-		,case when decedents_w_time.DischargeStatus eq '20' then "Y" else "N" end as deceased_hospital_yn
-		,coalesce(decedents_w_time.endoflife_numer_yn_chemolt14days, 'N') as deceased_chemo_yn
-		,coalesce(decedents_w_time.hospice_days,0) as final_hospice_days
-		,coalesce(sum(decedents_w_time.prm_costs),0) as costs_final_30_days
+		,case when decedents.member_id is not null then 'Y' else 'N' end as deceased_yn
+		,coalesce(decedents.deceased_hospital_yn, 'N') as deceased_hospital_yn
+		,coalesce(decedents.endoflife_numer_yn_chemolt14days, 'N') as deceased_chemo_yn
+		,coalesce(decedents.final_hospice_days, 0) as final_hospice_days
+		,coalesce(decedents.costs_final_30_days, 0) as costs_final_30_days
 		,sum(mems.memmos) as riskscr_wgt
 		,sum(mems.riskscr_1 * mems.memmos) / calculated riskscr_wgt as riskscr_avg
 		,count(*) as memcnt
 	from post008.Members as mems
-	left join (
-			select
-				claims.member_id
-				,claims.time_slice as time_period
-				,claims.PRM_Costs
-				,claims.DischargeStatus
-				,decedents.member_id_excluded
-				,decedents.endoflife_numer_yn_chemolt14days
-				,case when decedents.death_date_excluded = decedents.latest_hospice_date_discharge then 
-					decedents.latest_hospice_date_discharge - decedents.latest_hospice_date_admit + 1 else 0 end
-					as hospice_days
-			from agg_claims_med as claims	/*To determine death from hospital and costs last 30 days*/
-			inner join M180_Out.Puad12_member_excluded as decedents
-				on claims.member_id = decedents.member_id_excluded
-			where upcase(decedents.report_status_excluded) = "DEATH"
-				and decedents.death_date_excluded - claims.prm_todate le 30
-				) as decedents_w_time
-		on mems.member_id = decedents_w_time.member_id_excluded 
-		and mems.time_period = decedents_w_time.time_period
-	group by mems.time_period
-			,mems.elig_status_1
-			,decedents_w_time.time_period
-			,deceased_yn
-			,deceased_hospital_yn
-			,deceased_chemo_yn
-			,final_hospice_days
-			,decedents_w_time.endoflife_numer_yn_chemolt14days
+	left join decedents_agg_recent as decedents
+		on mems.member_id = decedents.member_id 
+		and mems.time_period = decedents.time_period
+	group by
+		mems.time_period
+		,elig_status_1
+		,deceased_yn
+		,deceased_hospital_yn
+		,deceased_chemo_yn
+		,final_hospice_days
+		,costs_final_30_days
 	;
 quit;
+
+
+proc sql noprint;
+	select sum(memcnt)
+	into :chksum_memcnt trimmed
+	from memcnt_to_export
+	;
+quit;
+%AssertRecordCount(post008.Members,eq,&chksum_memcnt.,ReturnMessage=Not all members were counted in the MemCnt table.)
+
 
 data post008.memcnt;
 	format &memcnt_cgfrmt.;
