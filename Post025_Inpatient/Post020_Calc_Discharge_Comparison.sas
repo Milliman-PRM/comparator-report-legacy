@@ -42,8 +42,12 @@ proc sql;
 		total.name_client as name_client
 		,total.time_period as time_period
 		,total.metric_category as metric_category
-		,scan(inpatient.discharge_status_desc,-1,' ') as metric_id
-		,catx("% of Inpatient Discharges with",inpatient.discharge_status_desc,"status") as metric_name
+		,case when upcase(inpatient.discharge_status_desc) = "DISCHARGED TO HOME HEALTH CARE" 
+			then "Home Health Care" 
+			else scan(inpatient.discharge_status_desc,-1,' ') 
+			end
+			as metric_id
+		,catx(" ","% of Inpatient Discharges with",calculated metric_id,"status") as metric_name
 		,sum(inpatient.cnt_discharges_inpatient)/total.total_discharges as metric_value
 	from Post025.Details_inpatient as inpatient
 	inner join 
