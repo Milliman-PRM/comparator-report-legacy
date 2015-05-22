@@ -52,6 +52,8 @@ quit;
 
 data Post050.metrics_key_value;
 	format &metrics_key_value_cgfrmt.;
+	label metric_ID= "Metric Identifier";
+	label metric_name= "Metric Description";
 	set &files_stack.;
 run;
 
