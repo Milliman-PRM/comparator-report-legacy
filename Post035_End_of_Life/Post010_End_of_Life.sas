@@ -13,10 +13,8 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
-libname M180_Out "&M180_Out." access=readonly;
 libname post010 "&post010." access=readonly;
 libname post008 "&post008." access=readonly;
-libname post025 "&post025." access=readonly;
 libname post035 "&post035.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -49,11 +47,11 @@ proc sql;
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as pct_chemo label = "Percentage of Decedents Recieving Chemotherapy Within 14 Days of Death"
 
-		,sum(case when memcnt.hospice_lt_3days eq "Y" then 1 else 0 end)/
+		,sum(case when memcnt.final_hospice_days gt 0 and memcnt.final_hospice_days lt 3 then 1 else 0 end)/
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as pct_hospice_lt3days label = "Percentage of Decedents Admitted to Hospice for Less Than 3 Days"
 
-		,sum(case when memcnt.hospice_never eq "Y" then 1 else 0 end)/
+		,sum(case when memcnt.final_hospice_days eq 0 then 1 else 0 end)/
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as pct_hospice_never label = "Percentage of Decedents Never Admitted to Hospice"
 
