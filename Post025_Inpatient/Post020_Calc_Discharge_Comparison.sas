@@ -38,6 +38,7 @@ proc sql;
 	;
 quit;
 
+/*Take sum of discharges per category divided by total discharges to get the metrics (discharge rate per category)*/
 proc sql;
 	create table measures as
 	select distinct
@@ -59,18 +60,10 @@ proc sql;
 	;
 quit;
 
-/*Transpose the dataset to get the data into a long format*/
-proc transpose data=measures
-		out=metrics_transpose(rename=(COL1 = metric_value))
-		name=metric_id
-		label=metric_name;
-	by name_client time_period metric_category;
-run;
-
-/*Write the table out to the post035 library*/
-data post035.metrics_IP_discharge;
+/*Write the table out to the post025 library*/
+data post025.metrics_IP_discharge;
 	format &metrics_key_value_cgfrmt.;
-	set metrics_transpose;
+	set measures;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
