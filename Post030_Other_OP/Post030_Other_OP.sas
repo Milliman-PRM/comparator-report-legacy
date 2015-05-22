@@ -157,7 +157,7 @@ data util_rates_riskadj;
 	set util_rates;
 	metric_id = catx("_",metric_id,"riskadj");
 	metric_name = catx(", ",metric_name,"Risk Adjusted");
-	metric_value = metric_value * _avg_riskscr;
+	metric_value = metric_value / _avg_riskscr;
 run;
 
 /*** COMBINE THE RESULTS ***/

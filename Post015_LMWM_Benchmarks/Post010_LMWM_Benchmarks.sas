@@ -14,7 +14,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /* Libnames */
 libname M015_Out "&M015_Out." access=readonly;
-libname post008 "&post008." access=readonly;
 libname post010 "&post010." access=readonly;
 libname post015 "&post015.";
 

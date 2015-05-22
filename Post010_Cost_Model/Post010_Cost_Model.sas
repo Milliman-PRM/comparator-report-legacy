@@ -37,26 +37,68 @@ libname post010 "&post010.";
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn
 	,Time_Slice=&list_time_period.
-	,Where_Claims=
-	,Where_Elig=
-	,Date_DateTime=
 	,Suffix_Output=member
 	)
 
-data agg_claims_med_coalesce;
-	set agg_claims_med_member;
+%macro conditional_rx;
+	%if %upcase(&rx_claims_exist.) eq YES %then %do;
+		%agg_claims(
+			IncStart=&list_inc_start.
+			,IncEnd=&list_inc_end.
+			,PaidThru=&list_paid_thru.
+			,Med_Rx=Rx
+			,Ongoing_Util_Basis=&post_ongoing_util_basis.
+			,Force_Util=&post_force_util.
+			,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn
+			,Time_Slice=&list_time_period.
+			,Suffix_Output=member
+			)
+	%end;
+%mend conditional_rx;
+
+%conditional_rx
+
+data agg_claims_coalesce;
+	set agg_claims_med_member (
+		in = med
+		drop =
+			_prm_util_cases_only
+			prm_util_per1kmemyrs
+		)
+		%sysfunc(ifc("%upcase(&rx_claims_exist.)" eq "YES"
+			,agg_claims_rx_member (
+				in = rx
+				drop =
+					units
+					dayssupply
+					quantitydispensed
+				)
+			,%str()
+			))
+		;
 	elig_status_1 = coalescec(elig_status_1,"Unknown");
 	prv_net_aco_yn = coalescec(prv_net_aco_yn,"N"); *Default to OON;
+	array
+		costs
+		allowed
+		paid
+		;
+	do over costs;
+		costs = coalesce(costs,0); *Blanket coalesce costs to zero because not all data source provide allowed/paid (mostly for Rx claims);
+	end;
+	format prm_coverage_type $8.;
+	if med then prm_coverage_type = "Medical";
+	else prm_coverage_type = "Rx";
 	rename time_slice = time_period;
 run;
 
 proc sql;
-	create table agg_claims_med_limited as
+	create table agg_claims_limited as
 	select
 		src.*
 		,mrl.mcrm_line
 
-	from agg_claims_med_coalesce as src
+	from agg_claims_coalesce as src
 	inner join post008.members as limit on
 		src.member_id eq limit.member_id
 			and src.time_period eq limit.time_period
@@ -65,7 +107,7 @@ proc sql;
 	;
 quit;
 
-%GetVariableInfo(agg_claims_med_limited,meta_variables)
+%GetVariableInfo(agg_claims_limited,meta_variables)
 
 proc sql noprint;
 	select
@@ -81,15 +123,16 @@ quit;
 proc means noprint
 	nway
 	missing
-	data = agg_claims_med_limited
+	data = agg_claims_limited
 	;
 	class time_period
 		mcrm_line
 		elig_status_1
 		prv_net_aco_yn
+		prm_coverage_type
 		;
 	var &agg_claims_measures.;
-	output out = agg_claims_med_reagg (drop =
+	output out = agg_claims_reagg (drop =
 		_TYPE_
 		_FREQ_
 		)
@@ -100,7 +143,7 @@ run;
 /***** CREATE FINAL OUTPUTS *****/
 data post010.cost_util;
 	format &cost_util_cgfrmt.;
-	set agg_claims_med_reagg;
+	set agg_claims_reagg;
 	&assign_name_client.;
 	if lowcase(mcrm_line) eq: "i" then prm_discharges = Discharges;
 	else prm_discharges = 0;
@@ -108,7 +151,6 @@ data post010.cost_util;
 	else prm_days = 0;
 	prm_allowed = Allowed;
 	prm_paid = paid;
-	PRM_Coverage_Type = 'Medical';
 	keep &cost_util_cgflds.;
 run;
 %LabelDataSet(post010.cost_util)

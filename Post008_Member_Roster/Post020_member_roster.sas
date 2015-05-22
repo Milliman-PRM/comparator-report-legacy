@@ -13,11 +13,11 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
+%include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 /* Libnames */
 libname M035_Out "&M035_Out." access = readonly;
 libname post008 "&post008.";
-
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -86,24 +86,24 @@ run;
 proc sql noprint;
 	select 
 		time_period
-		,inc_start format = 12.
-		,inc_end format = 12.
+		,inc_start_riskscr_features format = 12.
+		,inc_end_riskscr_features format = 12.
 		,paid_thru format = 12.
 		,time_period format = $12.
-	into :list_time_period_hcc separated by "~"
-		,:list_inc_start_hcc separated by "~"
-		,:list_inc_end_hcc separated by "~"
-		,:list_paid_thru_hcc separated by "~"
-		,:list_time_period_hcc separated by "~"
+	into :list_time_period_riskscr separated by "~"
+		,:list_inc_start_riskscr separated by "~"
+		,:list_inc_end_riskscr separated by "~"
+		,:list_paid_thru_riskscr separated by "~"
+		,:list_time_period_riskscr separated by "~"
 	from post008.Time_windows
 	;
 quit;
 
 
-%run_hcc_wrap_prm(&list_inc_start_hcc.
-		,&list_inc_end_hcc.
-		,&list_paid_thru_hcc.
-		,&list_time_period_hcc.
+%run_hcc_wrap_prm(&list_inc_start_riskscr.
+		,&list_inc_end_riskscr.
+		,&list_paid_thru_riskscr.
+		,&list_time_period_riskscr.
 		,post008
 		)
 
