@@ -13,39 +13,11 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M002_Out.Template_Import_comparator_report.sas";
-%include "&M013_Cde.Supp01_metadata.sas";
 
 libname post050 "&post050.";
 
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
-
-%MockLibrary(name_library_reference= M002_Cde
-/*			,path_root_seed= &post005.\Comparator_Report*/
-			,pollute_global= TRUE
-			)
-%put M002_cde = &M002_cde.;
-
-%CreateFolder(&M002_cde.\&name_datamart_target.)
-
-%CopyFile(File= Comparator_Report_Fields.csv
-			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
-			,ToDir= "&M002_cde.\&name_datamart_target."
-			)
-
-%CopyFile(File= Comparator_Report_Tables.csv
-			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
-			,ToDir= "&M002_cde.\&name_datamart_target."
-			)
-
-%MakeMetaFields(&name_datamart_target.
-				,Post050.meta_field
-				)
-%LabelDataSet(post050.meta_field)
-
-%MakeMetaProject(post050.meta_project)
-%LabelDataSet(post050.meta_project)
-
 
 proc sql noprint;
 	select distinct

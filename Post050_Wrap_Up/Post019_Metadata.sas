@@ -1,0 +1,65 @@
+/*
+### CODE OWNERS: Aaron Hoch 
+
+### OBJECTIVE:
+	Create some metadata tables to be included in the final database.
+
+### DEVELOPER NOTES:
+*/
+
+/****** SAS SPECIFIC HEADER SECTION *****/
+options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compress = yes;
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "&M002_Out.Template_Import_comparator_report.sas";
+%include "&M013_Cde.Supp01_metadata.sas";
+
+libname post050 "&post050.";
+
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+%MockLibrary(name_library_reference= M002_Cde
+			,path_root_seed= %sysget(UserProfile)\HealthBI_LocalData
+			,pollute_global= TRUE
+			)
+%put M002_cde = &M002_cde.;
+
+
+%CreateFolder(&M002_cde.\&name_datamart_target.)
+
+%CopyFile(File= Comparator_Report_Fields.csv
+			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
+			,ToDir= "&M002_cde.\&name_datamart_target."
+			)
+
+%CopyFile(File= Comparator_Report_Tables.csv
+			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
+			,ToDir= "&M002_cde.\&name_datamart_target."
+			)
+
+%MakeMetaFields(&name_datamart_target.
+				,Post050.meta_field
+				)
+
+data Post050.meta_field;
+	format &meta_field_cgfrmt.;
+	set Post050.meta_field;
+	keep &meta_field_cgflds.;
+run;
+%LabelDataSet(post050.meta_field)
+
+
+
+%MakeMetaProject(post050.meta_project)
+
+data Post050.meta_project;
+	format &meta_project_cgfrmt.;
+	set Post050.meta_project;
+	keep &meta_project_cgflds.;
+run;
+%LabelDataSet(post050.meta_project)
+
+
+%put System Return Code = &syscc.;
