@@ -62,14 +62,14 @@ run;
 /*** DERIVE A CONCATENTATED LIBRARY ***/
 proc sql noprint;
 	select distinct
-		cats("'",path_directory,"'")
+		quote(strip(path_directory))
 	into :libs separated by ","
 	from parsed_filenames
 	;
 quit;
 %put libs = &libs.;
 
-libname Source (&libs.);
+libname Source (&libs.) access=readonly;
 
 proc sql noprint;
 	select cats("Source",".",name_file)
