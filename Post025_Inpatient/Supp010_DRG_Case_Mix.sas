@@ -35,7 +35,8 @@ libname post025 "&post025." access=readonly;
 proc sql;
 	create table full_agg as
 	select
-		&reporting_level.
+		time_period
+		,&reporting_level.
 		,discharge_status_desc
 		,catx('_'
 			,drg_inpatient
@@ -44,11 +45,13 @@ proc sql;
 		,sum(cnt_discharges_inpatient) as discharges_sum format=comma12.
 	from Post025.Details_Inpatient
 	group by
-		&reporting_level.
+		time_period
+		,&reporting_level.
 		,discharge_status_desc
 		,drg
 	order by
-		&reporting_level.
+		time_period
+		,&reporting_level.
 		,discharge_status_desc
 		,drg
 	;
@@ -57,19 +60,29 @@ quit;
 proc sql;
 	create table eda_reporting_level as
 	select
-		&reporting_level.
+		time_period
+		,&reporting_level.
 		,sum(discharges_sum) as discharges_sum format=comma12.
 	from full_agg
-	group by &reporting_level.
-	order by discharges_sum desc
+	group by 
+		time_period
+		,&reporting_level.
+	order by 
+		time_period
+		,discharges_sum desc
 	;
 	create table eda_discharge_status_desc as
 	select
-		discharge_status_desc
+		time_period
+		,discharge_status_desc
 		,sum(discharges_sum) as discharges_sum format=comma12.
 	from full_agg
-	group by discharge_status_desc
-	order by discharges_sum desc
+	group by 
+		time_period
+		,discharge_status_desc
+	order by 
+		time_period
+		,discharges_sum desc
 	;
 quit;
 
@@ -78,13 +91,15 @@ proc sql;
 	select agg.*
 	from full_agg as agg
 	inner join eda_reporting_level as eda on
-		agg.&reporting_level. eq eda.&reporting_level.
+		agg.time_period eq eda.time_period
+		and agg.&reporting_level. eq eda.&reporting_level.
 	where 
 		agg.discharges_sum gt 0
 		/*This limit should only do something during testing/development.*/
 		and eda.discharges_sum ge 142
 	order by
-		agg.&reporting_level.
+		agg.time_period
+		,agg.&reporting_level.
 		,agg.discharge_status_desc
 		,agg.drg 
 	;
@@ -102,6 +117,7 @@ quit;
 
 	data _munge_input;
 		set &name_dset_input.;
+		by time_period;
 
 		format cnt_success comma12.;
 		if upcase(discharge_status_desc) eq "%upcase(&chosen_discharge_status.)" then cnt_success = discharges_sum;
@@ -114,6 +130,7 @@ quit;
 		covparms = _single_covparms
 		;
 	proc glimmix data=_munge_input method=laplace;
+		by time_period;
 		class &reporting_level. drg;
 		model cnt_success / discharges_sum = &reporting_level.;
 		random drg;
@@ -128,16 +145,24 @@ quit;
 	*/
 
 	data &name_dset_output_lsmeans.;
-		format &reporting_level.;
+		format
+			time_period
+			&reporting_level.
+			;
 		format
 			discharge_status_desc $256.
 			mu percent8.3
 			;
-		set _single_lsmeans(keep = &reporting_level. mu);
+		set _single_lsmeans(keep = 
+			time_period
+			&reporting_level.
+			mu
+			);
 		discharge_status_desc = "&chosen_discharge_status.";
 	run;
 
 	data &name_dset_output_covparms.;
+		format time_period;
 		format discharge_status_desc $256.;
 		set _single_covparms;
 		discharge_status_desc = "&chosen_discharge_status.";
@@ -206,25 +231,30 @@ quit;
 proc sql;
 	create table mu_raw as
 	select
-		base.&reporting_level.
+		base.time_period
+		,base.&reporting_level.
 		,base.discharge_status_desc
 		,agg.discharges_sum as report_level_raw_cnt
 		,base.report_dischstatus_raw_cnt
 		,coalesce(base.report_dischstatus_raw_cnt, 0) / agg.discharges_sum as mu_raw format=percent12.3
 	from (
 		select
-			&reporting_level.
+			time_period
+			,&reporting_level.
 			,discharge_status_desc
 			,sum(discharges_sum) as report_dischstatus_raw_cnt format=comma12.
 		from agg_filter
 		group by
-			&reporting_level.
+			time_period
+			,&reporting_level.
 			,discharge_status_desc
 		) as base
 	left join eda_reporting_level as agg on
-		base.&reporting_level. eq agg.&reporting_level.
+		base.time_period eq agg.time_period
+		and base.&reporting_level. eq agg.&reporting_level.
 	order by
-		report_level_raw_cnt desc
+		time_period
+		,report_level_raw_cnt desc
 		,discharge_status_desc
 	;
 quit;
@@ -233,7 +263,8 @@ quit;
 proc sql;
 	create table results_normalized as
 	select
-		slop.&reporting_level.
+		slop.time_period
+		,slop.&reporting_level.
 		,sort_report.discharges_sum as report_level_raw_cnt
 		,slop.discharge_status_desc
 		,sort_disch.discharges_sum as discharge_status_desc_raw_cnt
@@ -245,21 +276,29 @@ proc sql;
 	from lsmeans_sloppy as slop
 	left join (
 		select
-			&reporting_level.
+			time_period
+			,&reporting_level.
 			,sum(mu) as report_level_slop_total format=percent8.3
 		from lsmeans_sloppy
-		group by &reporting_level.
+		group by 
+			time_period
+			,&reporting_level.
 		) as agg on
-		slop.&reporting_level. eq agg.&reporting_level.
+		slop.time_period eq agg.time_period
+		and slop.&reporting_level. eq agg.&reporting_level.
 	left join mu_raw as raw on
-		slop.&reporting_level. eq raw.&reporting_level.
+		slop.time_period eq raw.time_period
+		and slop.&reporting_level. eq raw.&reporting_level.
 		and slop.discharge_status_desc eq raw.discharge_status_desc
 	left join eda_reporting_level as sort_report on
-		slop.&reporting_level. eq sort_report.&reporting_level.
+		slop.time_period eq sort_report.time_period
+		and slop.&reporting_level. eq sort_report.&reporting_level.
 	left join eda_discharge_status_desc as sort_disch on
-		slop.discharge_status_desc eq sort_disch.discharge_status_desc
+		slop.time_period eq sort_disch.time_period
+		and slop.discharge_status_desc eq sort_disch.discharge_status_desc
 	order by 
-		report_level_raw_cnt desc
+		time_period
+		,report_level_raw_cnt desc
 		,&reporting_level.
 		,discharge_status_desc_raw_cnt desc
 		,discharge_status_desc
@@ -278,20 +317,24 @@ proc sql;
 		,cov.Stderr	as cov_stderr
 	from (
 		select
-			discharge_status_desc
+			time_period
+			,discharge_status_desc
 			,discharge_status_desc_raw_cnt
 			,sum(mu_raw*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_raw format=percent12.3
 			,sum(mu_slop*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_slop format=percent12.3
 			,sum(mu_normalized*report_level_raw_cnt)/sum(report_level_raw_cnt) as mu_comp_normalized format=percent12.3
 		from results_normalized
 		group by
-			discharge_status_desc
+			time_period
+			,discharge_status_desc
 			,discharge_status_desc_raw_cnt
 	) as agg
 	left join covparms_sloppy as cov on
-		agg.discharge_status_desc eq cov.discharge_status_desc
+		agg.time_period eq cov.time_period
+		and agg.discharge_status_desc eq cov.discharge_status_desc
 	order by
-		agg.discharge_status_desc_raw_cnt desc
+		agg.time_period
+		,agg.discharge_status_desc_raw_cnt desc
 		,agg.discharge_status_desc
 	;
 quit;
@@ -309,6 +352,7 @@ quit;
 /*
 ods output ParameterEstimates=coefs_reoptimize;
 proc glimmix data=agg_filter startglm inititer=42 order=internal maxopt=4;
+	by time_period;
 	class discharge_status_desc &reporting_level. drg;
 	freq discharges_sum;
 	model discharge_status_desc = &reporting_level. / link=glogit solution;
