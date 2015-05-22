@@ -13,18 +13,19 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "&M002_Out.Template_Import_comparator_report.sas";
 
 libname post050 "&post050.";
 
-
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
 
 proc sql noprint;
 	select distinct
 			name_table
 		into :remaining_tables separated by " "				
-		from Comparator_report_tables
+		from metadata_target
 		where upcase(name_table) ne "METRICS_KEY_VALUE"		/*This table is already in the Post050 library. So it does not need moved.*/
 	;
 quit;
