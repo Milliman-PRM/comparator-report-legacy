@@ -19,8 +19,14 @@ benchmark_days_per1k,,float,,N,,N,,"Rate of Days per 1,000 member years."
 benchmark_util_per1k,,float,,N,,N,,"Rate of Utilization per 1,000 member years."
 deceased_yn,,char,1,N,Y~N,N,,Are these members deceased as of the end of this time period?
 deceased_hospital_yn,,char,1,N,Y~N,N,,Did the deceased members die in the hospital?
-deceased_chemo_yn,,char,1,N,Y~N,N,,Did the deceased members recently receive chemotherapy?
+endoflife_numer_yn_chemolt14days,,char,1,N,Y~N,N,,Did the deceased members recently receive chemotherapy?
+endoflife_denom_yn_chemolt14days,,char,1,N,Y~N,N,,Should these members be considered when evaluating who recently received chemotherapy?
+endoflife_numer_yn_hospicelt3day,,char,1,N,Y~N,N,,Did the deceased members have a final hospice stay of less than 3 days?
+endoflife_denom_yn_hospicelt3day,,char,1,N,Y~N,N,,Should these members be considered when evaluating who had a final hospice stay of less than 3 days?
+endoflife_numer_yn_hospicenever,,char,1,N,Y~N,N,,Did these deceased members never have a hospice stay?
+endoflife_denom_yn_hospicenever,,char,1,N,Y~N,N,,Should these members be considered when evaluating who never had a hospice stay?
 final_hospice_days,,integer,,N,,N,,"For deceased members, how many days were they in the hospice immediately prior to death?"
+costs_final_30_days_sum,,float,,N,,N,,Total cost in the final 30 days of life.
 riskscr_avg,,float,,N,,N,,Average risk score for the corresponding members.
 memcnt,,integer,,N,,N,,Count of members with the corresponding statuses.
 prv_id_inpatient,,varchar,40,N,,N,,Provider ID of the corresponding inpatient facility.
