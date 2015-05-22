@@ -15,7 +15,6 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.pudd_methods\*.sas";
 
 libname M180_Out "&M180_Out." access=readonly;
-libname post010 "&post010." access=readonly;
 libname post008 "&post008.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
