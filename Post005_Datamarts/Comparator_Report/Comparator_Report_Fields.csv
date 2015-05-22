@@ -21,6 +21,7 @@ deceased_yn,,char,1,N,Y~N,N,,Are these members deceased as of the end of this ti
 deceased_hospital_yn,,char,1,N,Y~N,N,,Did the deceased members die in the hospital?
 deceased_chemo_yn,,char,1,N,Y~N,N,,Did the deceased members recently receive chemotherapy?
 final_hospice_days,,integer,,N,,N,,"For deceased members, how many days were they in the hospice immediately prior to death?"
+costs_final_30_days,,float,,N,,N,,Total cost in the final 30 days of life.
 riskscr_avg,,float,,N,,N,,Average risk score for the corresponding members.
 memcnt,,integer,,N,,N,,Count of members with the corresponding statuses.
 prv_id_inpatient,,varchar,40,N,,N,,Provider ID of the corresponding inpatient facility.
