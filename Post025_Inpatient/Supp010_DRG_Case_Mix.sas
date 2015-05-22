@@ -218,6 +218,10 @@ quit;
 			drop table _covparms_&i_status.;
 		quit;
 	%end;
+
+	proc sort data=&name_dset_output_lsmeans.; by time_period; run;
+	proc sort data=&name_dset_output_covparms.; by time_period; run;
+
 %mend loop_statuses;
 
 %loop_statuses(agg_filter,lsmeans_sloppy,covparms_sloppy)
