@@ -204,5 +204,6 @@ data post025.metrics_inpatient;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+%LabelDataSet(post025.metrics_inpatient)
 
 %put return_code = &syscc.;
