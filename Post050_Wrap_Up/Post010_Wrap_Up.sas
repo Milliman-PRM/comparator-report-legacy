@@ -87,4 +87,52 @@ data Post050.metrics_key_value;
 run;
 %LabelDataSet(Post050.metrics_key_value)
 
+/*** VALIDATE OUTPUT CONTENTS (BEYOND STANDARD SCHEMA CHECKS) ***/
+data metric_categories_expected;
+	set metadata_target;
+	where upcase(name_table) eq "METRICS_KEY_VALUE"
+		and upcase(name_field) eq "METRIC_CATEGORY"
+		;
+	format metric_category $32.;
+	do i_whitelist = 1 to countw(whitelist_nonnull_values,"~");
+		metric_category = lowcase(scan(whitelist_nonnull_values,i_whitelist,"~"));
+		output;
+	end;
+	keep metric_category;
+run;
+
+proc sort data = metric_categories_expected;
+	by metric_category;
+run;
+
+proc sql;
+	create table metric_categories_observed as
+	select distinct
+		lowcase(metric_category) as metric_category
+	from post050.metrics_key_value
+	order by metric_category
+	;
+quit;
+
+data metric_category_mismatches;
+	merge
+		metric_categories_expected (in = expected)
+		metric_categories_observed (in = observed)
+		;
+	by metric_category;
+	format
+		in_expected $1.
+		in_observed $1.
+		;
+	if expected then in_expected = "Y";
+	else in_expected = "N";
+	if observed then in_observed = "Y";
+	else in_observed = "N";
+	if not(expected and observed);
+run;
+%AssertDataSetNotPopulated(
+	metric_category_mismatches
+	,ReturnMessage=%GetRecordCount(metric_category_mismatches) mismatches between expected and computed metric categories.
+	)
+
 %put System Return Code = &syscc.;
