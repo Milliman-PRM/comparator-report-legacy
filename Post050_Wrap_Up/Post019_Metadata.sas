@@ -21,19 +21,16 @@ libname post050 "&post050.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-%MockLibrary(name_library_reference= M002_Cde
-			,path_root_seed= %sysget(UserProfile)\HealthBI_LocalData
-			,pollute_global= TRUE
-			)
-%put M002_cde = &M002_cde.;
 
 
-%CreateFolder(&M002_cde.\&name_datamart_target.)
 
 %CopyFile(File= Comparator_Report_Fields.csv
 			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
 			,ToDir= "&M002_cde.\&name_datamart_target."
 			)
+%let M002_cde = %MockDirectoryGetPath();
+%put M002_cde = &M002_cde.;
+%CreateFolder(&M002_cde.&name_datamart_target.)
 
 %CopyFile(File= Comparator_Report_Tables.csv
 			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
