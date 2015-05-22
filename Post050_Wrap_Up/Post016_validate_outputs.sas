@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Aaron Hoch
+### CODE OWNERS: Aaron Hoch, Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Validate the outputs against the given data mart to ensure we are supplying
