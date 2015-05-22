@@ -79,7 +79,7 @@ proc sql noprint;
 quit;
 
 
-libname Source (&libs.);
+libname Source (&libs.) access=readOnly;
 
 proc datasets NOLIST;
 	copy 
