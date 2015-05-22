@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, Shea Parkes
+### CODE OWNERS: Aaron Hoch
 
 ### OBJECTIVE:
 	Validate the outputs against the given data mart to ensure we are supplying
@@ -14,16 +14,15 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M002_cde.supp01_validation_functions.sas";
 
-libname post010 "&post010.";
+libname post050 "&post050.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
 
-/*TODO: Re-enable when we can validate only those tables that are present.*/
-/*%ValidateAgainstTemplate(
-	validate_libname=post010
+%ValidateAgainstTemplate(
+	validate_libname=post050
 	,validate_template=&name_datamart_target.
-	)*/
+	)
 
 %put System Return Code = &syscc.;
