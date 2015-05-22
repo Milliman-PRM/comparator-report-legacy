@@ -22,8 +22,7 @@ libname Post050 "&Post050.";
 %GetFilenamesFromDir(
 					Directory=&path_postboarding_data_root.
 					,Output=Files_to_Stack
-					,Keepstrings=metrics
-					,ExcludeStrings=metrics_key_value
+					,Keepstrings=.sas7bdat
 					,subs=yes
 					,types=files
 					);
@@ -53,6 +52,11 @@ data parsed_filenames (drop=directory filename);
 				)
 			)
 		);
+	if prxmatch(
+		"/^metrics_(?!key_value)/i"
+		,strip(name_file)
+		)
+		eq 0 then delete;
 run;
 
 /*** DERIVE A CONCATENTATED LIBRARY ***/
