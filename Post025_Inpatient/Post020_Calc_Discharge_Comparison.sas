@@ -21,43 +21,42 @@ libname post025 "&post025.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 /*Calculate the requested measures using the inpatient table.*/
+
+/*Calculate the total discharges for each client, time period*/
+proc sql;
+	create table discharges_total as
+	select 
+		name_client
+		,time_period
+		,"IP Discharge" as metric_category
+		,sum(cnt_discharges_inpatient) as total_discharges
+	from Post025.details_inpatient
+	group by 
+		name_client
+		,time_period
+		,metric_category
+	;
+quit;
+
 proc sql;
 	create table measures as
-	select 
-		"&name_client." as name_client
-		,time_slice as time_period
-		,"IP Discharge" as metric_category
-
-		,sum(case when DischargeStatus = "01" then 1 else 0 end)
-			/count(caseAdmitID)
-			as Discharge_home label="Discharged to Home"
-
-		,sum(case when DischargeStatus IN ("62", "90") then 1 else 0 end)
-			/count(caseAdmitID)
-			as Discharge_irf label="Discharged to IRF"
-
-		,sum(case when DischargeStatus = "03" then 1 else 0 end)
-			/count(caseAdmitID)
-			as Discharge_snf label="Discharged to SNF"
-
-		,sum(case when DischargeStatus = "06" then 1 else 0 end)
-			/count(caseAdmitID)
-			as Discharge_homehlthcare label="Discharged to Home Health Care"
-
-		,sum(case when DischargeStatus = "20" then 1 else 0 end)
-			/count(caseAdmitID)
-			as Discharge_died label="Died"
-
-		,1.00 - calculated Discharge_home - calculated Discharge_irf - calculated Discharge_snf 
-			- calculated Discharge_homehlthcare - calculated Discharge_died
-			as Discharge_other label="Other"
-
-		from Discharge_cases_table as cases
-		group by
-			name_client
-			,time_period
-			,metric_category
-		;
+	select distinct
+		total.name_client as name_client
+		,total.time_period as time_period
+		,total.metric_category as metric_category
+		,inpatient.discharge_status_desc as metric_name
+		,sum(inpatient.cnt_discharges_inpatient)/total.total_discharges as metric_value
+	from Post025.Details_inpatient as inpatient
+	inner join 
+		Discharges_total as total
+		on inpatient.name_client = total.name_client
+		and inpatient.time_period = total.time_period
+	group by
+		total.name_client
+		,total.time_period
+		,metric_category
+		,inpatient.discharge_status_desc
+	;
 quit;
 
 /*Transpose the dataset to get the data into a long format*/
