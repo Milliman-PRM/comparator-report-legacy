@@ -42,6 +42,7 @@ libname temp008 "&post008." access=readonly;
 
 %Macro Store_Table_Vectors(input_table= temp008.time_windows);
 
+	%IF %sysfunc(exist(&input_table.,"DATA")) ne 0 %THEN %DO;
 
 	%global list_time_period;
 	%global list_inc_start;
@@ -70,6 +71,7 @@ libname temp008 "&post008." access=readonly;
 
 	%END;
 
+%Mend Store_Table_Vectors;
 
 %Store_Table_Vectors()
 
