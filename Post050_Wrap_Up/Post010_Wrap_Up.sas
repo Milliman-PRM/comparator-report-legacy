@@ -25,17 +25,40 @@ libname Post050 "&Post050.";
 					,Keepstrings=metrics
 					,ExcludeStrings=metrics_key_value
 					,subs=yes
+					,types=files
 					);
 
 data parsed_filenames (drop=directory filename);
 	set Files_to_stack;
-	files=scan(scan(filename,2,"\"),1,".");
-	libraries=cats(directory,"\",scan(filename,1,"\"));
+	format
+		path_directory $2048.
+		name_file $256.
+		;
+	path_directory = directory;
+	name_file = scan(
+		scan(filename,1,"\","B")
+		,1
+		,"."
+		);
+	if index(filename,"\") gt 0 then path_directory = cats(
+		path_directory
+		,substr(
+			filename
+			,1
+			,find(
+				filename
+				,"\"
+				,"i"
+				,-length(filename)
+				)
+			)
+		);
 run;
 
 /*** DERIVE A CONCATENTATED LIBRARY ***/
 proc sql noprint;
-	select cats("'",libraries,"'")
+	select distinct
+		cats("'",path_directory,"'")
 	into :libs separated by ","
 	from parsed_filenames
 	;
@@ -45,7 +68,7 @@ quit;
 libname Source (&libs.);
 
 proc sql noprint;
-	select cats("Source",".",files)
+	select cats("Source",".",name_file)
 	into :files_stack separated by " "
 	from parsed_filenames
 	;
