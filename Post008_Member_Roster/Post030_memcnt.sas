@@ -56,7 +56,7 @@ proc sql;
 				,decedents.member_id_excluded
 				,decedents.endoflife_numer_yn_chemolt14days
 				,case when decedents.death_date_excluded = decedents.latest_hospice_date_discharge then 
-					decedents.latest_hospice_date_discharge - decedents.latest_hospice_date_admit else 0 end
+					decedents.latest_hospice_date_discharge - decedents.latest_hospice_date_admit + 1 else 0 end
 					as hospice_days
 			from agg_claims_med as claims	/*To determine death from hospital and costs last 30 days*/
 			inner join M180_Out.Puad12_member_excluded as decedents
