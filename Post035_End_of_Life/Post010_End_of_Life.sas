@@ -34,7 +34,6 @@ proc sql;
 		,calculated mortality_rate / aggs.riskscr_1_avg
 			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
 
-		/*TODO: Consider case where there are no decedents*/
 		,sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death"
@@ -83,6 +82,7 @@ run;
 data post035.metrics_endoflife;
 	format &metrics_key_value_cgfrmt.;
 	set EOL_transpose;
+	where metric_value ne .; /*Some time periods will not have any qualifying decedents.*/
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
