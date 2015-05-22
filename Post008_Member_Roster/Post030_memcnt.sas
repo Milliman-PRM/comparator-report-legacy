@@ -154,7 +154,7 @@ proc sql;
 		,coalesce(decedents.deceased_hospital_yn, 'N') as deceased_hospital_yn
 		,&puad_quality_metrics_coalesce.
 		,coalesce(decedents.final_hospice_days, 0) as final_hospice_days
-		,coalesce(decedents.costs_final_30_days, 0) as costs_final_30_days
+		,sum(coalesce(decedents.costs_final_30_days, 0)) as costs_final_30_days_sum
 		,sum(mems.memmos) as riskscr_wgt
 		,sum(mems.riskscr_1 * mems.memmos) / calculated riskscr_wgt as riskscr_avg
 		,count(*) as memcnt
@@ -169,7 +169,6 @@ proc sql;
 		,deceased_hospital_yn
 		,&puad_quality_metrics_select.
 		,final_hospice_days
-		,costs_final_30_days
 	;
 quit;
 

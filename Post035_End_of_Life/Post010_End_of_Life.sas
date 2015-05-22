@@ -34,7 +34,7 @@ proc sql;
 		,calculated mortality_rate / aggs.riskscr_1_avg
 			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
 
-		,sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days else 0 end) /
+		,sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days_sum else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death"
 
