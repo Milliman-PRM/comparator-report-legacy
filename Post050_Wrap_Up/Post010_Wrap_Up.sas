@@ -11,6 +11,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "%GetParentFolder(0)share01_postboarding_wrapup.sas" / source2;
 
 /* Libnames */
 libname Post050 "&Post050.";
@@ -18,46 +19,7 @@ libname Post050 "&Post050.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*** SWEEP FOR METRIC TABLES ***/
-%GetFilenamesFromDir(
-					Directory=&path_postboarding_data_root.
-					,Output=Files_to_Stack
-					,Keepstrings=.sas7bdat
-					,subs=yes
-					,types=files
-					);
-
-data parsed_filenames (drop=directory filename);
-	set Files_to_stack;
-	format
-		path_directory $2048.
-		name_file $256.
-		;
-	path_directory = directory;
-	name_file = scan(
-		scan(filename,1,"\","B")
-		,1
-		,"."
-		);
-	if index(filename,"\") gt 0 then path_directory = cats(
-		path_directory
-		,substr(
-			filename
-			,1
-			,find(
-				filename
-				,"\"
-				,"i"
-				,-length(filename)
-				)
-			)
-		);
-	if prxmatch(
-		"/^metrics_(?!key_value)/i"
-		,strip(name_file)
-		)
-		eq 0 then delete;
-run;
+%sweep_for_sas_datasets(%str(/^metrics_(?!key_value)/i))
 
 /*** DERIVE A CONCATENTATED LIBRARY ***/
 proc sql noprint;
