@@ -22,28 +22,41 @@ libname post050 "&post050.";
 
 
 
-proc sql noprint;
-	select distinct
-			name_table
-		into :remaining_tables separated by " "				
+%sweep_for_sas_datasets()
+
+proc sql;
+	create table dsets as
+	select
+		*
+	from parsed_filenames
+	where upcase(name_file) in (
+		select distinct
+			upcase(name_table)
 		from metadata_target
-		where upcase(name_table) ne "METRICS_KEY_VALUE"	/*This table is already in the Post050 library. So it does not need moved.*/
+		)
+		and upcase(path_directory) ne "%upcase(&post050.)" /*Ignore any files already in the proper output location*/
 	;
 quit;
-%put remaining_tables = &remaining_tables.;
-
-%sweep_for_sas_datasets()
 
 proc sql noprint;
 	select distinct
 		quote(strip(path_directory))
 	into :libs separated by ","
-	from parsed_filenames
+	from dsets
 	;
 quit;
 %put libs = &libs.;
 
 libname Source (&libs.) access=readOnly;
+
+proc sql noprint;
+	select distinct
+		name_file
+	into :remaining_tables separated by " "
+	from dsets
+	;
+quit;
+%put remaining_tables = &remaining_tables.;
 
 proc datasets NOLIST;
 	copy 
