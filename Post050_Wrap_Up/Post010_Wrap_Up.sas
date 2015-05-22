@@ -18,6 +18,7 @@ libname Post050 "&Post050.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
+/*** SWEEP FOR METRIC TABLES ***/
 %GetFilenamesFromDir(
 					Directory=&path_postboarding_data_root.
 					,Output=Files_to_Stack
@@ -32,13 +33,14 @@ data parsed_filenames (drop=directory filename);
 	libraries=cats(directory,"\",scan(filename,1,"\"));
 run;
 
+/*** DERIVE A CONCATENTATED LIBRARY ***/
 proc sql noprint;
 	select cats("'",libraries,"'")
 	into :libs separated by ","
 	from parsed_filenames
 	;
 quit;
-
+%put libs = &libs.;
 
 libname Source (&libs.);
 
@@ -48,10 +50,14 @@ proc sql noprint;
 	from parsed_filenames
 	;
 quit;
+%put files_stack = &files_stack.;
 
+/*** STACK RESULTS ***/
 data Post050.metrics_key_value;
 	format &metrics_key_value_cgfrmt.;
 	set &files_stack.;
+	keep &metrics_key_value_cgflds.;
 run;
+%LabelDataSet(Post050.metrics_key_value)
 
 %put System Return Code = &syscc.;
