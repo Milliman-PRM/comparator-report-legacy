@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
   Write the results to the shared network location for delivery to the client
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     DELIVERABLE_FILES = [
         path_
         for path_ in POSTBOARDING_ARGS["post050"].iterdir()
-        if path_.suffix in FILE_EXTENSIONS_SCRAPE
+        if path_.suffix.lower() in FILE_EXTENSIONS_SCRAPE
         ]
 
     PATH_DIR_OUTPUT = PATH_NETWORK_SHARE_ROOT / healthbi_env.META["project_id"] \
