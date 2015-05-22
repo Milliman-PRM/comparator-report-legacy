@@ -5,6 +5,7 @@
 	This program creates a table with the individual metrics for IP Discharge Comparison.
 
 ### DEVELOPER NOTES:
+	Calculate the requested measures using the inpatient table.
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
@@ -20,9 +21,6 @@ libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Calculate the requested measures using the inpatient table.*/
-
-/*Calculate the total discharges for each client, time period*/
 proc sql;
 	create table discharges_total as
 	select 
@@ -38,13 +36,14 @@ proc sql;
 	;
 quit;
 
-/*Take sum of discharges per category divided by total discharges to get the metrics (discharge rate per category)*/
 proc sql;
 	create table measures as
-	select distinct
+	select distinct /*This distinct clause is needed. Without it, one line is output for every provider*/
 		total.name_client as name_client
 		,total.time_period as time_period
 		,total.metric_category as metric_category
+		,reverse(left(reverse(inpatient.discharge_status_desc),
+			charindex(' ', reverse(inpatient.discharge_status_desc)) - 1)) as metric_id
 		,inpatient.discharge_status_desc as metric_name
 		,sum(inpatient.cnt_discharges_inpatient)/total.total_discharges as metric_value
 	from Post025.Details_inpatient as inpatient
@@ -60,7 +59,6 @@ proc sql;
 	;
 quit;
 
-/*Write the table out to the post025 library*/
 data post025.metrics_IP_discharge;
 	format &metrics_key_value_cgfrmt.;
 	set measures;
