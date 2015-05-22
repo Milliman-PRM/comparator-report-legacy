@@ -145,5 +145,6 @@ data post040.metrics_SNF;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+%LabelDataSet(post040.metrics_SNF)
 
 %put return_code = &syscc.;

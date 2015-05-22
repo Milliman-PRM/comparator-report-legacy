@@ -42,6 +42,7 @@ deceased_chemo_yn,memcnt,Y,N
 final_hospice_days,memcnt,Y,N
 costs_final_30_days,memcnt,Y,N
 riskscr_avg,memcnt,N,N
+riskscr_wgt,memcnt,N,N
 memcnt,memcnt,N,N
 name_client,details_inpatient,Y,N
 time_period,details_inpatient,Y,N
@@ -79,6 +80,9 @@ time_period,time_windows,Y,Y
 inc_start,time_windows,N,N
 inc_end,time_windows,N,N
 paid_thru,time_windows,N,N
+inc_start_riskscr_features,time_windows,N,N
+inc_end_riskscr_features,time_windows,N,N
+riskscr_period_type,time_windows,N,N
 name_client,meta_field,Y,N
 meta_field,meta_field,Y,N
 meta_field_label,meta_field,N,N
