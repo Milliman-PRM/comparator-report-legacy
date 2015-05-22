@@ -54,6 +54,7 @@ data post008.time_windows;
 	set time_windows;
 
 	where inc_start ge &Date_CredibleStart.;
+	&assign_name_client.;
 
 	format
 		riskscr_period_type
