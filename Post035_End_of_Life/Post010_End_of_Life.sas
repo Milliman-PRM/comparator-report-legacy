@@ -13,8 +13,8 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
-libname post010 "&post010." access=readonly;
 libname post008 "&post008." access=readonly;
+libname post010 "&post010." access=readonly;
 libname post035 "&post035.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -24,38 +24,41 @@ proc sql;
 	select
 		
 		"&name_client." as name_client
-		,"End Of Life" as metric_category
+		,"end_of_life" as metric_category
 		,memcnt.time_period as time_period
 
 		,sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end) /
 			sum(memcnt.memcnt)
 			as mortality_rate label = "Mortality Rate"
 
-		,(sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end) /
-			sum(memcnt.memcnt) ) / aggs.riskscr_1_avg
+		,calculated mortality_rate / aggs.riskscr_1_avg
 			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
 
-		,(sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)) / aggs.riskscr_1_avg
-			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death, Risk Adjusted"
+		/*TODO: Consider case where there are no decedents*/
+		,sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days else 0 end) /
+			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
+			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death"
 
-		,sum(case when deceased_hospital_yn = "Y" then 1 else 0 end) /
+		,calculated avg_cost_final_30days / aggs.riskscr_1_avg
+			as avg_cost_final_30days_riskadj label = "Average Cost in 30 Days Prior to Death, Risk Adjusted"
+
+		,sum(case when memcnt.deceased_hospital_yn = "Y" and memcnt.deceased_yn = "Y" then 1 else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as pct_death_in_hosp label = "Percentage of Deaths in Hospital"
 
-		,sum(case when deceased_chemo_yn eq "Y" then 1 else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_chemo label = "Percentage of Decedents Recieving Chemotherapy Within 14 Days of Death"
+		,sum(case when memcnt.endoflife_numer_yn_chemolt14days eq "Y" then 1 else 0 end) /
+			sum(case when memcnt.endoflife_denom_yn_chemolt14days = "Y" then 1 else 0 end)
+			as pct_chemo label = "Percentage of Cancer Decedents Recieving Chemotherapy Within 14 Days of Death"
 
-		,sum(case when memcnt.final_hospice_days gt 0 and memcnt.final_hospice_days lt 3 then 1 else 0 end)/
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_lt3days label = "Percentage of Decedents Admitted to Hospice for Less Than 3 Days"
+		,sum(case when memcnt.endoflife_numer_yn_hospicelt3day eq "Y" then 1 else 0 end) /
+			sum(case when memcnt.endoflife_denom_yn_hospicelt3day = "Y" then 1 else 0 end)
+			as pct_hospice_lt3days label = "Percentage of Cancer Decedents Admitted to Hospice for Less Than 3 Days"
 
-		,sum(case when memcnt.final_hospice_days eq 0 then 1 else 0 end)/
-			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
-			as pct_hospice_never label = "Percentage of Decedents Never Admitted to Hospice"
+		,sum(case when memcnt.endoflife_numer_yn_hospicenever eq "Y" then 1 else 0 end) /
+			sum(case when memcnt.endoflife_denom_yn_hospicenever = "Y" then 1 else 0 end)
+			as pct_hospice_never label = "Percentage of Cancer Decedents Never Admitted to Hospice"
 
-		,sum(case when final_hospice_days gt 180 then 1 else 0 end) /
+		,sum(case when final_hospice_days gt 365.25/2 then 1 else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then 1 else 0 end)
 			as pct_hospice_gt_6months label = "Percentage of Decedents in Hospice Over 6 Months"
 
