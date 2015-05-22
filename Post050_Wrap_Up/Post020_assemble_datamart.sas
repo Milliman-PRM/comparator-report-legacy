@@ -1,10 +1,11 @@
 /*
-### CODE OWNERS: Aaron Hoch 
+### CODE OWNERS: Aaron Hoch, Kyle Baird
 
 ### OBJECTIVE:
-	Move all of the Comparator Report files into one central location (assemble the datamart). 
+	Move all of the Comparator Report files into one central location (assemble the datamart).
 
 ### DEVELOPER NOTES:
+	<none>
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
