@@ -1,10 +1,12 @@
 /*
-### CODE OWNERS: Michael Menser, Shea Parkes, Jason Altieri
+### CODE OWNERS: Shea Parkes, Jason Altieri
 
 ### OBJECTIVE:
-	Create the memcnt table from the member roster.
+	Calculate various end of life metrics.
 
 ### DEVELOPER NOTES:
+	Remember the memcnt table is not one record per member.
+	Some metrics are per cancer decedent only.
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
@@ -18,6 +20,10 @@ libname post010 "&post010." access=readonly;
 libname post035 "&post035.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
+
 
 proc sql; 
 	create table pre_eol_metrics as
