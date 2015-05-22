@@ -81,7 +81,15 @@ proc sql;
 			when claims.dischargestatus = '03' then 'Y'
 			else 'N'
 			end as inpatient_discharge_to_snf_yn
-		,'N' as preference_sensitive_yn /*TODO: Fill with real logic when available.*/
+		,case
+			when upcase(claims.prm_pref_sensitive_included_yn) eq "Y" then
+				case
+					when upcase(claims.prm_pref_sensitive_category) ne "NOT PSA" then "Y"
+					else "N"
+					end
+			else "N"
+			end
+			as preference_sensitive_yn
 	from agg_claims_med as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
@@ -157,6 +165,9 @@ proc sql;
 			/ sum(detail.cnt_discharges_inpatient)
 			as pct_IP_disch_to_SNF label="Percentage of IP Stays Discharged to SNF"
 
+		,sum(case when upcase(detail.inpatient_readmit_yn) eq "Y" then detail.cnt_discharges_inpatient else 0 end)
+			/ sum(detail.cnt_discharges_inpatient)
+			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 	from details_inpatient as detail
 	left join
 		post010.basic_aggs as aggs	
