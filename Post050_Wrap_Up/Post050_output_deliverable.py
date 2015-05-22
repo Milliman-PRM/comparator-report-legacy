@@ -54,6 +54,8 @@ if __name__ == '__main__':
         ".sqlite",
         ".sas7bdat",
         ".xlsx",
+        ".sas7bndx",
+        ".html",
         ]
     CLIENT_INITIALS = healthbi_env.META["client_initials"]
 
