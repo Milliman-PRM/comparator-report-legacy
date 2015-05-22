@@ -18,24 +18,23 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 
 libname post050 "&post050.";
 
+%let path_dir_datamart_def = %GetParentFolder(1)Post005_Datamarts\&name_datamart_target.\;
+%put path_dir_datamart_def = &path_dir_datamart_def.;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
 
 
-%CopyFile(File= Comparator_Report_Fields.csv
-			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
-			,ToDir= "&M002_cde.\&name_datamart_target."
-			)
 %let M002_cde = %MockDirectoryGetPath();
 %put M002_cde = &M002_cde.;
 %CreateFolder(&M002_cde.&name_datamart_target.)
 
-%CopyFile(File= Comparator_Report_Tables.csv
-			,CurrentDir= %GetParentFolder(1)\Post005_Datamarts\Comparator_Report
-			,ToDir= "&M002_cde.\&name_datamart_target."
-			)
+%CopyFile(
+	File=&name_datamart_target._Fields.csv
+	,CurrentDir=&path_dir_datamart_def.
+	,ToDir=&M002_cde.&name_datamart_target.
+	)
 
 %MakeMetaFields(
 	&name_datamart_target.
