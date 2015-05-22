@@ -10,6 +10,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
+%include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
 libname post008 "&post008.";
 
@@ -49,6 +50,7 @@ data time_windows;
 run;
 
 data post008.time_windows;
+	format &time_windows_cgfrmt.;
 	set time_windows;
 
 	where inc_start ge &Date_CredibleStart.;
@@ -70,6 +72,8 @@ data post008.time_windows;
 		inc_start_riskscr_features = inc_start;
 		inc_end_riskscr_features = inc_end;
 		end;
+
+	keep &time_windows_cgflds.;
 
 run;
 %LabelDataSet(post008.time_windows)
