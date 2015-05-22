@@ -45,7 +45,7 @@ endoflife_denom_yn_hospicelt3day,memcnt,Y,N
 endoflife_numer_yn_hospicenever,memcnt,Y,N
 endoflife_denom_yn_hospicenever,memcnt,Y,N
 final_hospice_days,memcnt,Y,N
-costs_final_30_days,memcnt,Y,N
+costs_final_30_days_sum,memcnt,N,N
 riskscr_avg,memcnt,N,N
 riskscr_wgt,memcnt,N,N
 memcnt,memcnt,N,N
