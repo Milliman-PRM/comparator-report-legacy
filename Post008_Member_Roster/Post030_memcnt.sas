@@ -43,9 +43,7 @@ proc sql;
 		,case when decedents_w_time.member_id_excluded is not null then 'Y' else 'N' end as deceased_yn /*TODO: Append with Decedent/End of Life information when available*/ 
 		,case when decedents_w_time.DischargeStatus eq '20' then "Y" else "N" end as deceased_hospital_yn
 		,coalesce(decedents_w_time.endoflife_numer_yn_chemolt14days, 'N') as deceased_chemo_yn
-		,coalesce(decedents_w_time.endoflife_numer_yn_hospicelt3day, 'N') as hospice_lt_3days
-		,coalesce(decedents_w_time.endoflife_numer_yn_hospicenever,'N') as hospice_never
-		,0 as final_hospice_days
+		,decedents_w_time.hospice_days as final_hospice_days
 		,coalesce(sum(decedents_w_time.prm_costs),0) as costs_final_30_days
 		,count(*) as memcnt
 	from post008.Members as mems
@@ -57,8 +55,9 @@ proc sql;
 				,claims.DischargeStatus
 				,decedents.member_id_excluded
 				,decedents.endoflife_numer_yn_chemolt14days
-				,decedents.endoflife_numer_yn_hospicenever
-				,decedents.endoflife_numer_yn_hospicelt3day
+				,case when decedents.death_date_excluded = decedents.latest_hospice_date_discharge then 
+					decedents.latest_hospice_date_discharge - decedents.latest_hospice_date_admit else 0 end
+					as hospice_days
 			from agg_claims_med as claims	/*To determine death from hospital and costs last 30 days*/
 			inner join M180_Out.Puad12_member_excluded as decedents
 				on claims.member_id = decedents.member_id_excluded
@@ -73,13 +72,8 @@ proc sql;
 			,deceased_yn
 			,deceased_hospital_yn
 			,deceased_chemo_yn
-			,hospice_lt_3days
-			,hospice_never
 			,final_hospice_days
-			,decedents_w_time.member_id_excluded
 			,decedents_w_time.endoflife_numer_yn_chemolt14days
-			,decedents_w_time.endoflife_numer_yn_hospicelt3day
-			,decedents_w_time.endoflife_numer_yn_hospicenever
 	;
 quit;
 
