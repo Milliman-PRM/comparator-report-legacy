@@ -43,7 +43,7 @@ proc sql;
 		,case when decedents_w_time.member_id_excluded is not null then 'Y' else 'N' end as deceased_yn /*TODO: Append with Decedent/End of Life information when available*/ 
 		,case when decedents_w_time.DischargeStatus eq '20' then "Y" else "N" end as deceased_hospital_yn
 		,coalesce(decedents_w_time.endoflife_numer_yn_chemolt14days, 'N') as deceased_chemo_yn
-		,decedents_w_time.hospice_days as final_hospice_days
+		,coalesce(decedents_w_time.hospice_days,0) as final_hospice_days
 		,coalesce(sum(decedents_w_time.prm_costs),0) as costs_final_30_days
 		,count(*) as memcnt
 	from post008.Members as mems
