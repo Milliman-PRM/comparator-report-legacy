@@ -57,7 +57,7 @@ proc sql;
 	select 
 		"&name_client." as name_client
 		,aggs.time_period as time_period
-		,"ED" as metric_category
+		,"ER" as metric_category
 
 		,count(cases.CaseAdmitID)
 			/aggs.memmos_sum * 12000
@@ -113,11 +113,12 @@ proc transpose data=measures
 run;
 
 /*Write the table out to the post045 library*/
-data post045.metrics_ED;
+data post045.metrics_ER;
 	format &metrics_key_value_cgfrmt.;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+%LabelDataSet(post045.metrics_ER)
 
 %put return_code = &syscc.;
