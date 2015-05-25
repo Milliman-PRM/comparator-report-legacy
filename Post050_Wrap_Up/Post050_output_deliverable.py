@@ -16,12 +16,12 @@ assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
 WHITELIST_CLIENT_INITIALS = ["NYP"]
 FILE_EXTENSIONS_SCRAPE = [
-        ".sqlite",
-        ".sas7bdat",
-        ".xlsx",
-        ".sas7bndx",
-        ".html",
-        ]
+    ".sqlite",
+    ".sas7bdat",
+    ".xlsx",
+    ".sas7bndx",
+    ".html",
+    ]
 
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
