@@ -126,13 +126,19 @@ quit;
 		else cnt_success = 0;
 	run;
 
+	proc means noprint nway missing data=_munge_input;
+		by time_period;
+		class &reporting_level. drg;
+		var cnt_success discharges_sum;
+		output out = _munge_input_agg(drop = _type_ _freq_) sum=;
+	run;
 	
 	ods output 
 		SolutionR = _eff_random
 		ParameterEstimates = _eff_fixed
 		covparms = _single_covparms
 		;
-	proc glimmix data=_munge_input method=laplace inititer=42;
+	proc glimmix data=_munge_input_agg method=laplace inititer=42;
 		by time_period;
 		class &reporting_level. drg;
 		model cnt_success / discharges_sum = / solution;
@@ -166,6 +172,7 @@ quit;
 
 	proc sql;
 		drop table _munge_input;
+		drop table _munge_input_agg;
 		drop table _eff_random;
 		drop table _eff_fixed;
 		drop table _single_covparms;
