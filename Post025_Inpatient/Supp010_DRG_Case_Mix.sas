@@ -323,8 +323,10 @@ proc sql;
 	create table post_distort_check as
 	select
 		agg.*
-		,cov.Estimate as cov_estimate
-		,cov.Stderr	as cov_stderr
+		,cov_drg.Estimate as cov_drg_estimate
+		,cov_drg.Stderr	as cov_drg_stderr
+		,cov_rpt.Estimate as cov_rpt_estimate
+		,cov_rpt.Stderr	as cov_rpt_stderr
 	from (
 		select
 			time_period
@@ -339,10 +341,12 @@ proc sql;
 			,discharge_status_desc
 			,discharge_status_desc_raw_cnt
 	) as agg
-	left join covparms_sloppy as cov on
-		agg.time_period eq cov.time_period
-		and agg.discharge_status_desc eq cov.discharge_status_desc
-	where upcase(cov.CovParm) eq "%upcase(&reporting_level.)"
+	left join covparms_sloppy(where=(upcase(CovParm) eq "DRG")) as cov_drg on
+		agg.time_period eq cov_drg.time_period
+		and agg.discharge_status_desc eq cov_drg.discharge_status_desc
+	left join covparms_sloppy(where=(upcase(CovParm) eq "%upcase(&reporting_level.)")) as cov_rpt on
+		agg.time_period eq cov_rpt.time_period
+		and agg.discharge_status_desc eq cov_rpt.discharge_status_desc
 	order by
 		agg.time_period
 		,agg.discharge_status_desc_raw_cnt desc
