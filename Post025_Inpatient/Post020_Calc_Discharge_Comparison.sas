@@ -41,8 +41,7 @@ proc sql;
 		total.name_client as name_client
 		,total.time_period as time_period
 		,total.metric_category as metric_category
-		,case when upcase(inpatient.discharge_status_desc) = "DISCHARGED TO HOME HEALTH CARE" 
-				then "Home Health Care" 
+		,case when prxmatch('/\bHome Health\b/i', inpatient.discharge_status_desc) then "Home Health Care" 
 			else scan(inpatient.discharge_status_desc,-1,' ') 
 			end
 			as metric_id format=$32. length=32
