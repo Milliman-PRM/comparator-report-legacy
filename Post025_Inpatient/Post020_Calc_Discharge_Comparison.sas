@@ -37,7 +37,7 @@ quit;
 
 proc sql;
 	create table measures as
-	select distinct /*This distinct clause is needed. Without it, one line is output for every provider*/
+	select
 		total.name_client as name_client
 		,total.time_period as time_period
 		,total.metric_category as metric_category
@@ -58,7 +58,8 @@ proc sql;
 	group by
 		total.name_client
 		,total.time_period
-		,metric_category
+		,total.metric_category
+		,total.total_discharges
 		,metric_id
 		,metric_name
 	;
