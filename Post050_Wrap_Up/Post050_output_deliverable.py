@@ -71,11 +71,11 @@ if __name__ == '__main__':
         / "postboarding_directories.json"
         )
 
-    DELIVERABLE_FILES = [
-        path_
+    DELIVERABLE_FILES = {
+        path_: generate_file_checksum(path_)
         for path_ in POSTBOARDING_ARGS["post050"].iterdir()
         if path_.suffix.lower() in FILE_EXTENSIONS_SCRAPE
-        ]
+        }
 
     PATH_DIR_OUTPUT = PATH_NETWORK_SHARE_ROOT / healthbi_env.META["project_id"] \
         / healthbi_env.META["deliverable_name"] \
@@ -90,7 +90,8 @@ if __name__ == '__main__':
         )
     PATH_FILE_TRIGGER = PATH_DIR_OUTPUT / "PRM_Analytics.trg"
     with PATH_FILE_TRIGGER.open("w") as fh_trg:
-        for path_ in DELIVERABLE_FILES:
+        fh_trg.write('filename~md5\n')
+        for path_, hash_ in DELIVERABLE_FILES.items():
             print("Promoting {}...".format(path_.name))
             shutil.copy(str(path_), str(PATH_DIR_OUTPUT))
-            fh_trg.write("{}~{}\n".format(path_.name, generate_file_checksum(path_)))
+            fh_trg.write("{}~{}\n".format(path_.name, hash_))
