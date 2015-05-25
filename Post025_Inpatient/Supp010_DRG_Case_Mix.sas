@@ -203,6 +203,8 @@ quit;
 	%do i_status = 1 %to &cnt_statuses.;
 		%let current_status = %scan(&list_statuses.,&i_status.,%str(~));
 
+		%put FITTING MODEL FOR DISCHARGE STATUS = &current_status.;
+
 		%fit_one_status(&name_dset_input.,&current_status.,_means_&i_status.,_covparms_&i_status.)
 
 		proc append base=&name_dset_output_means. data=_means_&i_status.;
