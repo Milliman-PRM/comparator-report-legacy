@@ -26,7 +26,7 @@ proc sql;
 	select 
 		name_client
 		,time_period
-		,"IP Discharge" as metric_category
+		,"discharge_status" as metric_category
 		,sum(cnt_discharges_inpatient) as total_discharges
 	from Post025.details_inpatient
 	group by 
@@ -65,11 +65,13 @@ proc sql;
 	;
 quit;
 
-data post025.metrics_IP_discharge;
+data post025.metrics_discharge_status;
 	format &metrics_key_value_cgfrmt.;
 	set measures;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+
+%LabelDataSet(post025.metrics_discharge_status)
 
 %put return_code = &syscc.;
