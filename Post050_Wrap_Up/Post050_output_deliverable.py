@@ -101,6 +101,7 @@ if __name__ == '__main__':
             shutil.copy(str(path_), str(PATH_DIR_OUTPUT))
             fh_trg.write("{}~{}\n".format(path_.name, hash_))
 
+    print('\nSending notification email to interested parties.\n')
     msg = EmailMessage()
     msg['Subject'] = 'PRM Notification: New {}-{} Comparator Report Data Mart Available'.format(
         healthbi_env.META["project_id"],
