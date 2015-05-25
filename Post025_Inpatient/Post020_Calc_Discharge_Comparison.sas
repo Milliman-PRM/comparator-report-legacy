@@ -43,8 +43,6 @@ proc sql;
 		,total.metric_category as metric_category
 		,case when upcase(inpatient.discharge_status_desc) = "DISCHARGED TO HOME HEALTH CARE" 
 				then "Home Health Care" 
-			when upcase(inpatient.discharge_status_desc) = "UNKNOWN"
-				then "Other"
 			else scan(inpatient.discharge_status_desc,-1,' ') 
 			end
 			as metric_id format=$32. length=32

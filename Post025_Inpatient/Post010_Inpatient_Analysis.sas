@@ -54,7 +54,7 @@ proc sql;
 		,claims.providerid as prv_id_inpatient
 		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
-		,coalesce(disch_xwalk.disch_desc, 'Unknown') as discharge_status_desc format=$256.
+		,coalesce(disch_xwalk.disch_desc, 'Other') as discharge_status_desc format=$256.
 		,sum(claims.prm_util) as sum_days_inpatient
 		,claims.prm_util as los_inpatient
 		,sum(claims.prm_costs) as sum_costs_inpatient
