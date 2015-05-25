@@ -143,7 +143,9 @@ quit;
 		class &reporting_level. drg;
 		model cnt_success / discharges_sum = / solution;
 		random drg &reporting_level. / solution;
-		parms (1) (1); /*Start with some trivially safe covariance parameters so no initializaiton hiccups occur.*/
+		parms (1) (1) /*Start with some trivially safe covariance parameters so no initializaiton hiccups occur.*/
+			/ upperb=4.2,. /*Don't let the DRG effects soak up ALL the variance.*/
+			;
 	run;
 	ods output close;
 
