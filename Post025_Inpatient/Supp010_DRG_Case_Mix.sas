@@ -334,6 +334,7 @@ proc sql;
 	left join covparms_sloppy as cov on
 		agg.time_period eq cov.time_period
 		and agg.discharge_status_desc eq cov.discharge_status_desc
+	where upcase(cov.CovParm) eq "%upcase(&reporting_level.)"
 	order by
 		agg.time_period
 		,agg.discharge_status_desc_raw_cnt desc
