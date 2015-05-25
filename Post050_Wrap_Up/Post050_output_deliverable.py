@@ -11,6 +11,18 @@ import json
 import hashlib
 from pathlib import Path
 
+PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\NYP\NewYorkMillimanShare")
+assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
+
+WHITELIST_CLIENT_INITIALS = ["NYP"]
+FILE_EXTENSIONS_SCRAPE = [
+        ".sqlite",
+        ".sas7bdat",
+        ".xlsx",
+        ".sas7bndx",
+        ".html",
+        ]
+
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
@@ -47,16 +59,6 @@ if __name__ == '__main__':
         )
     import healthbi_env
 
-    PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\NYP\NewYorkMillimanShare")
-    assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
-    WHITELIST_CLIENT_INITIALS = ["NYP"]
-    FILE_EXTENSIONS_SCRAPE = [
-        ".sqlite",
-        ".sas7bdat",
-        ".xlsx",
-        ".sas7bndx",
-        ".html",
-        ]
     CLIENT_INITIALS = healthbi_env.META["client_initials"]
 
     if CLIENT_INITIALS.lower() not in \
