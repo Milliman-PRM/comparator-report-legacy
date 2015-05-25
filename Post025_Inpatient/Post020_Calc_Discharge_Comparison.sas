@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Michael Menser 
+### CODE OWNERS: Michael Menser, Aaron Hoch, Shea Parkes
 
 ### OBJECTIVE:
 	This program creates a table with the individual metrics for IP Discharge Comparison.
