@@ -10,6 +10,11 @@
 import json
 import hashlib
 from pathlib import Path
+import pprint as pp
+from smtplib import SMTP
+from email.message import EmailMessage
+
+LOCAL_SMTP = 'smtp.milliman.com'
 
 PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\NYP\NewYorkMillimanShare")
 assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
@@ -95,3 +100,31 @@ if __name__ == '__main__':
             print("Promoting {}...".format(path_.name))
             shutil.copy(str(path_), str(PATH_DIR_OUTPUT))
             fh_trg.write("{}~{}\n".format(path_.name, hash_))
+
+    msg = EmailMessage()
+    msg['Subject'] = 'PRM Notification: New {}-{} Comparator Report Data Mart Available'.format(
+        healthbi_env.META["project_id"],
+        healthbi_env.META["deliverable_name"],
+        )
+    msg['From'] = 'prm.operations@milliman.com'
+    msg['To'] = 'shea.parkes@milliman.com'
+    msg.set_content(
+        'A new comparator reporting datamart is available here:\n{dir_root}\n\n'
+        'Output files (and their MD5 values) include:\n{list_files}\n\n'
+        'Major project level metadata includes:\n{project_meta}\n\n'
+        '\n'.format(
+            dir_root=PATH_DIR_OUTPUT,
+            list_files=pp.pformat({
+                p.name: k
+                for p, k in DELIVERABLE_FILES.items()
+                }),
+            project_meta=pp.pformat({
+                k: v
+                for k, v in healthbi_env.META.items()
+                if not isinstance(k, tuple) and not isinstance(v, (list, dict))
+                })
+            )
+        )
+
+    with SMTP(LOCAL_SMTP) as smtp:
+        smtp.send_message(msg)
