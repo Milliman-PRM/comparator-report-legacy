@@ -132,11 +132,12 @@ quit;
 		ParameterEstimates = _eff_fixed
 		covparms = _single_covparms
 		;
-	proc glimmix data=_munge_input method=laplace;
+	proc glimmix data=_munge_input method=laplace inititer=42;
 		by time_period;
 		class &reporting_level. drg;
 		model cnt_success / discharges_sum = / solution;
 		random drg &reporting_level. / solution;
+		parms (1) (1); /*Start with some trivially safe covariance parameters so no initializaiton hiccups occur.*/
 	run;
 	ods output close;
 
