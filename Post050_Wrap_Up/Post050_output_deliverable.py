@@ -107,7 +107,8 @@ if __name__ == '__main__':
         healthbi_env.META["deliverable_name"],
         )
     msg['From'] = 'prm.operations@milliman.com'
-    msg['To'] = 'shea.parkes@milliman.com'
+    with (PATH_NETWORK_SHARE_ROOT / 'email_notification_list.txt').open() as fh_notify_list:
+        msg['To'] = ', '.join(fh_notify_list.readlines()).replace('\n', '')
     msg.set_content(
         'A new comparator reporting datamart is available here:\n{dir_root}\n\n'
         'Output files (and their MD5 values) include:\n{list_files}\n\n'
