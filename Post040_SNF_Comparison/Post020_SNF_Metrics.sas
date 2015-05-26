@@ -115,9 +115,10 @@ proc sql;
 
 	from details_snf as detail
 	left join
-		post010.basic_aggs as aggs
+		post010.basic_aggs_elig_status as aggs
 		on detail.name_client = aggs.name_client
 		and detail.time_period = aggs.time_period
+		and detail.elig_status_1 = aggs.elig_status_1
 	group by 
 			detail.time_period
 			,detail.elig_status_1
