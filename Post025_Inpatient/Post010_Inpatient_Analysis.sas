@@ -157,6 +157,10 @@ proc sql;
 			/ sum(detail.cnt_discharges_inpatient)
 			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
 
+		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' and detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
+			/ sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
+			as pct_1_day_LOS_medical label="One Day LOS as a Percent of Medical Discharges"
+
 		,sum(case when detail.acute_yn = 'Y' then detail.sum_costs_inpatient else 0 end)
 			/ aggs.prm_costs_sum_all_services
 			as pct_acute_IP_costs label="Acute Inpatient Costs as a Percentage of Total Costs"
