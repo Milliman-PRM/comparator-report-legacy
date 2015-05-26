@@ -76,6 +76,7 @@ sum_days_snf,details_snf,N,N
 sum_costs_snf,details_snf,N,N
 name_client,metrics_key_value,Y,N
 time_period,metrics_key_value,Y,N
+elig_status_1,metrics_key_value,Y,N
 metric_category,metrics_key_value,Y,N
 metric_id,metrics_key_value,Y,N
 metric_name,metrics_key_value,N,N
