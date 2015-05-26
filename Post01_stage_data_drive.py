@@ -88,6 +88,20 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
     import healthbi_env
 
+    # Rebuild all basic folders (especially local module folders)
+    from driver import Driver
+
+    driver_ = Driver(
+        project_id=healthbi_env.META['project_id'],
+        deliverable_name=healthbi_env.META['deliverable_name'],
+        prod_input=os.path.join(
+            healthbi_env.META['path_project'],
+            'driver.json',
+            ),
+        )
+    driver_.create_folders()
+
+    # Move on to making postboarding folders
     PATH_PROJECT_DATA = Path(healthbi_env.META['path_project_data']) / 'postboarding'
     try:
         PATH_PROJECT_DATA.mkdir()
