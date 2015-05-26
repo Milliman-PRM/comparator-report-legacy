@@ -68,9 +68,9 @@ meta_project_string,,varchar,1024,Y,,N,,"Project Metadata Value (String). One of
 meta_project_date,,date,,Y,,N,,"Project Metadata Value (Date). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
 meta_project_integer,,integer,,Y,,N,,"Project Metadata Value (Integer). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
 meta_project_notes,,varchar,256,N,,N,,Describes provided metadata.
-mcrm_line_desc_L1,,varchar,128,N,,N,,MCRM Service Category Description
-mcrm_line_desc_L2,,varchar,129,N,,N,,MCRM Service Category Description
-mcrm_line_desc_L3,,varchar,130,N,,N,,MCRM Service Category Description
-mcrm_line_desc_L4,,varchar,131,N,,N,,MCRM Service Category Description
-mcrm_line_desc_L5,,varchar,132,N,,N,,MCRM Service Category Description
+mcrm_line_desc_L1,,varchar,128,N,,N,,MCRM Service Category Description (Level 1)
+mcrm_line_desc_L2,,varchar,128,Y,,N,,MCRM Service Category Description (Level 2)
+mcrm_line_desc_L3,,varchar,128,Y,,N,,MCRM Service Category Description (Level 3)
+mcrm_line_desc_L4,,varchar,128,Y,,N,,MCRM Service Category Description (Level 4)
+mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5)
 riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations
