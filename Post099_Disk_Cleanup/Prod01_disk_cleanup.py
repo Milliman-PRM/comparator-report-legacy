@@ -5,9 +5,10 @@
   Clean up the disks used by the process.
 
 ### DEVELOPER NOTES:
-  <none>
+  This program imports 999_Disk_Cleanup from the HealthBI branch in order to clean up the disks.
 """
 
+sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
 import healthbi_env
 
 # =============================================================================
