@@ -40,6 +40,7 @@ proc sql noprint;
 	create table Agg_med_cases_limited as
 		select 
 			claims.*
+			,mems.elig_status_1
 	from agg_claims_med as claims 
 	inner join 
 		post008.members as mems 
@@ -55,6 +56,7 @@ proc sql;
 	create table snf_stays as
 	select
 		time_slice
+		,elig_status_1
 		,member_id
 		,caseadmitid
 		,min(date_case_earliest) as date_snf_admit format=YYMMDDd10.
@@ -63,6 +65,7 @@ proc sql;
 	where lowcase(prm_line) eq "i31"
 	group by
 		time_slice
+		,elig_status_1
 		,member_id
 		,caseadmitid
 	;
@@ -72,12 +75,14 @@ proc sql;
 	create table post040.snf_readmissions as
 	select distinct
 		snf.time_slice
+		,snf.elig_status_1
 		,snf.member_id
 		,snf.caseadmitid
 	from snf_stays as snf
 	inner join (
 		select
 			time_slice
+			,elig_status_1
 			,member_id
 			,caseadmitid
 			,max(date_case_earliest) as date_acute_admit
@@ -85,11 +90,13 @@ proc sql;
 		where lowcase(prm_line) ne "i31"
 		group by
 			time_slice
+			,elig_status_1
 			,member_id
 			,caseadmitid
 		) as acute on
 		snf.time_slice eq acute.time_slice
 		and snf.member_id eq acute.member_id
+		and snf.elig_status_1 eq acute.elig_status_1
 		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
 	left join snf_stays as snf_interrupts on
 		snf.time_slice eq snf_interrupts.time_slice
