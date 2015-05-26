@@ -96,7 +96,7 @@ proc sql;
 		left join disch_xwalk on
 			claims.dischargestatus eq disch_xwalk.disch_code
 	group by 
-		time_period
+		time_slice
 		,prv_id_inpatient
 		,discharge_status_code
 		,discharge_status_desc

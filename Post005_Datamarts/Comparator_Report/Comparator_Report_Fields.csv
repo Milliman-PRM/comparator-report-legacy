@@ -35,7 +35,7 @@ discharge_status_desc,,varchar,256,N,,N,,Description of the discharge status cod
 drg_inpatient,,char,3,N,,N,,DRG for these stays.
 drg_version_inpatient,,char,5,N,,N,,DRG Version for these stays.
 acute_yn,,char,1,N,Y~N,N,,Were these stays at an acute facility?
-medical_surgical,,char,8,N,Medical~Surgical,N,,What type of services did these stays contain (i.e. Medical or Surgical)?
+medical_surgical,,char,8,N,Medical~Surgical~None,N,,What type of services did these stays contain (i.e. Medical or Surgical)?
 inpatient_pqi_yn,,char,1,N,Y~N,N,,Were these stays for a PQI?
 inpatient_discharge_to_snf_yn,,char,1,N,Y~N,N,,Where these inpatient stays discarged to a SNF?
 inpatient_readmit_yn,,char,1,N,Y~N,N,,Was there a readmission troublingly soon after this discharge?
