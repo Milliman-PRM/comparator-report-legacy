@@ -133,7 +133,7 @@ proc sql;
 	select
 		detail.name_client
 		,detail.time_period
-		,detail.elig_status_1 label= "Beneficiary Status"
+		,detail.elig_status_1
 		,"Inpatient" as metric_category
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
