@@ -41,6 +41,7 @@ proc sql;
 	select
 		"&name_client." as name_client
 		,all_snf.time_slice as time_period
+		,active.elig_status_1
 		,all_snf.ProviderID as prv_id_snf
 		,case
 			when readmits.member_id is null then 'N'
@@ -61,6 +62,7 @@ proc sql;
 		and all_snf.caseadmitid = readmits.caseadmitid
 	group by
 		all_snf.time_slice
+		,active.elig_status_1
 		,prv_id_snf
 		,calculated snf_readmit_yn
 		,los_snf
@@ -74,6 +76,7 @@ proc sql;
 	select
 		detail.name_client
 		,detail.time_period
+		,detail.elig_status_1
 		,"SNF" as metric_category
 
 		,count(distinct detail.prv_id_snf) as distinct_SNFs label="Number of Distinct SNFs Utilized"
@@ -117,6 +120,7 @@ proc sql;
 		and detail.time_period = aggs.time_period
 	group by 
 			detail.time_period
+			,detail.elig_status_1
 			,detail.name_client
 			,aggs.memmos_sum
 			,aggs.prm_costs_sum_all_services
@@ -129,7 +133,7 @@ proc transpose data=measures
 		out=metrics_transpose(rename=(COL1 = metric_value))
 		name=metric_id
 		label=metric_name;
-	by name_client time_period metric_category;
+	by name_client time_period metric_category elig_status_1;
 run;
 
 /*Write the tables out to the post040 library*/
