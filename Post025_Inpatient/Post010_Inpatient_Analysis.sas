@@ -6,6 +6,8 @@
 
 ### DEVELOPER NOTES:
 	Indend to create a "details" table and then individual metrics.
+	PQI#90 docs are here: "C:\Users\Neil.Schneider\repos\Comparator_Report\On001_Documentation\PQI_90_Prevention_Quality_Overall_Composite_.pdf"
+	Original link: http://www.qualityindicators.ahrq.gov/Downloads/Modules/PQI/V50/TechSpecs/PQI_90_Prevention_Quality_Overall_Composite_.pdf
 */
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
@@ -72,10 +74,20 @@ proc sql;
 		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,case
 			when upcase(claims.prm_ahrq_pqi) in(
-				'NONE'
-				,'PQI02' /* PQI02 is not part of the composite PQI score */
-				) then 'N'
-			else 'Y'
+				'PQI01'
+				,'PQI03'
+				,'PQI05'
+				,'PQI07'
+				,'PQI08'
+				,'PQI10'
+				,'PQI11'
+				,'PQI12'
+				,'PQI13'
+				,'PQI14'
+				,'PQI15'
+				,'PQI16'
+				) then 'Y'
+			else 'N'
 			end as inpatient_pqi_yn
 		,case
 			when claims.dischargestatus = '03' then 'Y'
