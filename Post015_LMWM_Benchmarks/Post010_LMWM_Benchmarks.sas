@@ -23,55 +23,32 @@ libname post015 "&post015.";
 /*Perform the risk-adjustment on the loosely-managed benchmarks
   across all combinations of time period and beneficiary status.*/
 proc sql noprint;
-	create table Risk_adj_loose_man_bench as
+	create table Risk_adj_man_bench as
 		select scores.time_period
-				,loose.mcrm_line
+				,bench.benchmark_type as type_benchmark format=$8. length=8 /*To match datamart definition*/
+				,bench.mcrm_line
 				,scores.elig_status_1
 
 				/*Calculate risk-adjusted benchmarks*/
 				,case
-					when loose.admits_per_1000 is not null then loose.admits_per_1000 * scores.riskscr_1_avg
+					when bench.admits_per_1000 is not null then bench.admits_per_1000 * scores.riskscr_1_avg
 					else 0
 					end
 					as benchmark_discharges_per1k
 				,case
-					when upcase(loose.annual_util_type) = "DAYS" then loose.annual_util_per_1000 * scores.riskscr_1_avg
+					when upcase(bench.annual_util_type) = "DAYS" then bench.annual_util_per_1000 * scores.riskscr_1_avg
 					else 0
 					end
 					as benchmark_days_per1k
-				,coalesce(loose.annual_util_per_1000,0) * scores.riskscr_1_avg as benchmark_util_per1k
+				,coalesce(bench.annual_util_per_1000,0) * scores.riskscr_1_avg as benchmark_util_per1k
 	from post010.basic_aggs_elig_status as scores
 	cross join 
-		M015_out.benchmarks_loosely_managed as loose
+		M015_out.hcg_benchmarks_nationwide as bench
 	order by
 		scores.time_period
-		,loose.mcrm_line
+		,bench.benchmark_type
+		,bench.mcrm_line
 		,scores.elig_status_1
-	;
-quit;
-
-
-/*Cross-join the well-managed benchmarks so that we duplicate them
-  across all combinations of time period and beneficiary status*/
-proc sql noprint;
-	create table cart_prod_well_man_benchmarks as
-		select groups.time_period
-				,well.mcrm_line
-				,groups.elig_status_1
-				,coalesce(well.admits_per_1000,0) as benchmark_discharges_per1k
-				,case
-					when upcase(well.annual_util_type) = "DAYS" then well.annual_util_per_1000
-					else 0
-					end
-					as benchmark_days_per1k
-				,coalesce(well.annual_util_per_1000,0) as benchmark_util_per1k
-	from post010.basic_aggs_elig_status as groups
-	cross join
-		M015_Out.benchmarks_well_managed as well
-	order by
-		groups.time_period
-		,well.mcrm_line
-		,groups.elig_status_1
 	;
 quit;
 
@@ -81,19 +58,15 @@ data Post015.cost_util_benchmark (keep=&cost_util_benchmark_cgflds.);
 
 	format &cost_util_benchmark_cgfrmt.;
 
-	set Risk_adj_loose_man_bench (in= loose)
-		cart_prod_well_man_benchmarks (in= well);
+	set Risk_adj_man_bench;
 	by
 		time_period
+		type_benchmark
 		mcrm_line
 		elig_status_1
 		;
 	
 	&assign_name_client.;
-	
-	if loose then type_benchmark = "Loose";
-		else if well then type_benchmark = "Well";
-	
 run;
 
 %LabelDataset(Post015.cost_util_benchmark);
