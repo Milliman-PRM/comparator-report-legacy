@@ -54,9 +54,9 @@ proc sql;
 		"&Name_Client." as name_client
 		,time_period
 		,elig_status_1
-		,sum(memmos) as memmos_sum
-		,sum(memmos * riskscr_1) as memmos_sum_riskadj
-		,sum(memmos * riskscr_1) / sum(memmos) as riskscr_1_avg
+		,sum(memmos) as memmos_sum label= "Total Member Months"
+		,sum(memmos * riskscr_1) as memmos_sum_riskadj label= "Total Member Months (Risk Adjusted)"
+		,sum(memmos * riskscr_1) / sum(memmos) as riskscr_1_avg label= "Avgerage Risk Score"
 	from post008.members
 	group by
 		time_period
@@ -72,8 +72,9 @@ proc sql;
 	create table post010.basic_aggs_elig_status as
 	select
 		mem.*
-		,coalesce(costs.prm_costs_sum, 0) as prm_costs_sum_all_services
-		,coalesce(costs.prm_discharges_sum, 0) as discharges_sum_all_services
+		,"Basic" as metric_category
+		,coalesce(costs.prm_costs_sum, 0) as prm_costs_sum_all_services label= "Total Costs (All Services)"
+		,coalesce(costs.prm_discharges_sum, 0) as discharges_sum_all_services label= "Total Discharges"
 	from members_aggregate as mem
 	left join costs_sum_all_services as costs on
 		mem.name_client eq costs.name_client
@@ -119,11 +120,11 @@ quit;
 %LabelDataSet(post010.basic_aggs)
 
 
-proc transpose data=post010.basic_aggs 
+proc transpose data=post010.basic_aggs_elig_status 
 		out=metrics_transpose (rename=(COL1 = metric_value))
 		name=metric_id
 		label=metric_name;	
-	by name_client time_period metric_category;
+	by name_client time_period metric_category elig_status_1;
 run;
 
 data post010.metrics_basic;
