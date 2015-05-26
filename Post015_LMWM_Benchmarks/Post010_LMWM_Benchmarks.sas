@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Aaron Hoch, Kyle Baird
+### CODE OWNERS: Aaron Hoch, Kyle Baird, Jason Altieri
 
 ### OBJECTIVE:
 	Internalize the logic for generating Loosely and Well-Managed Benchmarks.
@@ -20,8 +20,9 @@ libname post015 "&post015.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
-/*Perform the risk-adjustment on the loosely-managed benchmarks
-  across all combinations of time period and beneficiary status.*/
+/*Perform the risk-adjustment on the loosely-managed benchmarks.
+  Create a table with LM/WM benchmarks across all combinations of 
+  time period and beneficiary status.*/
 proc sql noprint;
 	create table Risk_adj_man_bench as
 		select scores.time_period
@@ -29,18 +30,28 @@ proc sql noprint;
 				,bench.mcrm_line
 				,scores.elig_status_1
 
-				/*Calculate risk-adjusted benchmarks*/
+				/*Risk adjust the loosely managed benchmarks and use the raw well managed benchmarks*/
 				,case
-					when bench.admits_per_1000 is not null then bench.admits_per_1000 * scores.riskscr_1_avg
+					when bench.admits_per_1000 is not null then 
+						case when upcase(bench.benchmark_type) = "LOOSE" then
+							bench.admits_per_1000 * scores.riskscr_1_avg
+							else bench.admits_per_1000 end
 					else 0
 					end
 					as benchmark_discharges_per1k
 				,case
-					when upcase(bench.annual_util_type) = "DAYS" then bench.annual_util_per_1000 * scores.riskscr_1_avg
+					when upcase(bench.annual_util_type) = "DAYS" then 
+						case when upcase(bench.benchmark_type) = "LOOSE" then
+							bench.annual_util_per_1000 * scores.riskscr_1_avg
+							else bench.annual_util_per_1000 end
 					else 0
 					end
 					as benchmark_days_per1k
-				,coalesce(bench.annual_util_per_1000,0) * scores.riskscr_1_avg as benchmark_util_per1k
+				,case when upcase(bench.benchmark_type) = "LOOSE" then
+					coalesce(bench.annual_util_per_1000,0) * scores.riskscr_1_avg 
+					else coalesce(bench.annual_util_per_1000,0) 
+					end
+					as benchmark_util_per1k
 	from post010.basic_aggs_elig_status as scores
 	cross join 
 		M015_out.hcg_benchmarks_nationwide as bench
@@ -53,7 +64,7 @@ proc sql noprint;
 quit;
 
 
-/*Stack the loosley-managed and the well-managed benchmarks*/
+/*Format the benchmarks for output to the network*/
 data Post015.cost_util_benchmark (keep=&cost_util_benchmark_cgflds.);
 
 	format &cost_util_benchmark_cgfrmt.;
