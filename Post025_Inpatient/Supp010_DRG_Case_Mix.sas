@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, David Pierce
 
 ### OBJECTIVE:
 	Provide a framework to perform DRG case mix adjustments.
