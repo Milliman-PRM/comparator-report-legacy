@@ -43,6 +43,7 @@ proc sql;
 	create table claims_members as
 	select
 		claims.*
+		,mems.elig_status_1
 	from agg_claims_med_raw as claims
 	inner join post008.members as mems
 		on claims.Member_ID = mems.Member_ID 
@@ -56,6 +57,7 @@ proc sql;
 	create table pct_office_visits_pcp as
 	select
 		time_slice as time_period
+		,elig_status_1
 		,"pct_office_visits_pcp" as metric_id length = 32 format = $32.
 		,"% Primary Care Office Visits" as metric_name length = 256 format = $256.
 		,sum(case when lowcase(prm_line) eq "p32c" then prm_util else 0 end) as _sum_visits_pcp
@@ -64,6 +66,7 @@ proc sql;
 	from claims_members
 	where lowcase(prm_line) in ("p32c","p32d")
 	group by time_slice
+			,elig_status_1
 	;
 quit;
 
@@ -114,6 +117,7 @@ proc sql;
 	create table agg_util as
 	select
 		claims.time_slice as time_period
+		,claims.elig_status_1
 		,ref_service_agg.metric_id
 		,ref_service_agg.metric_name
 		,sum(prm_util) as _sum_prm_util
@@ -122,6 +126,7 @@ proc sql;
 		on claims.prm_line eq ref_service_agg.mr_line
 	group by
 		claims.time_slice
+		,claims.elig_status_1
 		,ref_service_agg.metric_id
 		,ref_service_agg.metric_name
 	;
@@ -134,7 +139,7 @@ proc transpose data = post010.metrics_basic
 		"riskscr_1_avg"
 		,"memmos_sum"
 		);
-	by time_period;
+	by time_period elig_status_1;
 	var metric_value;
 	id metric_id;
 run;
@@ -149,6 +154,10 @@ proc sql;
 	from agg_util as agg_util
 	left join memmos_riskscr as memmos_riskscr
 		on agg_util.time_period eq memmos_riskscr.time_period
+		and agg_util.elig_status_1 eq memmos_riskscr.elig_status_1
+	order by
+		agg_util.time_period
+		,agg_util.elig_status_1
 	;
 quit;
 
@@ -167,7 +176,7 @@ data post030.metrics_outpatient;
 		util_rates_riskadj
 		pct_office_visits_pcp
 		;
-	by time_period;
+	by time_period elig_status_1;
 	&assign_name_client.;
 	metric_category = "outpatient";
 	keep &metrics_key_value_cgflds.;
