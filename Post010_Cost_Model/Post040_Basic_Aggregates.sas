@@ -64,7 +64,9 @@ proc sql;
 	;
 quit;
 
-
+data post010.Basic_aggs_w_elig;
+set members_aggregate;
+run;
 
 /**** BRING TOGETHER IN MULTIPLE WIDE AND LONG FORMATS ****/
 
