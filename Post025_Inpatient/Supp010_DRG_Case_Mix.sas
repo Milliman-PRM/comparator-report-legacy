@@ -95,8 +95,6 @@ proc sql;
 		and agg.&reporting_level. eq eda.&reporting_level.
 	where 
 		agg.discharges_sum gt 0
-		/*This limit should only do something during testing/development.*/
-		and eda.discharges_sum ge 142
 	order by
 		agg.time_period
 		,agg.&reporting_level.
@@ -111,10 +109,14 @@ quit;
 %macro fit_one_status(
 	name_dset_input
 	,chosen_discharge_status
-	,name_dset_output_lsmeans
+	,name_dset_output_means
 	,name_dset_output_covparms
 	);
-
+	/*
+	For development/testing purposes only:
+		%let name_dset_input = agg_filter;
+		%let chosen_discharge_status = Discharged to Home;
+	*/
 	data _munge_input;
 		set &name_dset_input.;
 		by time_period;
@@ -124,42 +126,45 @@ quit;
 		else cnt_success = 0;
 	run;
 
-	
-	ods output 
-		lsmeans = _single_lsmeans
-		covparms = _single_covparms
-		;
-	proc glimmix data=_munge_input method=laplace;
+	proc means noprint nway missing data=_munge_input;
 		by time_period;
 		class &reporting_level. drg;
-		model cnt_success / discharges_sum = &reporting_level.;
-		random drg;
-		lsmeans &reporting_level. / ilink;
+		var cnt_success discharges_sum;
+		output out = _munge_input_agg(drop = _type_ _freq_) sum=;
+	run;
+	
+	ods output 
+		SolutionR = _eff_random
+		ParameterEstimates = _eff_fixed
+		covparms = _single_covparms
+		;
+	proc glimmix data=_munge_input_agg method=laplace inititer=42;
+		by time_period;
+		class &reporting_level. drg;
+		model cnt_success / discharges_sum = / solution;
+		random drg &reporting_level. / solution;
+		parms (1) (1) /*Start with some trivially safe covariance parameters so no initializaiton hiccups occur.*/
+			/ upperb=4.2,. /*Don't let the DRG effects soak up ALL the variance.*/
+			lowerb=.,0.1 /*Encourage the reporting level to absorb a minimum amount of variance.*/
+			;
 	run;
 	ods output close;
 
-	/*POTENTIAL TODO:
-		Change reporting_level to a random effect to account for potential rare discharge statuses causing complete separation.
-		This would cause "credibility" to be applied to the estimates.
-		Would also be annoying because we wouldn't be able to utilize the LSMEANS functionality; would have to build from parameters.
-	*/
-
-	data &name_dset_output_lsmeans.;
-		format
-			time_period
-			&reporting_level.
-			;
-		format
-			discharge_status_desc $256.
-			mu percent8.3
-			;
-		set _single_lsmeans(keep = 
-			time_period
-			&reporting_level.
-			mu
-			);
-		discharge_status_desc = "&chosen_discharge_status.";
-	run;
+	proc sql;
+		create table &name_dset_output_means. as
+		select
+			random.time_period
+			,random.&reporting_level.
+			,"&chosen_discharge_status." as discharge_status_desc format=$256. length=256
+			,logistic(fixed.Estimate + random.Estimate) as mu format=percent12.3
+		from _eff_random as random
+		left join _eff_fixed as fixed on
+			random.time_period eq fixed.time_period
+		where
+			upcase(fixed.effect) eq 'INTERCEPT'
+			and upcase(random.effect) eq "%upcase(&reporting_level.)"
+		;
+	quit;
 
 	data &name_dset_output_covparms.;
 		format time_period;
@@ -170,22 +175,24 @@ quit;
 
 	proc sql;
 		drop table _munge_input;
-		drop table _single_lsmeans;
+		drop table _munge_input_agg;
+		drop table _eff_random;
+		drop table _eff_fixed;
 		drop table _single_covparms;
 	quit;
 
 %mend fit_one_status;
 
-/* %fit_one_status(agg_filter,Discharged to Home,testing_ouput_lsmeans,testing_ouput_covparms) */
+/* %fit_one_status(agg_filter,Discharged to Home,testing_ouput_means,testing_ouput_covparms) */
 
 
 
 /**** FIT ALL THE MODELS ****/
 
-%macro loop_statuses(name_dset_input,name_dset_output_lsmeans,name_dset_output_covparms);
-	%if %sysfunc(exist(&name_dset_output_lsmeans.)) %then %do;
+%macro loop_statuses(name_dset_input,name_dset_output_means,name_dset_output_covparms);
+	%if %sysfunc(exist(&name_dset_output_means.)) %then %do;
 		proc sql;
-			drop table &name_dset_output_lsmeans.;
+			drop table &name_dset_output_means.;
 		quit;
 	%end;
 	%if %sysfunc(exist(&name_dset_output_covparms.)) %then %do;
@@ -207,24 +214,26 @@ quit;
 	%do i_status = 1 %to &cnt_statuses.;
 		%let current_status = %scan(&list_statuses.,&i_status.,%str(~));
 
-		%fit_one_status(&name_dset_input.,&current_status.,_lsmeans_&i_status.,_covparms_&i_status.)
+		%put FITTING MODEL FOR DISCHARGE STATUS = &current_status.;
 
-		proc append base=&name_dset_output_lsmeans. data=_lsmeans_&i_status.;
+		%fit_one_status(&name_dset_input.,&current_status.,_means_&i_status.,_covparms_&i_status.)
+
+		proc append base=&name_dset_output_means. data=_means_&i_status.;
 		proc append base=&name_dset_output_covparms. data=_covparms_&i_status.;
 		run;
 
 		proc sql;
-			drop table _lsmeans_&i_status.;
+			drop table _means_&i_status.;
 			drop table _covparms_&i_status.;
 		quit;
 	%end;
 
-	proc sort data=&name_dset_output_lsmeans.; by time_period; run;
+	proc sort data=&name_dset_output_means.; by time_period; run;
 	proc sort data=&name_dset_output_covparms.; by time_period; run;
 
 %mend loop_statuses;
 
-%loop_statuses(agg_filter,lsmeans_sloppy,covparms_sloppy)
+%loop_statuses(agg_filter,means_sloppy,covparms_sloppy)
 
 
 
@@ -277,13 +286,13 @@ proc sql;
 		,coalesce(raw.mu_raw, 0) as mu_raw format=percent8.3
 		,slop.mu as mu_slop
 		,slop.mu / agg.report_level_slop_total as mu_normalized format=percent8.3
-	from lsmeans_sloppy as slop
+	from means_sloppy as slop
 	left join (
 		select
 			time_period
 			,&reporting_level.
 			,sum(mu) as report_level_slop_total format=percent8.3
-		from lsmeans_sloppy
+		from means_sloppy
 		group by 
 			time_period
 			,&reporting_level.
@@ -317,8 +326,10 @@ proc sql;
 	create table post_distort_check as
 	select
 		agg.*
-		,cov.Estimate as cov_estimate
-		,cov.Stderr	as cov_stderr
+		,cov_drg.Estimate as cov_drg_estimate
+		,cov_drg.Stderr	as cov_drg_stderr
+		,cov_rpt.Estimate as cov_rpt_estimate
+		,cov_rpt.Stderr	as cov_rpt_stderr
 	from (
 		select
 			time_period
@@ -333,9 +344,12 @@ proc sql;
 			,discharge_status_desc
 			,discharge_status_desc_raw_cnt
 	) as agg
-	left join covparms_sloppy as cov on
-		agg.time_period eq cov.time_period
-		and agg.discharge_status_desc eq cov.discharge_status_desc
+	left join covparms_sloppy(where=(upcase(CovParm) eq "DRG")) as cov_drg on
+		agg.time_period eq cov_drg.time_period
+		and agg.discharge_status_desc eq cov_drg.discharge_status_desc
+	left join covparms_sloppy(where=(upcase(CovParm) eq "%upcase(&reporting_level.)")) as cov_rpt on
+		agg.time_period eq cov_rpt.time_period
+		and agg.discharge_status_desc eq cov_rpt.discharge_status_desc
 	order by
 		agg.time_period
 		,agg.discharge_status_desc_raw_cnt desc
