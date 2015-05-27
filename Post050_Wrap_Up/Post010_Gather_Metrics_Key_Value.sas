@@ -100,4 +100,39 @@ run;
 	,ReturnMessage=%GetRecordCount(metric_category_mismatches) mismatches between expected and computed metric categories.
 	)
 
+
+proc summary nway missing data=post050.metrics_key_value;
+	class name_client time_period elig_status_1 metric_ID;
+	output out=chk_ID_dupes (drop= _type_);
+run;
+
+data _null_;
+	set chk_ID_dupes;
+	call %AssertThat(
+					_freq_
+					,eq
+					,1
+					,ReturnMessage=Metric_ID is not a unique identifier.
+					)
+					;
+
+run;
+
+proc summary nway missing data=post050.metrics_key_value;
+	class name_client time_period elig_status_1 metric_name;
+	output out=chk_name_dupes (drop= _type_);
+run;
+
+data _null_;
+	set chk_name_dupes;
+	call %AssertThat(
+					_freq_
+					,eq
+					,1
+					,ReturnMessage=Metric_name is not a unique identifier.
+					)
+					;
+
+run;
+
 %put System Return Code = &syscc.;
