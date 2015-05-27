@@ -20,6 +20,9 @@ libname post050 "&post050." access=readonly;
 %put path_dir_local_temp = &path_dir_local_temp.;
 %CreateFolder(&path_dir_local_temp.)
 
+%let prefix_files_out = CompRpt;
+%put prefix_files_out = &prefix_files_out.;
+
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
@@ -35,7 +38,18 @@ libname post050 "&post050." access=readonly;
 	name_datamart=&name_datamart_target.
 	,path_input=&path_dir_local_temp.
 	,path_output=&post050.
-	,prefix=CompRpt
+	,prefix=&prefix_files_out.
 	)
+
+/* TODO: Enable this once the QlikView report has been developed
+%write_trigger(
+	reportsplit=All
+	,filename_qvw_template=comparator_report
+	,prefix=&prefix_files_out.
+	,clientcode=&profit_center_code.&client_initials.01
+	,path_sqlite=&post050.
+	,can_emit=False
+	)
+*/
 
 %put System Return Code = &syscc.;
