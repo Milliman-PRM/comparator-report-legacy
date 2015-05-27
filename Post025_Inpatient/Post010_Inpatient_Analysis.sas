@@ -53,6 +53,7 @@ proc sql;
 	select
 		"&name_client." as name_client
 		,claims.time_slice as time_period
+		,mems.elig_status_1
 		,claims.providerid as prv_id_inpatient
 		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
@@ -109,6 +110,7 @@ proc sql;
 			claims.dischargestatus eq disch_xwalk.disch_code
 	group by 
 		time_slice
+		,mems.elig_status_1
 		,prv_id_inpatient
 		,discharge_status_code
 		,discharge_status_desc
@@ -131,6 +133,7 @@ proc sql;
 	select
 		detail.name_client
 		,detail.time_period
+		,detail.elig_status_1
 		,"Inpatient" as metric_category
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
@@ -186,12 +189,14 @@ proc sql;
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 	from details_inpatient as detail
 	left join
-		post010.basic_aggs as aggs	
+		post010.basic_aggs_elig_status as aggs	
 			on detail.name_client = aggs.name_client
 			and detail.time_period = aggs.time_period
+			and detail.elig_status_1 = aggs.elig_status_1
 	group by 
 		detail.time_period
 		,detail.name_client
+		,detail.elig_status_1
 		,aggs.memmos_sum
 		,aggs.prm_costs_sum_all_services
 		,aggs.memmos_sum_riskadj
@@ -205,7 +210,7 @@ proc transpose data=measures
 				out=metrics_transpose(rename=(COL1 = metric_value))
 				name=metric_id
 				label=metric_name;
-	by name_client time_period metric_category;
+	by name_client time_period metric_category elig_status_1;
 run;
 
 data post025.details_inpatient;

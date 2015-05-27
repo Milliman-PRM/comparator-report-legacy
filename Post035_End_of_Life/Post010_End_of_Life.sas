@@ -32,6 +32,7 @@ proc sql;
 		"&name_client." as name_client
 		,"end_of_life" as metric_category
 		,memcnt.time_period as time_period
+		,memcnt.elig_status_1 
 
 		,sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end) /
 			sum(memcnt.memcnt)
@@ -68,10 +69,12 @@ proc sql;
 			as pct_hospice_gt_6months label = "Percentage of Decedents in Hospice Over 6 Months"
 
 	from post008.memcnt as memcnt
-	left join post010.basic_aggs as aggs
+	left join post010.basic_aggs_elig_status as aggs
 			on memcnt.time_period = aggs.time_period
+			and memcnt.elig_status_1 = aggs.elig_status_1
 	group by 
 			memcnt.time_period
+			,memcnt.elig_status_1
 			,aggs.riskscr_1_avg
 	;
 quit;
@@ -82,7 +85,7 @@ proc transpose data=pre_eol_metrics
 				out=EOL_transpose(rename=(COL1 = metric_value))
 				name=metric_id
 				label=metric_name;
-	by name_client time_period metric_category;
+	by name_client time_period metric_category elig_status_1;
 run;
 
 data post035.metrics_endoflife;
