@@ -33,7 +33,7 @@ libname post040 "&post040.";
 	,IncEnd=%sysfunc(mdy(12,31,9999))
 	,PaidThru=%sysfunc(mdy(12,31,9999))
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid~PRM_Readmit_All_Cause_YN~PRM_Readmit_All_Cause_CaseID
+	,Dimensions=member_ID~prm_line~caseadmitid~PRM_Readmit_All_Cause_YN~PRM_Readmit_All_Cause_CaseID
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eqt "i")
     );
