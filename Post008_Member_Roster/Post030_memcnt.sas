@@ -155,6 +155,7 @@ proc sql;
 		,&puad_quality_metrics_coalesce.
 		,coalesce(decedents.final_hospice_days, 0) as final_hospice_days
 		,sum(coalesce(decedents.costs_final_30_days, 0)) as costs_final_30_days_sum
+		,mems.riskscr_1_type as risk_score_type
 		,sum(mems.memmos) as riskscr_wgt
 		,sum(mems.riskscr_1 * mems.memmos) / calculated riskscr_wgt as riskscr_avg
 		,count(*) as memcnt
