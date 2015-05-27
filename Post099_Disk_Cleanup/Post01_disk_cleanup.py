@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Michael Menser
+### CODE OWNERS: Michael Menser, Shea Parkes
 
 ### OBJECTIVE:
   Clean up the disks used by the process.
@@ -10,13 +10,14 @@
 
 import os
 import sys
+
 sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
 import healthbi_env
+from Prod01_disk_cleanup import dir_cleanup
 
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
 
 if __name__ == '__main__':
-    from Prod01_disk_cleanup import dir_cleanup
     dir_cleanup(healthbi_env.META["path_project_local"])
