@@ -59,7 +59,7 @@ proc sql;
 		,aggs.time_period as time_period
 		,"ER" as metric_category
 
-		,count(cases.CaseAdmitID)
+		,sum(PRM_Util)
 			/aggs.memmos_sum * 12000
 			as ED_per1k label="ED visits per 1000"
 
