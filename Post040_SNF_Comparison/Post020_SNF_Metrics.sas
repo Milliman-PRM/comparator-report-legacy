@@ -58,7 +58,6 @@ proc sql;
 		and all_snf.member_ID = active.member_ID
 	left join Post040.SNF_Readmissions as readmits
 		on all_snf.member_id = readmits.member_id
-		and all_snf.time_slice = readmits.time_slice
 		and all_snf.caseadmitid = readmits.caseadmitid
 	group by
 		all_snf.time_slice
@@ -111,7 +110,7 @@ proc sql;
 
 		,sum(case when detail.snf_readmit_yn = 'Y' then detail.cnt_discharges_snf else 0 end)
 			/sum(detail.cnt_discharges_snf)
-			as percent_SNF_readmit label="Percentage of SNF Discharges with Actue IP Readmits Within 30 Days"
+			as percent_SNF_readmit label="Percentage of SNF Discharges during an All-Cause IP Readmission Window"
 
 	from details_snf as detail
 	left join

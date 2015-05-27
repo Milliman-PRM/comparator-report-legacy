@@ -2,10 +2,12 @@
 ### CODE OWNERS: Jason Altieri, Shea Parkes
 
 ### OBJECTIVE:
-	Identify SNF discharges that were readmitted troublingly quickly.
+	Identify SNF stays that failed
+		(i.e. fell in the middle of a Medicare 30-day all cause re-admit).
 
 ### DEVELOPER NOTES:
-	None
+	This program is not vectorized by time_period because the failure windows can bleed over the time window edges.
+	It was easier to just compute these answers without vectorization and join them to the vectorized results in the next program.
 */
 
 /****** SAS SPECIFIC HEADER SECTION *****/
@@ -14,8 +16,8 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
+%Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 
-libname post008 "&post008." access = readonly;
 libname post040 "&post040.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -23,91 +25,92 @@ libname post040 "&post040.";
 
 
 
+
+/**** BROAD AGG_CLAIMS() CALL TO GET INTERESTING DATA ****/
+
 %Agg_Claims(
-	IncStart=&list_inc_start.
-	,IncEnd=&list_inc_end.
-	,PaidThru=&list_paid_thru.
-	,Time_Slice=&list_time_period.
-	,Med_Rx=Med
+	IncStart=&Date_CredibleStart.
+	,IncEnd=%sysfunc(mdy(12,31,9999))
+	,PaidThru=%sysfunc(mdy(12,31,9999))
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Dimensions=member_ID~prm_line~caseadmitid~PRM_Readmit_All_Cause_YN~PRM_Readmit_All_Cause_CaseID
 	,Force_Util=&post_force_util.
-	,where_claims= %str(lowcase(outclaims_prm.prm_line) eqt "i" and lowcase(outclaims_prm.prm_line) not in (&nonacute_ip_prm_line_ignore_snf.))
+	,where_claims= %str(lowcase(outclaims_prm.prm_line) eqt "i")
     );
 
-/*Limit the claims to only those members who are included in our centralized member roster.*/
-proc sql noprint;
-	create table Agg_med_cases_limited as
-		select 
-			claims.*
-			,mems.elig_status_1
-	from agg_claims_med as claims 
-	inner join 
-		post008.members as mems 
-		on claims.time_slice = mems.time_period 
-		and claims.member_ID = mems.member_ID
+
+
+
+/**** FIND WINDOWS OF FAILURE ****/
+
+proc sql;
+	create table failure_windows_sloppy as
+	select distinct /*No need for any duplicate information*/
+		index.member_id
+		,index.date_case_latest as fail_window_start
+		,readmit.date_case_earliest as fail_window_end
+	from agg_claims_med(where = (
+		lowcase(prm_line) ne 'i31'
+		and upcase(PRM_Readmit_All_Cause_YN) eq 'Y'
+		)) as index
+	left join agg_claims_med as readmit on
+		index.member_id eq readmit.member_id
+		and index.PRM_Readmit_All_Cause_CaseID eq readmit.caseadmitid
 	order by
-		claims.time_slice
-		,claims.caseadmitid;
+		index.member_id
+		,index.date_case_latest
+	;
 quit;
 
+%AssertNoNulls(failure_windows_sloppy, fail_window_end,ReturnMessage=Not all linkages were found.)
+
+%massage_windows(
+	failure_windows_sloppy
+	,failure_windows
+	,fail_window_start
+	,fail_window_end
+	,member_id
+	)
+
+
+
+	
+/**** FIND SNF FAILURES ****/
 
 proc sql;
 	create table snf_stays as
 	select
-		time_slice
-		,elig_status_1
-		,member_id
+		member_id
 		,caseadmitid
-		,min(date_case_earliest) as date_snf_admit format=YYMMDDd10.
-		,max(date_case_latest) as date_snf_discharge format=YYMMDDd10.
-	from Agg_med_cases_limited
+		,max(date_case_latest) as date_discharge_snf
+	from agg_claims_med
 	where lowcase(prm_line) eq "i31"
 	group by
-		time_slice
-		,elig_status_1
-		,member_id
+		member_id
+		,caseadmitid
+	order by
+		member_id
 		,caseadmitid
 	;
 quit;
 
 proc sql;
 	create table post040.snf_readmissions as
-	select distinct
-		snf.time_slice
-		,snf.elig_status_1
-		,snf.member_id
+	select
+		snf.member_id
 		,snf.caseadmitid
 	from snf_stays as snf
-	inner join (
-		select
-			time_slice
-			,elig_status_1
-			,member_id
-			,caseadmitid
-			,max(date_case_earliest) as date_acute_admit
-		from Agg_med_cases_limited
-		where lowcase(prm_line) ne "i31"
-		group by
-			time_slice
-			,elig_status_1
-			,member_id
-			,caseadmitid
-		) as acute on
-		snf.time_slice eq acute.time_slice
-		and snf.member_id eq acute.member_id
-		and snf.elig_status_1 eq acute.elig_status_1
-		and (acute.date_acute_admit - snf.date_snf_discharge) between 2 and 30 /*Do not count immediate transfers.*/
-	left join snf_stays as snf_interrupts on
-		snf.time_slice eq snf_interrupts.time_slice
-		and snf.member_id eq snf_interrupts.member_id
-		and snf.caseadmitid ne snf_interrupts.caseadmitid
-		/*Make sure there wasn't another SNF stay prior to the Acute admit*/
-		and snf_interrupts.date_snf_admit between snf.date_snf_discharge and acute.date_acute_admit
-	where snf_interrupts.member_id is null
+	inner join failure_windows as fails on
+		snf.member_id eq fails.member_id
+		and snf.date_discharge_snf between fails.fail_window_start and fails.fail_window_end
+	order by
+		snf.member_id
+		,snf.caseadmitid
 	;
 quit;
 %LabelDataSet(post040.snf_readmissions)
+
+%AssertNoDuplicates(post040.snf_readmissions,Member_ID CaseAdmitID,ReturnMessage=Unexpected cartesianing occured.)
 
 %let readmit_rate = %sysfunc(round(%sysevalf(%GetRecordCount(post040.snf_readmissions)/%GetRecordCount(snf_stays)),0.0001));
 %put readmit_rate = &readmit_rate.;
