@@ -25,12 +25,14 @@ proc sql;
 	select 
 		name_client
 		,time_period
+		,elig_status_1
 		,"discharge_status" as metric_category
 		,sum(cnt_discharges_inpatient) as total_discharges
 	from Post025.details_inpatient
 	group by 
 		name_client
 		,time_period
+		,elig_status_1
 		,metric_category
 	;
 quit;
@@ -40,6 +42,7 @@ proc sql;
 	select
 		total.name_client as name_client
 		,total.time_period as time_period
+		,total.elig_status_1 as elig_status_1
 		,total.metric_category as metric_category
 		,case when prxmatch('/\bHome Health\b/i', inpatient.discharge_status_desc) then "Home Health Care" 
 			else scan(inpatient.discharge_status_desc,-1,' ') 
@@ -55,6 +58,7 @@ proc sql;
 	group by
 		total.name_client
 		,total.time_period
+		,total.elig_status_1
 		,total.metric_category
 		,total.total_discharges
 		,metric_id

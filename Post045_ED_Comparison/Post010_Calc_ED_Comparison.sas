@@ -38,6 +38,7 @@ proc sql;
 	create table ED_cases_table as
 	select 
 		claims.*
+		,mems.elig_status_1
 	from agg_claims_med as claims 
 	inner join 
 		post008.members as mems 
@@ -57,6 +58,7 @@ proc sql;
 	select 
 		"&name_client." as name_client
 		,aggs.time_period as time_period
+		,cases.elig_status_1
 		,"ER" as metric_category
 
 		,sum(PRM_Util)
@@ -93,11 +95,13 @@ proc sql;
 
 	from Ed_cases_table as cases
 	left join 
-		Post010.basic_aggs as aggs
+		Post010.basic_aggs_elig_status as aggs
 		on cases.time_slice = aggs.time_period
+		and cases.elig_status_1 = aggs.elig_status_1
 	group by
 		name_client
 		,time_period
+		,cases.elig_status_1
 		,metric_category
 		,aggs.memmos_sum
 		,aggs.riskscr_1_avg
@@ -109,7 +113,7 @@ proc transpose data=measures
 		out=metrics_transpose(rename=(COL1 = metric_value))
 		name=metric_id
 		label=metric_name;
-	by name_client time_period metric_category;
+	by name_client time_period metric_category elig_status_1;
 run;
 
 /*Write the table out to the post045 library*/
