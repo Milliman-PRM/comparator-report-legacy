@@ -140,7 +140,7 @@ quit;
 				,post008
 				)
 	%end;
-	%else %if %upcase(&riskscr_model.) eq %upcase(MARA) %then %do;
+	%else %if %upcase(&riskscr_model.) eq %upcase(MARA Risk Score) %then %do;
 
 		%run_mara_wrap_prm(&list_inc_start_riskscr.
 				,&list_inc_end_riskscr.
