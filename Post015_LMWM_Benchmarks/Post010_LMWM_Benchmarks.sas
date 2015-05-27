@@ -26,14 +26,15 @@ libname post015 "&post015.";
 proc sql noprint;
 	create table Risk_adj_man_bench as
 		select scores.time_period
-				,bench.benchmark_type as type_benchmark format=$8. length=8 /*To match datamart definition*/
+				,case when bench.benchmark_type = "LOOSELY" then "Loose" else "Well" end 
+					as type_benchmark format=$8. length=8 /*To match datamart definition*/
 				,bench.mcrm_line
 				,scores.elig_status_1
 
 				/*Risk adjust the loosely managed benchmarks and use the raw well managed benchmarks*/
 				,case
 					when bench.admits_per_1000 is not null then 
-						case when upcase(bench.benchmark_type) = "LOOSE" then
+						case when upcase(bench.benchmark_type) = "LOOSELY" then
 							bench.admits_per_1000 * scores.riskscr_1_avg
 							else bench.admits_per_1000 end
 					else 0
@@ -41,13 +42,13 @@ proc sql noprint;
 					as benchmark_discharges_per1k
 				,case
 					when upcase(bench.annual_util_type) = "DAYS" then 
-						case when upcase(bench.benchmark_type) = "LOOSE" then
+						case when upcase(bench.benchmark_type) = "LOOSELY" then
 							bench.annual_util_per_1000 * scores.riskscr_1_avg
 							else bench.annual_util_per_1000 end
 					else 0
 					end
 					as benchmark_days_per1k
-				,case when upcase(bench.benchmark_type) = "LOOSE" then
+				,case when upcase(bench.benchmark_type) = "LOOSELY" then
 					coalesce(bench.annual_util_per_1000,0) * scores.riskscr_1_avg 
 					else coalesce(bench.annual_util_per_1000,0) 
 					end
@@ -57,7 +58,7 @@ proc sql noprint;
 		M015_out.hcg_benchmarks_nationwide as bench
 	order by
 		scores.time_period
-		,bench.benchmark_type
+		,type_benchmark
 		,bench.mcrm_line
 		,scores.elig_status_1
 	;
