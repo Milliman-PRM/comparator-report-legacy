@@ -106,33 +106,23 @@ proc summary nway missing data=post050.metrics_key_value;
 	output out=chk_ID_dupes (drop= _type_);
 run;
 
-data _null_;
+data chk_ID_dupes_errors;
 	set chk_ID_dupes;
-	call %AssertThat(
-					_freq_
-					,eq
-					,1
-					,ReturnMessage=Metric_ID is not a unique identifier.
-					)
-					;
-
+	where _freq_ gt 1;
 run;
+
+%AssertDataSetNotPopulated(chk_ID_dupes_errors)
 
 proc summary nway missing data=post050.metrics_key_value;
 	class name_client time_period elig_status_1 metric_name;
 	output out=chk_name_dupes (drop= _type_);
 run;
 
-data _null_;
+data chk_name_dupes_errors;
 	set chk_name_dupes;
-	call %AssertThat(
-					_freq_
-					,eq
-					,1
-					,ReturnMessage=Metric_name is not a unique identifier.
-					)
-					;
-
+	where _freq_ gt 1;
 run;
+
+%AssertDataSetNotPopulated(chk_name_dupes_errors)
 
 %put System Return Code = &syscc.;
