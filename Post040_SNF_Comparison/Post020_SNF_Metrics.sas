@@ -107,7 +107,7 @@ proc sql;
 
 		,sum(case when detail.snf_readmit_yn = 'Y' then detail.cnt_discharges_snf else 0 end)
 			/sum(detail.cnt_discharges_snf)
-			as percent_SNF_readmit label="Percentage of SNF Discharges with Actue IP Readmits Within 30 Days"
+			as percent_SNF_readmit label="Percentage of SNF Discharges during an All-Cause IP Readmission Window"
 
 	from details_snf as detail
 	left join
