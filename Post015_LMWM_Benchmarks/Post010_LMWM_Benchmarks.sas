@@ -26,7 +26,7 @@ libname post015 "&post015.";
 proc sql noprint;
 	create table Risk_adj_man_bench as
 		select scores.time_period
-				,case when bench.benchmark_type = "LOOSELY" then "Loose" else "Well" end 
+				,case when upcase(bench.benchmark_type) = "LOOSELY" then "Loose" else "Well" end 
 					as type_benchmark format=$8. length=8 /*To match datamart definition*/
 				,bench.mcrm_line
 				,scores.elig_status_1
