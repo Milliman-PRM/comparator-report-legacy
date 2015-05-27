@@ -46,7 +46,7 @@ data Post050.metrics_key_value;
 	format &metrics_key_value_cgfrmt.;
 	label metric_ID= "Metric Identifier";
 	label metric_name= "Metric Description";
-	label elig_status_1 = "Beneficiary Status";
+	label elig_status_1 = "&lbl_elig_status_1.";
 	set &files_stack.;
 	keep &metrics_key_value_cgflds.;
 run;
