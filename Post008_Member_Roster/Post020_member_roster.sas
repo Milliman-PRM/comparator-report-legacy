@@ -113,25 +113,24 @@ proc sql noprint;
 quit;
 
 proc sql noprint;
-		select count(distinct risk_score_type)
-		into :cnt_riskscr_types trimmed
+	select count(distinct member_ID)
+	into :cnt_HCC_mems trimmed
 	from member_roster
+	where upcase(risk_score_type) eq upcase("CMS HCC Risk Score")
+	;
+	select count(distinct member_ID)
+	into :cnt_MARA_mems trimmed
+	from member_roster
+	where upcase(risk_score_type) eq upcase("MARA Risk Score")
 	;
 quit;
-%put cnt_riskscr_types = &cnt_riskscr_types.;
-%AssertThat(&cnt_riskscr_types.,eq,1,ReturnMessage=It is not the case that a single risk score model was requested.)
+%put cnt_HCC_mems = &cnt_HCC_mems.;
+%put cnt_MARA_mems = &cnt_MARA_mems.;
 
-proc sql noprint;
-		select distinct risk_score_type
-		into :riskscr_type trimmed
-	from member_roster
-	;
-quit;
-%put riskscr_type = &riskscr_type.;
 
-%macro Calc_Risk_Scores (riskscr_model=);
-
-	%if %upcase(&riskscr_model.) eq %upcase(CMS HCC Risk Score) %then %do;
+%macro Calc_Risk_Scores ();
+	
+	%if &cnt_HCC_mems. gt 0 %then %do;
 
 		%run_hcc_wrap_prm(&list_inc_start_riskscr.
 				,&list_inc_end_riskscr.
@@ -140,7 +139,18 @@ quit;
 				,post008
 				)
 	%end;
-	%else %if %upcase(&riskscr_model.) eq %upcase(MARA Risk Score) %then %do;
+
+	%else %do; 
+		proc sql noprint;
+			create table post008.hcc_results (
+			    time_slice 			char	format= $32. 
+				,hicno 				char	format= $40.
+				,score_community 	num		format= best12.
+				);
+		quit;		
+	%end;
+
+	%if &cnt_MARA_mems. gt 0 %then %do;
 
 		%run_mara_wrap_prm(&list_inc_start_riskscr.
 				,&list_inc_end_riskscr.
@@ -150,9 +160,19 @@ quit;
 				)
 	%end;
 
+	%else %do;
+		proc sql noprint;
+			create table post008.mara_scores (
+			    time_slice 			char	format= $32. 
+				,member_id 			char	format= $40.
+				,riskscr_tot	 	num		format= best12.
+				);
+		quit;	
+	%end;
+
 %mend Calc_Risk_Scores;
 
-%Calc_Risk_Scores(riskscr_model=&riskscr_type.)
+%Calc_Risk_Scores()
 
 /*Pull in member months to append to the member roster
 	This utilizes potentially different time periods from risk scores above.*/
@@ -184,14 +204,20 @@ proc sql;
 				)
 			end as age
 		,coalesce(memmos.memmos_medical,0) as memmos
-		,riskscr.score_community as riskscr_1
+		,member.risk_score_type as riskscr_1_type
+		,case when upcase(member.risk_score_type) = upcase("CMS HCC Risk Score") then hcc_rs.score_community
+				when upcase(member.risk_score_type) = upcase("MARA Risk Score") then mara_rs.riskscr_tot
+				else .
+			end as riskscr_1
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
-	left join post008.hcc_results as riskscr
-		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
+	left join post008.hcc_results as hcc_rs
+		on upcase(roster.time_period) eq upcase(hcc_rs.time_slice) and roster.member_id eq hcc_rs.hicno
+	left join post008.mara_scores as mara_rs
+		on upcase(roster.time_period) eq upcase(mara_rs.time_slice) and roster.member_id eq mara_rs.member_id
 	left join agg_memmos as memmos
 		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
 	order by
