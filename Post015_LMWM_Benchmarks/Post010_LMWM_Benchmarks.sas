@@ -55,6 +55,7 @@ proc sql noprint;
 	from post010.basic_aggs_elig_status as scores
 	cross join 
 		M015_out.hcg_benchmarks_nationwide as bench
+	where upcase(bench.lob) = "upcase(&type_benchmark_hcg.)"
 	order by
 		scores.time_period
 		,type_benchmark
