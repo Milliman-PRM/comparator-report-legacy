@@ -47,9 +47,20 @@ proc sql noprint;
 quit;
 %put codegen_member_selection = %bquote(&codegen_member_selection.);
 
+proc sql noprint;
+	create table memtime_w_riskscr_type as
+		select time.*
+				,mem.risk_score_type
+	from M035_Out.member_time as time
+	left join
+		M035_Out.member as mem
+		on time.member_ID = mem.member_ID
+	;
+quit;
+
 data member_roster;
 	format time_period $16.;
-	set M035_Out.member_time (keep =
+	set memtime_w_riskscr_type (keep =
 		member_id
 		assignment_indicator
 		cover_medical
@@ -60,6 +71,8 @@ data member_roster;
 		elig_status_1
 		mem_prv_id_align
 		prv_name_align
+		/*Fields pulled from member table*/
+		risk_score_type
 		);
 	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
 		;
@@ -99,15 +112,47 @@ proc sql noprint;
 	;
 quit;
 
+proc sql noprint;
+		select count(distinct risk_score_type)
+		into :cnt_riskscr_types trimmed
+	from member_roster
+	;
+quit;
+%put cnt_riskscr_types = &cnt_riskscr_types.;
+%AssertThat(&cnt_riskscr_types.,eq,1,ReturnMessage=It is not the case that a single risk score model was requested.)
 
-%run_hcc_wrap_prm(&list_inc_start_riskscr.
-		,&list_inc_end_riskscr.
-		,&list_paid_thru_riskscr.
-		,&list_time_period_riskscr.
-		,post008
-		)
+proc sql noprint;
+		select distinct risk_score_type
+		into :riskscr_type trimmed
+	from member_roster
+	;
+quit;
+%put riskscr_type = &riskscr_type.;
 
+%macro Calc_Risk_Scores (riskscr_model=);
 
+	%if %upcase(&riskscr_model.) eq %upcase(CMS HCC Risk Score) %then %do;
+
+		%run_hcc_wrap_prm(&list_inc_start_riskscr.
+				,&list_inc_end_riskscr.
+				,&list_paid_thru_riskscr.
+				,&list_time_period_riskscr.
+				,post008
+				)
+	%end;
+	%else %if %upcase(&riskscr_model.) eq %upcase(MARA) %then %do;
+
+		%run_mara_wrap_prm(&list_inc_start_riskscr.
+				,&list_inc_end_riskscr.
+				,&list_paid_thru_riskscr.
+				,&list_time_period_riskscr.
+				,post008
+				)
+	%end;
+
+%mend Calc_Risk_Scores;
+
+%Calc_Risk_Scores(riskscr_model=&riskscr_type.)
 
 /*Pull in member months to append to the member roster
 	This utilizes potentially different time periods from risk scores above.*/
