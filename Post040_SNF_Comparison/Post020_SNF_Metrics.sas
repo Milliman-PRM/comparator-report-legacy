@@ -57,7 +57,6 @@ proc sql;
 		and all_snf.member_ID = active.member_ID
 	left join Post040.SNF_Readmissions as readmits
 		on all_snf.member_id = readmits.member_id
-		and all_snf.time_slice = readmits.time_slice
 		and all_snf.caseadmitid = readmits.caseadmitid
 	group by
 		all_snf.time_slice
