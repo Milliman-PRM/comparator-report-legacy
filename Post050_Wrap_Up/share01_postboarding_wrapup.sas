@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Store code that is shared across programs in the module to limit
@@ -64,5 +64,27 @@
 		delete __files_to_stack__;
 	quit;
 %mend sweep_for_sas_datasets;
+
+
+
+/**** SNAG LABELS FOR RE-USE ****/
+
+libname temp035 "&M035_Out." access=readonly;
+
+    proc sql noprint;
+        select label
+        into :lbl_elig_status_1 trimmed
+        from dictionary.columns
+        where
+            upcase(libname) eq 'TEMP035'
+            and upcase(memname) eq 'MEMBER'
+            and upcase(name) eq 'ELIG_STATUS_1'
+        ;
+    quit;
+
+    %put lbl_elig_status_1 = &lbl_elig_status_1.;
+
+libname temp035 clear;
+
 
 %put System Return Code = &syscc.;

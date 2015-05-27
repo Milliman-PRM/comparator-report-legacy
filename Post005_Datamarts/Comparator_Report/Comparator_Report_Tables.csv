@@ -50,6 +50,7 @@ riskscr_avg,memcnt,N,N
 riskscr_wgt,memcnt,N,N
 memcnt,memcnt,N,N
 name_client,details_inpatient,Y,N
+elig_status_1,details_inpatient,Y,N
 time_period,details_inpatient,Y,N
 prv_id_inpatient,details_inpatient,Y,N
 discharge_status_code,details_inpatient,Y,N
@@ -68,6 +69,7 @@ sum_days_inpatient,details_inpatient,N,N
 sum_costs_inpatient,details_inpatient,N,N
 name_client,details_snf,Y,N
 time_period,details_snf,Y,N
+elig_status_1,details_snf,Y,N
 prv_id_snf,details_snf,Y,N
 snf_readmit_yn,details_snf,Y,N
 los_snf,details_snf,Y,N
@@ -76,6 +78,7 @@ sum_days_snf,details_snf,N,N
 sum_costs_snf,details_snf,N,N
 name_client,metrics_key_value,Y,N
 time_period,metrics_key_value,Y,N
+elig_status_1,metrics_key_value,Y,N
 metric_category,metrics_key_value,Y,N
 metric_id,metrics_key_value,Y,N
 metric_name,metrics_key_value,N,N
