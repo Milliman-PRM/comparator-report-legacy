@@ -13,7 +13,7 @@ prm_costs,,float,,N,,N,Costs,"Costs chosen for the client.  This could be allowe
 prm_allowed,,float,,N,,N,,Allowed costs
 prm_paid,,float,,N,,N,,Paid costs
 prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,"What type of coverage does this correspond to? (e.g. Medical, Rx)"
-type_benchmark,,varchar,8,N,Loose~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed)
+type_benchmark,,varchar,8,N,Loosely~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed)
 benchmark_discharges_per1k,,float,,N,,N,,"Rate of Discharges per 1,000 member years."
 benchmark_days_per1k,,float,,N,,N,,"Rate of Days per 1,000 member years."
 benchmark_util_per1k,,float,,N,,N,,"Rate of Utilization per 1,000 member years."
