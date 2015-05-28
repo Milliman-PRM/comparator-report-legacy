@@ -26,7 +26,7 @@ libname post015 "&post015.";
 proc sql noprint;
 	create table Risk_adj_man_bench as
 		select scores.time_period
-				,bench.benchmark_type as type_benchmark format=$8. length=8 /*To match datamart definition*/
+				,bench.benchmark_type as type_benchmark label = ' '  format=$8. length=8 /*To match datamart definition*/
 				,bench.mcrm_line
 				,scores.elig_status_1
 
