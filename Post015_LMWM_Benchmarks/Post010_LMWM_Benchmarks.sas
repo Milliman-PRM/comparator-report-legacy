@@ -26,7 +26,7 @@ libname post015 "&post015.";
 proc sql noprint;
 	create table Risk_adj_man_bench as
 		select scores.time_period
-				,bench.benchmark_type as type_benchmark format=$8. length=8 /*To match datamart definition*/
+				,bench.benchmark_type as type_benchmark label = ' '  format=$8. length=8 /*To match datamart definition*/
 				,bench.mcrm_line
 				,scores.elig_status_1
 
@@ -55,6 +55,7 @@ proc sql noprint;
 	from post010.basic_aggs_elig_status as scores
 	cross join 
 		M015_out.hcg_benchmarks_nationwide as bench
+	where upcase(bench.lob) = "%upcase(&type_benchmark_hcg.)"
 	order by
 		scores.time_period
 		,type_benchmark
