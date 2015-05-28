@@ -25,4 +25,72 @@ libname post050 "&post050.";
 	,validate_template=&name_datamart_target.
 	)
 
+Proc SQL NoPrint; 
+	create table chk_output_tables as
+	select
+			libname 
+			,memname
+			,name
+	from dictionary.columns
+	where
+		upcase(libname) eq "POST050"
+	order by 
+		memname
+		,name 
+	;
+quit;
+
+Proc SQL NoPrint;
+	select count(distinct memname)
+	into :cnt_output_tables trimmed
+	from chk_output_tables 
+	;
+	select count(distinct memname)
+	into :cnt_out_w_nameclient trimmed
+	from chk_output_tables
+	where upcase(name) eq "NAME_CLIENT"
+	; 
+quit;
+%put cnt_output_tables = &cnt_output_tables.;
+%put cnt_out_w_nameclient = &cnt_out_w_nameclient.;
+%AssertThat(&cnt_output_tables.
+			,eq
+			,&cnt_out_w_nameclient.
+			,ReturnMessage=It is not the case that all output tables contain name_client.
+			)
+
+Proc SQL NoPrint; 
+	select
+		catx("." 
+			,libname 
+			,memname 
+		)
+	into :codegen_tables_w_name_client separated by " "
+	from chk_output_tables
+	where upcase(name) eq "NAME_CLIENT"
+	order by name 
+	;
+quit;
+
+%put codegen_tables_w_name_client = &codegen_tables_w_name_client.;
+
+data Name_client_All;
+	set &codegen_tables_w_name_client.;
+	keep name_client; 
+run;
+
+proc sql; 
+	create table Name_client_Unique as
+	select distinct name_client
+	from Name_client_All
+	order by name_client
+	;
+quit;
+
+data additional_client_names;
+	set Name_client_Unique;
+	where upcase(name_client) ne upcase("&name_client.");
+run;
+%AssertDataSetNotPopulated(additional_client_names)
+
 %put System Return Code = &syscc.;
