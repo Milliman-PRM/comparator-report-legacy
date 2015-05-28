@@ -100,17 +100,16 @@ run;
 	,ReturnMessage=%GetRecordCount(metric_category_mismatches) mismatches between expected and computed metric categories.
 	)
 
+%AssertNoDuplicates(
+	post050.metrics_key_value
+	,name_client time_period elig_status_1 metric_ID
+	,ReturnMessage=Metric_ID is not a unique identifier.
+	)
 
 %AssertNoDuplicates(
-					post050.metrics_key_value
-					,name_client time_period elig_status_1 metric_ID
-					,ReturnMessage=Metric_ID is not a unique identifier.
-					)
-
-%AssertNoDuplicates(
-					post050.metrics_key_value
-					,name_client time_period elig_status_1 metric_name
-					,ReturnMessage=Metric_name is not a unique identifier.
-					)
+	post050.metrics_key_value
+	,name_client time_period elig_status_1 metric_name
+	,ReturnMessage=Metric_name is not a unique identifier.
+	)
 
 %put System Return Code = &syscc.;
