@@ -1,6 +1,7 @@
 name_field,name_table,key_table,key_global
 name_client,cost_util,Y,N
 time_period,cost_util,Y,N
+prm_line,cost_util,Y,N
 mcrm_line,cost_util,Y,N
 elig_status_1,cost_util,Y,N
 prv_net_aco_yn,cost_util,Y,N
