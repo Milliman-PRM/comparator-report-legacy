@@ -13,6 +13,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
+%include "&M008_Cde.Func05_run_mara_wrap_prm.sas";
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 /* Libnames */
@@ -157,6 +158,7 @@ quit;
 				,&list_paid_thru_riskscr.
 				,&list_time_period_riskscr.
 				,post008
+				,list_models= DXPROLAG0~DXCONLAG0 
 				)
 	%end;
 
