@@ -207,10 +207,14 @@ proc sql;
 			end as age
 		,coalesce(memmos.memmos_medical,0) as memmos
 		,member.risk_score_type as riskscr_1_type
-		,case when upcase(member.risk_score_type) = upcase("CMS HCC Risk Score") then hcc_rs.score_community
-				when upcase(member.risk_score_type) = upcase("MARA Risk Score") then mara_rs.riskscr_tot
+		,case when upcase(member.risk_score_type) = upcase("CMS HCC Risk Score")
+					then hcc_rs.score_community
+				when upcase(member.risk_score_type) = upcase("MARA Risk Score")
+					and upcase(substr(time_windows.riskscr_period_type,1,3)) = upcase(substr(mara_rs.model_name,3,3))
+					then mara_rs.riskscr_tot
 				else .
 			end as riskscr_1
+
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
