@@ -161,11 +161,25 @@ quit;
 				,riskscr
 				,list_models=DXPROLAG0~DXCONLAG0
 				)
+
+		proc sql;
+			create table riskscr.mara_scores_limited as
+			select
+				scores.*
+			from riskscr.mara_scores as scores
+			inner join post008.time_windows as windows
+				on scores.time_slice eq windows.time_period
+					and upcase(substr(scores.model_name,3,3)) eq upcase(substr(windows.riskscr_period_type,1,3))
+			order by
+				scores.member_id
+				,scores.time_slice
+			;
+		quit;
 	%end;
 
 	%else %do;
 		proc sql noprint;
-			create table riskscr.mara_scores (
+			create table riskscr.mara_scores_limited (
 			    time_slice 			char	format= $32. 
 				,member_id 			char	format= $40.
 				,riskscr_tot	 	num		format= best12.
@@ -221,9 +235,9 @@ proc sql;
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
-	left join post008.hcc_results as hcc_rs
+	left join riskscr.hcc_results as hcc_rs
 		on upcase(roster.time_period) eq upcase(hcc_rs.time_slice) and roster.member_id eq hcc_rs.hicno
-	left join post008.mara_scores as mara_rs
+	left join riskscr.mara_scores_limited as mara_rs
 		on upcase(roster.time_period) eq upcase(mara_rs.time_slice) and roster.member_id eq mara_rs.member_id
 	left join agg_memmos as memmos
 		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
