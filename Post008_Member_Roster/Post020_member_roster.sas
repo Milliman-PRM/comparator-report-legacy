@@ -128,22 +128,23 @@ quit;
 %put cnt_HCC_mems = &cnt_HCC_mems.;
 %put cnt_MARA_mems = &cnt_MARA_mems.;
 
+%MockLibrary(riskscr)
 
 %macro Calc_Risk_Scores ();
-	
+
 	%if &cnt_HCC_mems. gt 0 %then %do;
 
 		%run_hcc_wrap_prm(&list_inc_start_riskscr.
 				,&list_inc_end_riskscr.
 				,&list_paid_thru_riskscr.
 				,&list_time_period_riskscr.
-				,post008
+				,riskscr
 				)
 	%end;
 
 	%else %do; 
 		proc sql noprint;
-			create table post008.hcc_results (
+			create table riskscr.hcc_results (
 			    time_slice 			char	format= $32. 
 				,hicno 				char	format= $40.
 				,score_community 	num		format= best12.
@@ -157,14 +158,14 @@ quit;
 				,&list_inc_end_riskscr.
 				,&list_paid_thru_riskscr.
 				,&list_time_period_riskscr.
-				,post008
-				,list_models= DXPROLAG0~DXCONLAG0 
+				,riskscr
+				,list_models=DXPROLAG0~DXCONLAG0
 				)
 	%end;
 
 	%else %do;
 		proc sql noprint;
-			create table post008.mara_scores (
+			create table riskscr.mara_scores (
 			    time_slice 			char	format= $32. 
 				,member_id 			char	format= $40.
 				,riskscr_tot	 	num		format= best12.
