@@ -50,8 +50,19 @@ quit;
 
 proc sql noprint;
 	create table memtime_w_riskscr_type as
-		select time.*
-				,mem.risk_score_type
+		select
+			time.member_id
+			,time.assignment_indicator
+			,time.cover_medical
+			,time.cover_rx
+			,time.date_start
+			,time.date_end
+			/*Any time-varying dimensions to keep*/
+			,time.elig_status_1
+			,time.mem_prv_id_align
+			,time.prv_name_align
+			/*Fields pulled from member table*/
+			,mem.risk_score_type as riskscr_1_type
 	from M035_Out.member_time as time
 	left join
 		M035_Out.member as mem
@@ -61,28 +72,15 @@ quit;
 
 data member_roster;
 	format time_period $16.;
-	set memtime_w_riskscr_type (keep =
-		member_id
-		assignment_indicator
-		cover_medical
-		cover_rx
-		date_start
-		date_end
-		/*Any time-varying dimensions to keep*/
-		elig_status_1
-		mem_prv_id_align
-		prv_name_align
-		/*Fields pulled from member table*/
-		risk_score_type
-		);
+	set memtime_w_riskscr_type;
 	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
 		;
 	/* DEVELOPMENT CODE:
 		Used to shuffle risk score types so we can test pathing into risk
 		score APIs
 	call streaminit(420);
-	if rand("BERNOULLI",0.5) then risk_score_type = "CMS HCC Risk Score";
-	else risk_score_type = "MARA Risk Score";
+	if rand("BERNOULLI",0.5) then riskscr_1_type = "CMS HCC Risk Score";
+	else riskscr_1_type = "MARA Risk Score";
 	*/
 
 	/*Only output the windows that include then ending boundary of our time period.*/
@@ -126,12 +124,12 @@ proc sql noprint;
 	select count(distinct member_ID)
 	into :cnt_HCC_mems trimmed
 	from member_roster
-	where upcase(risk_score_type) eq upcase("CMS HCC Risk Score")
+	where upcase(riskscr_1_type) eq upcase("CMS HCC Risk Score")
 	;
 	select count(distinct member_ID)
 	into :cnt_MARA_mems trimmed
 	from member_roster
-	where upcase(risk_score_type) eq upcase("MARA Risk Score")
+	where upcase(riskscr_1_type) eq upcase("MARA Risk Score")
 	;
 quit;
 %put cnt_HCC_mems = &cnt_HCC_mems.;
@@ -231,11 +229,9 @@ proc sql;
 				)
 			end as age
 		,coalesce(memmos.memmos_medical,0) as memmos
-		,member.risk_score_type as riskscr_1_type
-		,case when upcase(member.risk_score_type) = upcase("CMS HCC Risk Score")
+		,case when upcase(roster.riskscr_1_type) = upcase("CMS HCC Risk Score")
 					then hcc_rs.score_community
-				when upcase(member.risk_score_type) = upcase("MARA Risk Score")
-					and upcase(substr(time_windows.riskscr_period_type,1,3)) = upcase(substr(mara_rs.model_name,3,3))
+				when upcase(roster.riskscr_1_type) = upcase("MARA Risk Score")
 					then mara_rs.riskscr_tot
 				else .
 			end as riskscr_1
