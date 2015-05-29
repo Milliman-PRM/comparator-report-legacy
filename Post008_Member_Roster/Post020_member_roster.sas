@@ -103,15 +103,17 @@ proc sql noprint;
 		,inc_start_riskscr_features format = 12.
 		,inc_end_riskscr_features format = 12.
 		,paid_thru format = 12.
-		,time_period format = $12.
 	into :list_time_period_riskscr separated by "~"
 		,:list_inc_start_riskscr separated by "~"
 		,:list_inc_end_riskscr separated by "~"
 		,:list_paid_thru_riskscr separated by "~"
-		,:list_time_period_riskscr separated by "~"
 	from post008.Time_windows
 	;
 quit;
+%put list_time_period_riskscr = &list_time_period_riskscr.;
+%put list_inc_start_riskscr = &list_inc_start_riskscr.;
+%put list_inc_end_riskscr = &list_inc_end_riskscr.;
+%put list_paid_thru_riskscr = &list_paid_thru_riskscr.;
 
 proc sql noprint;
 	select count(distinct member_ID)
