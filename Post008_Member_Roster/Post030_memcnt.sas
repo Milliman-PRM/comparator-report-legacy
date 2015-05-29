@@ -169,6 +169,7 @@ proc sql;
 		,deceased_yn
 		,deceased_hospital_yn
 		,&puad_quality_metrics_select.
+		,risk_score_type
 		,final_hospice_days
 	;
 quit;
