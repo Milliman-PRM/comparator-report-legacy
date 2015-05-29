@@ -182,7 +182,8 @@ quit;
 	%else %do;
 		proc sql noprint;
 			create table riskscr.mara_scores_limited (
-			    time_slice 			char	format= $32. 
+			    time_slice 			char	format= $32.
+				,model_name char format = $16.
 				,member_id 			char	format= $40.
 				,riskscr_tot	 	num		format= best12.
 				);
