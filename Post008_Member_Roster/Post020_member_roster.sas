@@ -101,43 +101,51 @@ run;
 	,ReturnMessage=Multiple time windows assigned for a given time period.
 	)
 
-/*Calculate Risk Scores to add to the member table*/
-proc sql noprint;
-	select 
-		time_period
-		,inc_start_riskscr_features format = 12.
-		,inc_end_riskscr_features format = 12.
-		,paid_thru format = 12.
-	into :list_time_period_riskscr separated by "~"
-		,:list_inc_start_riskscr separated by "~"
-		,:list_inc_end_riskscr separated by "~"
-		,:list_paid_thru_riskscr separated by "~"
-	from post008.Time_windows
-	;
-quit;
-%put list_time_period_riskscr = &list_time_period_riskscr.;
-%put list_inc_start_riskscr = &list_inc_start_riskscr.;
-%put list_inc_end_riskscr = &list_inc_end_riskscr.;
-%put list_paid_thru_riskscr = &list_paid_thru_riskscr.;
-
-proc sql noprint;
-	select count(distinct member_ID)
-	into :cnt_HCC_mems trimmed
-	from member_roster
-	where upcase(riskscr_1_type) eq upcase("CMS HCC Risk Score")
-	;
-	select count(distinct member_ID)
-	into :cnt_MARA_mems trimmed
-	from member_roster
-	where upcase(riskscr_1_type) eq upcase("MARA Risk Score")
-	;
-quit;
-%put cnt_HCC_mems = &cnt_HCC_mems.;
-%put cnt_MARA_mems = &cnt_MARA_mems.;
-
-%MockLibrary(riskscr)
-
 %macro Calc_Risk_Scores ();
+	%local
+		list_time_period_riskscr
+		list_inc_start_riskscr
+		list_inc_end_riskscr
+		list_paid_thru_riskscr
+		;
+	proc sql noprint;
+		select 
+			time_period
+			,inc_start_riskscr_features format = 12.
+			,inc_end_riskscr_features format = 12.
+			,paid_thru format = 12.
+		into :list_time_period_riskscr separated by "~"
+			,:list_inc_start_riskscr separated by "~"
+			,:list_inc_end_riskscr separated by "~"
+			,:list_paid_thru_riskscr separated by "~"
+		from post008.Time_windows
+		;
+	quit;
+	%put list_time_period_riskscr = &list_time_period_riskscr.;
+	%put list_inc_start_riskscr = &list_inc_start_riskscr.;
+	%put list_inc_end_riskscr = &list_inc_end_riskscr.;
+	%put list_paid_thru_riskscr = &list_paid_thru_riskscr.;
+
+	%local
+		cnt_HCC_mems
+		cnt_MARA_mems
+		;
+	proc sql noprint;
+		select count(distinct member_ID)
+		into :cnt_HCC_mems trimmed
+		from member_roster
+		where upcase(riskscr_1_type) eq upcase("CMS HCC Risk Score")
+		;
+		select count(distinct member_ID)
+		into :cnt_MARA_mems trimmed
+		from member_roster
+		where upcase(riskscr_1_type) eq upcase("MARA Risk Score")
+		;
+	quit;
+	%put cnt_HCC_mems = &cnt_HCC_mems.;
+	%put cnt_MARA_mems = &cnt_MARA_mems.;
+
+	%MockLibrary(riskscr) /*Temporary location to dump stepping stones needed for risk score calculations.*/
 
 	%if &cnt_HCC_mems. gt 0 %then %do;
 
@@ -188,7 +196,7 @@ quit;
 		proc sql noprint;
 			create table riskscr.mara_scores_limited (
 			    time_slice 			char	format= $32.
-				,model_name char format = $16.
+				,model_name char format = $10.
 				,member_id 			char	format= $40.
 				,riskscr_tot	 	num		format= best12.
 				);
