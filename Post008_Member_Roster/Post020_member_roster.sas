@@ -77,6 +77,13 @@ data member_roster;
 		);
 	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
 		;
+	/* DEVELOPMENT CODE:
+		Used to shuffle risk score types so we can test pathing into risk
+		score APIs
+	call streaminit(420);
+	if rand("BERNOULLI",0.5) then risk_score_type = "CMS HCC Risk Score";
+	else risk_score_type = "MARA Risk Score";
+	*/
 
 	/*Only output the windows that include then ending boundary of our time period.*/
 	&codegen_member_selection.
