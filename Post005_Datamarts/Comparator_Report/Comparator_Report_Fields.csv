@@ -27,6 +27,7 @@ endoflife_numer_yn_hospicenever,,char,1,N,Y~N,N,,Did these deceased members neve
 endoflife_denom_yn_hospicenever,,char,1,N,Y~N,N,,Should these members be considered when evaluating who never had a hospice stay?
 final_hospice_days,,integer,,N,,N,,"For deceased members, how many days were they in the hospice immediately prior to death?"
 costs_final_30_days_sum,,float,,N,,N,,Total cost in the final 30 days of life.
+risk_score_type,,varchar,32,N,CMS HCC Risk Score~MARA Risk Score,N,,Description of the model used to compute risk scores.
 riskscr_avg,,float,,N,,N,,Average risk score for the corresponding members.
 memcnt,,integer,,N,,N,,Count of members with the corresponding statuses.
 prv_id_inpatient,,varchar,40,N,,N,,Provider ID of the corresponding inpatient facility.

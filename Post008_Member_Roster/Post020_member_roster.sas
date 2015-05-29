@@ -13,6 +13,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M008_Cde.Func04_run_hcc_wrap_prm.sas";
+%include "&M008_Cde.Func05_run_mara_wrap_prm.sas";
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 /* Libnames */
@@ -47,22 +48,40 @@ proc sql noprint;
 quit;
 %put codegen_member_selection = %bquote(&codegen_member_selection.);
 
+proc sql noprint;
+	create table memtime_w_riskscr_type as
+		select
+			time.member_id
+			,time.assignment_indicator
+			,time.cover_medical
+			,time.cover_rx
+			,time.date_start
+			,time.date_end
+			/*Any time-varying dimensions to keep*/
+			,time.elig_status_1
+			,time.mem_prv_id_align
+			,time.prv_name_align
+			/*Fields pulled from member table*/
+			,mem.risk_score_type as riskscr_1_type
+	from M035_Out.member_time as time
+	left join
+		M035_Out.member as mem
+		on time.member_ID = mem.member_ID
+	;
+quit;
+
 data member_roster;
 	format time_period $16.;
-	set M035_Out.member_time (keep =
-		member_id
-		assignment_indicator
-		cover_medical
-		cover_rx
-		date_start
-		date_end
-		/*Any time-varying dimensions to keep*/
-		elig_status_1
-		mem_prv_id_align
-		prv_name_align
-		);
+	set memtime_w_riskscr_type;
 	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
 		;
+	/* DEVELOPMENT CODE:
+		Used to shuffle risk score types so we can test pathing into risk
+		score APIs
+	call streaminit(420);
+	if rand("BERNOULLI",0.5) then riskscr_1_type = "CMS HCC Risk Score";
+	else riskscr_1_type = "MARA Risk Score";
+	*/
 
 	/*Only output the windows that include then ending boundary of our time period.*/
 	&codegen_member_selection.
@@ -82,32 +101,111 @@ run;
 	,ReturnMessage=Multiple time windows assigned for a given time period.
 	)
 
-/*Calculate Risk Scores to add to the member table*/
-proc sql noprint;
-	select 
-		time_period
-		,inc_start_riskscr_features format = 12.
-		,inc_end_riskscr_features format = 12.
-		,paid_thru format = 12.
-		,time_period format = $12.
-	into :list_time_period_riskscr separated by "~"
-		,:list_inc_start_riskscr separated by "~"
-		,:list_inc_end_riskscr separated by "~"
-		,:list_paid_thru_riskscr separated by "~"
-		,:list_time_period_riskscr separated by "~"
-	from post008.Time_windows
-	;
-quit;
+%macro Calc_Risk_Scores ();
+	%local
+		list_time_period_riskscr
+		list_inc_start_riskscr
+		list_inc_end_riskscr
+		list_paid_thru_riskscr
+		;
+	proc sql noprint;
+		select 
+			time_period
+			,inc_start_riskscr_features format = 12.
+			,inc_end_riskscr_features format = 12.
+			,paid_thru format = 12.
+		into :list_time_period_riskscr separated by "~"
+			,:list_inc_start_riskscr separated by "~"
+			,:list_inc_end_riskscr separated by "~"
+			,:list_paid_thru_riskscr separated by "~"
+		from post008.Time_windows
+		;
+	quit;
+	%put list_time_period_riskscr = &list_time_period_riskscr.;
+	%put list_inc_start_riskscr = &list_inc_start_riskscr.;
+	%put list_inc_end_riskscr = &list_inc_end_riskscr.;
+	%put list_paid_thru_riskscr = &list_paid_thru_riskscr.;
 
+	%local
+		cnt_HCC_mems
+		cnt_MARA_mems
+		;
+	proc sql noprint;
+		select count(distinct member_ID)
+		into :cnt_HCC_mems trimmed
+		from member_roster
+		where upcase(riskscr_1_type) eq upcase("CMS HCC Risk Score")
+		;
+		select count(distinct member_ID)
+		into :cnt_MARA_mems trimmed
+		from member_roster
+		where upcase(riskscr_1_type) eq upcase("MARA Risk Score")
+		;
+	quit;
+	%put cnt_HCC_mems = &cnt_HCC_mems.;
+	%put cnt_MARA_mems = &cnt_MARA_mems.;
 
-%run_hcc_wrap_prm(&list_inc_start_riskscr.
-		,&list_inc_end_riskscr.
-		,&list_paid_thru_riskscr.
-		,&list_time_period_riskscr.
-		,post008
-		)
+	%MockLibrary(riskscr) /*Temporary location to dump stepping stones needed for risk score calculations.*/
 
+	%if &cnt_HCC_mems. gt 0 %then %do;
 
+		%run_hcc_wrap_prm(&list_inc_start_riskscr.
+				,&list_inc_end_riskscr.
+				,&list_paid_thru_riskscr.
+				,&list_time_period_riskscr.
+				,riskscr
+				)
+	%end;
+
+	%else %do; 
+		proc sql noprint;
+			create table riskscr.hcc_results (
+			    time_slice 			char	format= $32. 
+				,hicno 				char	format= $40.
+				,score_community 	num		format= best12.
+				);
+		quit;		
+	%end;
+
+	%if &cnt_MARA_mems. gt 0 %then %do;
+
+		%run_mara_wrap_prm(&list_inc_start_riskscr.
+				,&list_inc_end_riskscr.
+				,&list_paid_thru_riskscr.
+				,&list_time_period_riskscr.
+				,riskscr
+				,list_models=DXPROLAG0~DXCONLAG0
+				)
+
+		proc sql;
+			create table riskscr.mara_scores_limited as
+			select
+				scores.*
+			from riskscr.mara_scores as scores
+			inner join post008.time_windows as windows
+				on scores.time_slice eq windows.time_period
+					and upcase(substr(scores.model_name,3,3)) eq upcase(substr(windows.riskscr_period_type,1,3))
+			order by
+				scores.member_id
+				,scores.time_slice
+			;
+		quit;
+	%end;
+
+	%else %do;
+		proc sql noprint;
+			create table riskscr.mara_scores_limited (
+			    time_slice 			char	format= $32.
+				,model_name char format = $10.
+				,member_id 			char	format= $40.
+				,riskscr_tot	 	num		format= best12.
+				);
+		quit;	
+	%end;
+
+%mend Calc_Risk_Scores;
+
+%Calc_Risk_Scores()
 
 /*Pull in member months to append to the member roster
 	This utilizes potentially different time periods from risk scores above.*/
@@ -139,14 +237,22 @@ proc sql;
 				)
 			end as age
 		,coalesce(memmos.memmos_medical,0) as memmos
-		,riskscr.score_community as riskscr_1
+		,case when upcase(roster.riskscr_1_type) = upcase("CMS HCC Risk Score")
+					then hcc_rs.score_community
+				when upcase(roster.riskscr_1_type) = upcase("MARA Risk Score")
+					then mara_rs.riskscr_tot
+				else .
+			end as riskscr_1
+
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
-	left join post008.hcc_results as riskscr
-		on upcase(roster.time_period) eq upcase(riskscr.time_slice) and roster.member_id eq riskscr.hicno
+	left join riskscr.hcc_results as hcc_rs
+		on upcase(roster.time_period) eq upcase(hcc_rs.time_slice) and roster.member_id eq hcc_rs.hicno
+	left join riskscr.mara_scores_limited as mara_rs
+		on upcase(roster.time_period) eq upcase(mara_rs.time_slice) and roster.member_id eq mara_rs.member_id
 	left join agg_memmos as memmos
 		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
 	order by
