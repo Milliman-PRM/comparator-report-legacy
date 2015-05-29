@@ -126,6 +126,7 @@ proc means noprint
 	data = agg_claims_limited
 	;
 	class time_period
+		prm_line
 		mcrm_line
 		elig_status_1
 		prv_net_aco_yn
