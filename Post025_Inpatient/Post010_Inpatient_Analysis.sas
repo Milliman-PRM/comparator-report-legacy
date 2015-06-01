@@ -54,7 +54,7 @@ proc sql;
 		"&name_client." as name_client
 		,claims.time_slice as time_period
 		,mems.elig_status_1
-		,claims.providerid as prv_id_inpatient
+		,coalesce(claims.providerid,'Unknown') as prv_id_inpatient
 		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
 		,coalesce(disch_xwalk.disch_desc, 'Other') as discharge_status_desc format=$256.
