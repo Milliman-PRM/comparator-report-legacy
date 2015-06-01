@@ -42,7 +42,7 @@ proc sql;
 		"&name_client." as name_client
 		,all_snf.time_slice as time_period
 		,active.elig_status_1
-		,all_snf.ProviderID as prv_id_snf
+		,coalesce(all_snf.ProviderID,'Unknown') as prv_id_snf
 		,case
 			when readmits.member_id is null then 'N'
 			else 'Y'
