@@ -92,7 +92,7 @@ quit;
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~dischargestatus~prm_todate~prm_line
 	,Time_Slice=&eol_time_period.
-	,suffix_output = time
+	,suffix_output = wide
 	)
 
 proc sql;
@@ -121,7 +121,7 @@ proc sql;
 	inner join M180_Out.Puad12_member_excluded as decedents
 		on roster.member_id = decedents.member_id_excluded
 		and decedents.death_date_excluded between windows.inc_start and windows.inc_end
-	left join agg_claims_med_time as claims on
+	left join agg_claims_med_wide as claims on
 		roster.time_period eq claims.time_slice
 		and roster.member_id eq claims.member_id
 		and (decedents.death_date_excluded - claims.prm_todate) between 0 and 30

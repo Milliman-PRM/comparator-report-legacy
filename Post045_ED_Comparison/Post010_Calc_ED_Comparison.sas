@@ -31,7 +31,7 @@ libname post045 "&post045.";
 	,Dimensions=member_ID~caseadmitid
 	,Force_Util=&post_force_util.
 	,Where_Claims = %str(prm_nyu_included_yn = "Y")
-	,Output_Suffix = time
+	,Output_Suffix = nyu
 	);
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
@@ -40,7 +40,7 @@ proc sql;
 	select 
 		claims.*
 		,mems.elig_status_1
-	from agg_claims_med_time as claims 
+	from agg_claims_med_nyu as claims 
 	inner join 
 		post008.members as mems 
 		on claims.time_slice = mems.time_period 

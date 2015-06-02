@@ -213,7 +213,7 @@ run;
 		,&list_inc_end.
 		,member_id
 		,&list_time_period.
-		,suffix_output = time
+		,suffix_output = roster
 		)
 
 /*Decorate roster with information from member that may be needed
@@ -254,7 +254,7 @@ proc sql;
 		on upcase(roster.time_period) eq upcase(hcc_rs.time_slice) and roster.member_id eq hcc_rs.hicno
 	left join riskscr.mara_scores_limited as mara_rs
 		on upcase(roster.time_period) eq upcase(mara_rs.time_slice) and roster.member_id eq mara_rs.member_id
-	left join agg_memmos_time as memmos
+	left join agg_memmos_roster as memmos
 		on roster.member_id = memmos.member_id and upcase(roster.time_period) = upcase(memmos.time_slice)
 	order by
 		roster.member_id

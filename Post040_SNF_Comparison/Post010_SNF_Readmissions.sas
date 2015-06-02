@@ -36,7 +36,7 @@ libname post040 "&post040.";
 	,Dimensions=member_ID~prm_line~caseadmitid~PRM_Readmit_All_Cause_YN~PRM_Readmit_All_Cause_CaseID
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eqt "i")
-	,output_suffix = time
+	,output_suffix = inpatient
     );
 
 
@@ -50,11 +50,11 @@ proc sql;
 		index.member_id
 		,index.date_case_latest as fail_window_start
 		,readmit.date_case_earliest as fail_window_end
-	from agg_claims_med_time(where = (
+	from agg_claims_med_inpatient(where = (
 		lowcase(prm_line) ne 'i31'
 		and upcase(PRM_Readmit_All_Cause_YN) eq 'Y'
 		)) as index
-	left join agg_claims_med_time as readmit on
+	left join agg_claims_med_inpatient as readmit on
 		index.member_id eq readmit.member_id
 		and index.PRM_Readmit_All_Cause_CaseID eq readmit.caseadmitid
 	order by
@@ -84,7 +84,7 @@ proc sql;
 		member_id
 		,caseadmitid
 		,max(date_case_latest) as date_discharge_snf
-	from agg_claims_med_time
+	from agg_claims_med_inpatient
 	where lowcase(prm_line) eq "i31"
 	group by
 		member_id
