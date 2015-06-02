@@ -32,6 +32,7 @@ libname post025 "&post025.";
 		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&list_time_period.
 		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
+		,suffix_output = inpatient
 		)
 
 data disch_xwalk;
@@ -103,7 +104,7 @@ proc sql;
 			else "N"
 			end
 			as preference_sensitive_yn
-	from agg_claims_med as claims
+	from agg_claims_med_inpatient as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join disch_xwalk on

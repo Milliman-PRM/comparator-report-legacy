@@ -33,6 +33,7 @@ libname post040 "&post040.";
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
+	,suffix_output = snf
     );
 
 
@@ -51,7 +52,7 @@ proc sql;
 		,sum(all_snf.Discharges) as cnt_discharges_snf
 		,sum(all_snf.PRM_Util) as sum_days_snf
 		,sum(all_snf.PRM_Costs) as sum_costs_snf
-	from agg_claims_med as all_snf
+	from agg_claims_med_snf as all_snf
 	/*Limit to members active in the analysis*/
 	inner join post008.members as active
 		on all_snf.time_slice = active.time_period 
