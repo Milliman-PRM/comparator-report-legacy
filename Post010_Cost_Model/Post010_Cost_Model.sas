@@ -20,6 +20,9 @@ libname M015_Out "&M015_Out." access=readonly;
 libname post008 "&post008." access=readonly;
 libname post010 "&post010.";
 
+%let limit_lob = upcase(lob) eq "%upcase(&type_benchmark_hcg.)";
+%put limit_lob = &limit_lob.;
+
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
@@ -96,14 +99,14 @@ proc sql;
 	create table agg_claims_limited as
 	select
 		src.*
-		,mrl.mcrm_line
+		,link_mr_mcrm_line.mcrm_line length = 5 format = $5.
 
 	from agg_claims_coalesce as src
 	inner join post008.members as limit on
 		src.member_id eq limit.member_id
 			and src.time_period eq limit.time_period
-	left join M015_Out.mr_line_info as mrl on
-		src.prm_line = mrl.mr_line
+	left join M015_Out.link_mr_mcrm_line (where = (&limit_lob.)) as link_mr_mcrm_line on
+		src.prm_line = link_mr_mcrm_line.mr_line
 	;
 quit;
 
