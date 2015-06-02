@@ -31,7 +31,7 @@ libname post045 "&post045.";
 	,Dimensions=member_ID~caseadmitid
 	,Force_Util=&post_force_util.
 	,Where_Claims = %str(prm_nyu_included_yn = "Y")
-	,Output_Suffix = nyu
+	,Suffix_Output = nyu
 	);
 
 /*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
