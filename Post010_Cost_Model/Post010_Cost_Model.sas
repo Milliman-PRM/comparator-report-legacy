@@ -218,7 +218,7 @@ proc sql;
 	select
 		ref_mr_line.mr_line
 		,ref_mr_line.prm_line_desc
-		,link.mcrm_line length = 5 format = $5.
+		,link.mcrm_line
 		,ref_mcrm_line.mcrm_line_desc_l1
 		,ref_mcrm_line.mcrm_line_desc_l2
 		,ref_mcrm_line.mcrm_line_desc_l3
