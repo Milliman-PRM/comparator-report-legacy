@@ -76,4 +76,5 @@ mcrm_line_desc_L2,,varchar,128,Y,,N,,MCRM Service Category Description (Level 2)
 mcrm_line_desc_L3,,varchar,128,Y,,N,,MCRM Service Category Description (Level 3)
 mcrm_line_desc_L4,,varchar,128,Y,,N,,MCRM Service Category Description (Level 4)
 mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5)
+mcrm_line_desc_L6,,varchar,128,Y,,N,,MCRM Service Category Description (Level 6)
 riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations

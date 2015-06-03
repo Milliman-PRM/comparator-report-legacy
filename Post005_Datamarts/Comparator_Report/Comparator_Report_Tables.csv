@@ -26,6 +26,7 @@ mcrm_line_desc_L2,ref_prm_line,N,N
 mcrm_line_desc_L3,ref_prm_line,N,N
 mcrm_line_desc_L4,ref_prm_line,N,N
 mcrm_line_desc_L5,ref_prm_line,N,N
+mcrm_line_desc_L6,ref_prm_line,N,N
 prm_util_type,ref_prm_line,N,N
 prm_coverage_type,ref_prm_line,N,N
 name_client,cost_util_benchmark,Y,N
