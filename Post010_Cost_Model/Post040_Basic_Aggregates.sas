@@ -107,7 +107,7 @@ proc sql;
 		,"Basic" as metric_category
 		,sum(memmos_sum) as memmos_sum label= "Total Member Months"
 		,sum(memmos_sum_riskadj) as memmos_sum_riskadj label= "Total Member Months (Risk Adjusted)"
-		,sum(riskscr_1_avg * memmos_sum)/sum(memmos_sum) as riskscr_1_avg label= "Avgerage Risk Score"
+		,sum(riskscr_1_avg * memmos_sum)/sum(memmos_sum) as riskscr_1_avg label= "Average Risk Score"
 		,sum(prm_costs_sum_all_services) as prm_costs_sum_all_services label= "Total Costs (All Services)"
 		,sum(discharges_sum_all_services) as discharges_sum_all_services label= "Total Discharges"
 	from post010.basic_aggs_elig_status
