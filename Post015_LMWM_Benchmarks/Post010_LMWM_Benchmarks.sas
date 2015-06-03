@@ -25,41 +25,49 @@ libname post015 "&post015.";
   time period and beneficiary status.*/
 proc sql noprint;
 	create table Risk_adj_man_bench as
-		select scores.time_period
-				,bench.benchmark_type as type_benchmark label = ' '  format=$8. length=8 /*To match datamart definition*/
-				,bench.mcrm_line
-				,scores.elig_status_1
-
-				/*Risk adjust the loosely managed benchmarks and use the raw well managed benchmarks*/
-				,case
-					when bench.admits_per_1000 is not null then 
-						case when upcase(bench.benchmark_type) = "LOOSELY" then
-							bench.admits_per_1000 * scores.riskscr_1_avg
-							else bench.admits_per_1000 end
-					else 0
+	select 
+		scores.time_period
+		,bench.loosely_well as type_benchmark
+		,ref_mcrm_line.mcrm_line
+		,scores.elig_status_1
+		/*** vvv COLUMNS HELPFUL FOR DEVELOPMENT/DIAGNOSTICS vvv ***/
+		,scores.riskscr_1_avg
+		,bench.admits_per1k
+		,bench.util_per1k
+		/*** ^^^ COLUMNS HELPFUL FOR DEVELOPMENT/DIAGNOSTICS ^^^ ***/
+		,case
+			when bench.admits_per1k is not null then
+				case
+					when upcase(bench.loosely_well) eq "LOOSELY" then bench.admits_per1k * scores.riskscr_1_avg
+					else bench.admits_per1k
 					end
-					as benchmark_discharges_per1k
-				,case
-					when upcase(bench.annual_util_type) = "DAYS" then 
-						case when upcase(bench.benchmark_type) = "LOOSELY" then
-							bench.annual_util_per_1000 * scores.riskscr_1_avg
-							else bench.annual_util_per_1000 end
-					else 0
+				else 0
+				end
+				as benchmark_discharges_per1k
+		,case
+			when upcase(bench.util_type) eq "DAYS" then
+				case
+					when upcase(bench.loosely_well) eq "LOOSELY" then bench.util_per1k * scores.riskscr_1_avg
+					else bench.util_per1k
 					end
-					as benchmark_days_per1k
-				,case when upcase(bench.benchmark_type) = "LOOSELY" then
-					coalesce(bench.annual_util_per_1000,0) * scores.riskscr_1_avg 
-					else coalesce(bench.annual_util_per_1000,0) 
-					end
-					as benchmark_util_per1k
+				else 0
+				end
+				as benchmark_days_per1k
+		,case
+			when upcase(bench.loosely_well) eq "LOOSELY" then coalesce(bench.util_per1k,0) * scores.riskscr_1_avg
+			else coalesce(bench.util_per1k,0)
+			end
+			as benchmark_util_per1k
 	from post010.basic_aggs_elig_status as scores
 	cross join 
-		M015_out.hcg_benchmarks_nationwide as bench
-	where upcase(bench.lob) = "%upcase(&type_benchmark_hcg.)"
+		M015_out.ref_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as ref_mcrm_line
+	inner join M015_out.benchmarks_hcg as bench on
+		ref_mcrm_line.lob eq bench.lob
+		and ref_mcrm_line.mcrm_line eq bench.mcrm_line
 	order by
 		scores.time_period
 		,type_benchmark
-		,bench.mcrm_line
+		,ref_mcrm_line.mcrm_line
 		,scores.elig_status_1
 	;
 quit;

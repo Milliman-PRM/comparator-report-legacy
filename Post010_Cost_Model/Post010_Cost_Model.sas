@@ -20,6 +20,9 @@ libname M015_Out "&M015_Out." access=readonly;
 libname post008 "&post008." access=readonly;
 libname post010 "&post010.";
 
+%let limit_lob = upcase(lob) eq "%upcase(&type_benchmark_hcg.)";
+%put limit_lob = &limit_lob.;
+
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
@@ -96,14 +99,14 @@ proc sql;
 	create table agg_claims_limited as
 	select
 		src.*
-		,mrl.mcrm_line
+		,link_mr_mcrm_line.mcrm_line length = 5 format = $5.
 
 	from agg_claims_coalesce as src
 	inner join post008.members as limit on
 		src.member_id eq limit.member_id
 			and src.time_period eq limit.time_period
-	left join M015_Out.mr_line_info as mrl on
-		src.prm_line = mrl.mr_line
+	left join M015_Out.link_mr_mcrm_line (where = (&limit_lob.)) as link_mr_mcrm_line on
+		src.prm_line = link_mr_mcrm_line.mr_line
 	;
 quit;
 
@@ -210,9 +213,33 @@ data post010.memmos;
 run;
 %LabelDataSet(post010.memmos)
 
+proc sql;
+	create view ref_prm_mcrm_line as
+	select
+		ref_mr_line.mr_line
+		,ref_mr_line.prm_line_desc
+		,link.mcrm_line
+		,ref_mcrm_line.mcrm_line_desc_l1
+		,ref_mcrm_line.mcrm_line_desc_l2
+		,ref_mcrm_line.mcrm_line_desc_l3
+		,ref_mcrm_line.mcrm_line_desc_l4
+		,ref_mcrm_line.mcrm_line_desc_l5
+		,ref_mcrm_line.mcrm_line_desc_l6
+		,ref_mr_line.costmodel_util
+		,ref_mr_line.prm_coverage_type
+	from M015_out.mr_line_info as ref_mr_line
+	inner join M015_out.link_mr_mcrm_line (where = (&limit_lob.)) as link on
+		ref_mr_line.mr_line eq link.mr_line
+	left join M015_out.ref_mcrm_line as ref_mcrm_line on
+		link.lob eq ref_mcrm_line.lob
+			and link.mcrm_line eq ref_mcrm_line.mcrm_line
+	order by ref_mr_line.mr_line
+	;
+quit;
+
 data post010.ref_prm_line;
 	format &ref_prm_line_cgfrmt.;
-	set M015_out.mr_line_info;
+	set ref_prm_mcrm_line;
 	prm_line = MR_Line;
 	&assign_name_client.;
 	prm_util_type = costmodel_util;

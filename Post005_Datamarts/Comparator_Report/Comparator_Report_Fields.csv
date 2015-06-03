@@ -1,11 +1,11 @@
 name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,require_label_ifnotallnull,notes_develop,notes_client
 name_client,,varchar,256,N,,N,,Client Name
 time_period,,varchar,32,N,,N,,Period for the information
-prm_line,,varchar,5,N,,N,,Detailed service category code. This can be rolled up to the mcrm_line level.
+prm_line,,char,5,N,,N,,Detailed service category code. This can be rolled up to the mcrm_line level.
 prm_line_desc,,varchar,128,N,,N,,PRM Service Category Description
-mcrm_line,,varchar,5,N,,N,This is the service category needed to roll up the information from Outclaims PRM into something that will compare with the benchmarks.,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
+mcrm_line,,varchar,8,N,,N,This is the service category needed to roll up the information from Outclaims PRM into something that will compare with the benchmarks.,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
 elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
-prv_net_aco_yn,,varchar,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
+prv_net_aco_yn,,char,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
 prm_util_type,,varchar,16,N,,N,Utilization Type,Utilization Type
 prm_discharges,,integer,,N,,N,Indicator of discharges. Should summarize to count of discharges. Only populated for Inpatient claims.,Indicates a discharges for an inpatient claim.
 prm_days,,integer,,N,,N,Count of days for an inpatient claim.,Count of days for the claim line for inpatient claims.
@@ -76,4 +76,5 @@ mcrm_line_desc_L2,,varchar,128,Y,,N,,MCRM Service Category Description (Level 2)
 mcrm_line_desc_L3,,varchar,128,Y,,N,,MCRM Service Category Description (Level 3)
 mcrm_line_desc_L4,,varchar,128,Y,,N,,MCRM Service Category Description (Level 4)
 mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5)
+mcrm_line_desc_L6,,varchar,128,Y,,N,,MCRM Service Category Description (Level 6)
 riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations
