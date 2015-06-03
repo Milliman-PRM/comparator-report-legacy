@@ -56,7 +56,7 @@ proc sql;
 		,elig_status_1
 		,sum(memmos) as memmos_sum label= "Total Member Months"
 		,sum(memmos * riskscr_1) as memmos_sum_riskadj label= "Total Member Months (Risk Adjusted)"
-		,sum(memmos * riskscr_1) / sum(memmos) as riskscr_1_avg label= "Avgerage Risk Score"
+		,sum(memmos * riskscr_1) / sum(memmos) as riskscr_1_avg label= "Average Risk Score"
 	from post008.members
 	group by
 		time_period
