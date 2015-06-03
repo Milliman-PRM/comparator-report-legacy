@@ -28,7 +28,7 @@ proc sql noprint;
 	select 
 		scores.time_period
 		,bench.loosely_well as type_benchmark label = ' '  format=$8. length=8 /*To match datamart definition*/
-		,ref_mcrm_line.mcrm_line length = 5 format = $5.
+		,ref_mcrm_line.mcrm_line
 		,scores.elig_status_1
 		/*** vvv COLUMNS HELPFUL FOR DEVELOPMENT/DIAGNOSTICS vvv ***/
 		,scores.riskscr_1_avg
