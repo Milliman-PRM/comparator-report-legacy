@@ -243,7 +243,7 @@ proc sql;
 				,npi_future.npi
 				,npi_recurse.npi
 				,npi_claims.npi
-				/*,src.tin - Haven't gotten this desperate yet.*/
+				,src.tin
 				) as npi format=$10. length=10
 
 			/*,npi_future.npi as npi_future
