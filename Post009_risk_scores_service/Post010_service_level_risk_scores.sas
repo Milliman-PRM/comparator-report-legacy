@@ -17,7 +17,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname M015_Out "&M015_Out." access=readonly;
 libname post008 "&post008." access=readonly;
-libname post010 "&post010.";
+libname post009 "&post009.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -65,13 +65,13 @@ proc means noprint nway missing data = risk_scores_service_member;
 	class time_period elig_status_1 mcrm_line;
 	var riskscr_1_util riskscr_1_cost;
 	weight memmos;
-	output out = post010.riskscr_service (drop = _:)
+	output out = post009.riskscr_service (drop = _:)
 		mean =
 			riskscr_1_util_avg
 			riskscr_1_cost_avg
 		sumwgt = memmos_sum
 		;
 run;
-%LabelDataSet(post010.riskscr_service)
+%LabelDataSet(post009.riskscr_service)
 
 %put System Return Code = &syscc.;
