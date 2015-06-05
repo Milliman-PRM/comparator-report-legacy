@@ -50,12 +50,12 @@ proc sql noprint;
 			else 0
 			end
 			as benchmark_discharges_per1k
+		,coalesce(bench.util_per1k,0) * calculated risk_adjustment_util as benchmark_util_per1k
 		,case
-			when upcase(bench.util_type) eq "DAYS" then bench.util_per1k * calculated risk_adjustment_util
+			when upcase(bench.util_type) eq "DAYS" then calculated benchmark_util_per1k
 			else 0
 			end
 			as benchmark_days_per1k
-		,coalesce(bench.util_per1k,0) * calculated risk_adjustment_util as benchmark_util_per1k
 	from (
 		select distinct
 			time_period
