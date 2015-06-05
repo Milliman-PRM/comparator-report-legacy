@@ -44,8 +44,10 @@ proc sql;
 		,total.time_period as time_period
 		,total.elig_status_1 as elig_status_1
 		,total.metric_category as metric_category
-		,case when prxmatch('/\bHome Health\b/i', inpatient.discharge_status_desc) then "Home Health Care" 
-			else scan(inpatient.discharge_status_desc,-1,' ') 
+		,case when prxmatch('/\bHome Health\b/i', inpatient.discharge_status_desc) then "discharge_to_home_health" 
+			else cats("discharge_to_",
+				case when scan(inpatient.discharge_status_desc,-1,' ') eq "Died" then "death"
+					else lowcase(scan(inpatient.discharge_status_desc,-1,' ')) end)
 			end
 			as metric_id format=$32. length=32
 		,catx(" ","% of Inpatient Discharges with",calculated metric_id,"status") as metric_name
