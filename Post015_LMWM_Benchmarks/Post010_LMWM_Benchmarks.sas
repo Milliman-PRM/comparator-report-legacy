@@ -32,25 +32,25 @@ proc sql noprint;
 		,ref_mcrm_line.mcrm_line
 		,member_dims.elig_status_1
 		/*** vvv COLUMNS HELPFUL FOR DEVELOPMENT/DIAGNOSTICS vvv ***/
-		,case
-			when upcase(bench.loosely_well) eq "LOOSELY" then riskscr.riskscr_1_util_avg
-			else 1.0 /*No risk adjustment done to well managed benchmarks*/
-			end
-			as risk_adjustment_util
-		,case
-			when upcase(bench.loosely_well) eq "LOOSELY" then riskscr.riskscr_1_cost_avg
-			else 1.0 /*No risk adjustment done to well managed benchmarks*/
-			end
-			as risk_adjustment_cost
 		,bench.admits_per1k
 		,bench.util_per1k
 		/*** ^^^ COLUMNS HELPFUL FOR DEVELOPMENT/DIAGNOSTICS ^^^ ***/
 		,case
-			when bench.admits_per1k is not null then bench.admits_per1k * calculated risk_adjustment_util
+			when upcase(bench.loosely_well) eq "LOOSELY" then riskscr.riskscr_1_util_avg
+			else 1.0 /*No risk adjustment done to well managed benchmarks*/
+			end
+			as riskscr_service_avg_util
+		,case
+			when upcase(bench.loosely_well) eq "LOOSELY" then riskscr.riskscr_1_cost_avg
+			else 1.0 /*No risk adjustment done to well managed benchmarks*/
+			end
+			as riskscr_service_avg_cost
+		,case
+			when bench.admits_per1k is not null then bench.admits_per1k * calculated riskscr_service_avg_util
 			else 0
 			end
 			as benchmark_discharges_per1k
-		,coalesce(bench.util_per1k,0) * calculated risk_adjustment_util as benchmark_util_per1k
+		,coalesce(bench.util_per1k,0) * calculated riskscr_service_avg_util as benchmark_util_per1k
 		,case
 			when upcase(bench.util_type) eq "DAYS" then calculated benchmark_util_per1k
 			else 0

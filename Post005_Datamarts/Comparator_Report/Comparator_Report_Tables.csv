@@ -34,6 +34,8 @@ time_period,cost_util_benchmark,Y,N
 mcrm_line,cost_util_benchmark,Y,N
 elig_status_1,cost_util_benchmark,Y,N
 type_benchmark,cost_util_benchmark,Y,N
+riskscr_service_avg_util,cost_util_benchmark,N,N
+riskscr_service_avg_cost,cost_util_benchmark,N,N
 benchmark_discharges_per1k,cost_util_benchmark,N,N
 benchmark_days_per1k,cost_util_benchmark,N,N
 benchmark_util_per1k,cost_util_benchmark,N,N
