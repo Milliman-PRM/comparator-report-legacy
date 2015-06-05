@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird
+### CODE OWNERS: Kyle Baird, Shea Parkes
 
 ### OBJECTIVE:
 	Calibrate risk scores to service category to enhance the risk adjusted metrics
