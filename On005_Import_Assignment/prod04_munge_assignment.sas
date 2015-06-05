@@ -245,6 +245,11 @@ proc sql;
 				,npi_claims.npi
 				,src.tin
 				) as npi format=$10. length=10
+			,case
+				when calculated npi eq src.tin then "TIN"
+				else "NPI"
+				end
+				as prv_id_name length = 16 format = $16.
 
 			/*,npi_future.npi as npi_future
 			,npi_recurse.npi as npi_recurse
@@ -280,14 +285,14 @@ quit;
 
 proc sql noprint;
 	select
-		round(avg(case when npi eq tin then 1 else 0 end),0.001)
-	into :pct_assign_windows_tin_default trimmed
+		round(avg(case when upcase(prv_id_name) ne "NPI" then 1 else 0 end),0.001)
+	into :pct_assign_windows_non_npi trimmed
 	from assign_extract
 	;
 quit;
-%put pct_assign_windows_tin_default = &pct_assign_windows_tin_default.;
+%put pct_assign_windows_non_npi = &pct_assign_windows_non_npi.;
 %AssertThat(
-	&pct_assign_windows_tin_default.
+	&pct_assign_windows_non_npi.
 	,le
 	,0.02
 	,ReturnMessage=An unusually high percentage of member assignment windows did not map to an NPI.
@@ -305,10 +310,10 @@ run;
 
 proc sql;
 	create table npi_roster as
-	select distinct npi
+	select distinct npi, prv_id_name
 	from assign_extract
 	union
-	select distinct claims.npi
+	select distinct claims.npi, "NPI"
 	from tin_to_npi_claims_dist as claims
 	inner join (
 		select distinct tin
@@ -344,6 +349,7 @@ proc sql;
 	create table npi_decorated as
 	select
 		src.npi as prv_id
+		,src.prv_id_name
 		,case
 			when npi.entity_type_cd eq "1" then case
 				when npi.prvdr_credential_text is null then cat(propcase(strip(npi.prvdr_last_name)), ", ", propcase(strip(npi.prvdr_first_name)))
@@ -395,7 +401,6 @@ data M018_Out.Client_Provider;
 	set npi_decorated;
 	call missing(&providers_fields_lacking.);
 
-	prv_id_name = 'NPI';
 	prv_net_hier_1 = 'ACO';
 	label prv_net_hier_1 = 'ACO';
 	prv_net_aco_yn = 'Y';
