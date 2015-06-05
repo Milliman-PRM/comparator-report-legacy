@@ -65,7 +65,7 @@ proc sql;
 		,claims.prm_drg as drg_inpatient
 		,claims.prm_drgversion as drg_version_inpatient
 		,case
-			when lowcase(claims.prm_line) not in (&nonacute_ip_prm_line_ignore_snf.) then 'Y'
+			when lowcase(claims.prm_line) not in ('i31') then 'Y'
 			else 'N'
 			end as acute_yn
 		,case
