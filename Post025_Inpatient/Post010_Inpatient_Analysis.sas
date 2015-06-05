@@ -69,7 +69,7 @@ proc sql;
 			else 'N'
 			end as acute_yn
 		,case
-			when claims.prm_line in ('I11a', 'I11b') then 'Medical' 
+			when claims.prm_line in ('I11a', 'I11b', 'I11c') then 'Medical' 
 			when claims.prm_line = 'I12' then 'Surgical'
 			else 'None'
 			end as medical_surgical
