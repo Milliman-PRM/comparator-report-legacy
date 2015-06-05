@@ -278,7 +278,20 @@ quit;
 %AssertRecordCount(assign_extract,eq,%GetRecordCount(M017_Out.timeline_assign_extract),ReturnMessage=Table integrity was not maintained.)
 %AssertNoNulls(assign_extract,npi,ReturnMessage=Not all assignments were resovled to an approximately useful NPI.)
 
-
+proc sql noprint;
+	select
+		round(avg(case when npi eq tin then 1 else 0 end),0.001)
+	into :pct_assign_windows_tin_default trimmed
+	from assign_extract
+	;
+quit;
+%put pct_assign_windows_tin_default = &pct_assign_windows_tin_default.;
+%AssertThat(
+	&pct_assign_windows_tin_default.
+	,le
+	,0.02
+	,ReturnMessage=An unusually high percentage of member assignment windows did not map to an NPI.
+	)
 
 /*** AUTHOR CLIENT_PROVIDER AND CLIENT_FACILITY ***/
 
