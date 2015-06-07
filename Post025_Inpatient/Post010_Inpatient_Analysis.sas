@@ -19,6 +19,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /*Libnames*/
 libname post008 "&post008." access=readonly;
 libname post009 "&post009." access=readonly;
+libname post010 "&post010." access=readonly;
 libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -165,39 +166,14 @@ proc means noprint nway missing data = partial_aggregation;
 	output out = details_inpatient (drop = _TYPE_ _FREQ_) sum = ;
 run;
 
-/*Calculate the requested measures*/
+/***** CALCULATE MEASURES *****/
+/*** Non-Risk Adjusted ***/
 proc sql;
-	create table measures as
+	create table measures_non_riskadj as
 	select
 		detail.name_client
 		,detail.time_period
 		,detail.elig_status_1
-		,"Inpatient" as metric_category
-
-		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as acute_per1k label="Acute Discharges per 1000"
-
-		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum_riskadj * 12000
-			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
-
-		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as surgical_per1k label="Surgical Discharges per 1000"
-
-		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum_riskadj * 12000
-			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
-
-		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as medical_per1k label="Medical Discharges per 1000"
-
-		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum_riskadj * 12000
-			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
-
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
@@ -238,31 +214,135 @@ proc sql;
 		,aggs.memmos_sum
 		,aggs.prm_costs_sum_all_services
 		,aggs.memmos_sum_riskadj
+	order by
+		detail.name_client
+		,detail.time_period
+		,detail.elig_status_1
 	;
 quit;
 
+/*** Risk Adjusted ***/
+proc sql;
+	create view cost_util_riskadj_mcrm as
+	select
+		claims_agg_mcrm.*
+		,risk.riskscr_1_util_avg
+		,risk.riskscr_1_cost_avg
+		,claims_agg_mcrm.cnt_discharges_medical / risk.riskscr_1_util_avg as cnt_discharges_medical_riskadj
+		,claims_agg_mcrm.cnt_discharges_surgical / risk.riskscr_1_util_avg as cnt_discharges_surgical_riskadj
+		,claims_agg_mcrm.cnt_discharges_acute / risk.riskscr_1_util_avg as cnt_discharges_acute_riskadj
+		,claims_agg_mcrm.cnt_discharges / risk.riskscr_1_util_avg as cnt_discharges_riskadj
+		,claims_agg_mcrm.sum_days / risk.riskscr_1_util_avg as sum_days_riskadj
+		,claims_agg_mcrm.sum_costs / risk.riskscr_1_cost_avg as sum_costs_riskadj
+	from (
+		select
+			name_client
+			,time_period
+			,elig_status_1
+			,mcrm_line
+			/*Flatten here to avoid having to repeat this nasty set of case logic
+			  again on risk adjusted values*/
+			,sum(
+				case upcase(medical_surgical)
+					when "MEDICAL" then cnt_discharges_inpatient
+					else 0
+					end
+				) as cnt_discharges_medical
+			,sum(
+				case upcase(medical_surgical)
+					when "SURGICAL" then cnt_discharges_inpatient
+					else 0
+					end
+				) as cnt_discharges_surgical
+			,sum(
+				case upcase(acute_yn)
+					when "Y" then cnt_discharges_inpatient
+					else 0
+					end
+				) as cnt_discharges_acute
+			,sum(cnt_discharges_inpatient) as cnt_discharges
+			,sum(sum_days_inpatient) as sum_days
+			,sum(sum_costs_inpatient) as sum_costs
+		from partial_aggregation
+		group by
+			name_client
+			,time_period
+			,elig_status_1
+			,mcrm_line
+		) as claims_agg_mcrm
+	left join post009.riskscr_service as risk on
+		claims_agg_mcrm.time_period eq risk.time_period
+			and claims_agg_mcrm.elig_status_1 eq risk.elig_status_1
+			and claims_agg_mcrm.mcrm_line eq risk.mcrm_line
+	;
+quit;
 
-
-/*Munge to target formats*/
-proc transpose data=measures 
-				out=metrics_transpose(rename=(COL1 = metric_value))
-				name=metric_id
-				label=metric_name;
-	by name_client time_period metric_category elig_status_1;
+proc means noprint nway missing data = cost_util_riskadj_mcrm;
+	class name_client time_period elig_status_1;
+	var cnt_: sum_:;
+	output out = cost_util_riskadj (drop = _TYPE_ _FREQ_) sum = ;
 run;
+
+proc sql;
+	create table measures_riskadj as
+	select
+		cost_util.name_client
+		,cost_util.time_period
+		,cost_util.elig_status_1
+/*		,basic_aggs.memmos_sum*/
+		,cost_util.cnt_discharges_medical / basic_aggs.memmos_sum * 12 * 1000 as medical_per1k label="Medical Discharges per 1000"
+		,cost_util.cnt_discharges_surgical / basic_aggs.memmos_sum * 12 * 1000 as surgical_per1k label="Surgical Discharges per 1000"
+		,cost_util.cnt_discharges_acute / basic_aggs.memmos_sum * 12 * 1000 as acute_per1k label="Acute Discharges per 1000"
+
+		,cost_util.cnt_discharges_medical_riskadj / basic_aggs.memmos_sum * 12 * 1000 as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
+		,cost_util.cnt_discharges_surgical_riskadj / basic_aggs.memmos_sum * 12 * 1000 as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
+		,cost_util.cnt_discharges_acute_riskadj / basic_aggs.memmos_sum * 12 * 1000 as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
+	from cost_util_riskadj as cost_util
+	left join post010.basic_aggs_elig_status as basic_aggs on
+		cost_util.name_client eq basic_aggs.name_client
+			and cost_util.time_period eq basic_aggs.time_period
+			and cost_util.elig_status_1 eq basic_aggs.elig_status_1
+	order by
+		cost_util.name_client
+		,cost_util.time_period
+		,cost_util.elig_status_1
+	;
+quit;
+
+/*** Transpose and Stack ***/
+proc transpose data = measures_riskadj
+	out = measures_riskadj_long (rename = (col1 = metric_value))
+	name = metric_id
+	label = metric_name
+	;
+	by name_client time_period elig_status_1;
+run;
+
+proc transpose data = measures_non_riskadj
+	out = measures_non_riskadj_long (rename = (col1 = metric_value))
+	name = metric_id
+	label = metric_name
+	;
+	by name_client time_period elig_status_1;
+run;
+
+data post025.metrics_inpatient;
+	format &metrics_key_value_cgfrmt.;
+	set measures_riskadj_long
+		measures_non_riskadj_long
+		;
+	by name_client time_period elig_status_1;
+	metric_category = "Inpatient";
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
+run;
+%LabelDataSet(post025.metrics_inpatient)
 
 data post025.details_inpatient;
 	format &details_inpatient_cgfrmt.;
 	set details_inpatient;
 	keep &details_inpatient_cgflds.;
 run;
-
-data post025.metrics_inpatient;
-	format &metrics_key_value_cgfrmt.;
-	set metrics_transpose;
-	keep &metrics_key_value_cgflds.;
-	attrib _all_ label = ' ';
-run;
-%LabelDataSet(post025.metrics_inpatient)
+%LabelDataSet(post025.details_inpatient)
 
 %put return_code = &syscc.;
