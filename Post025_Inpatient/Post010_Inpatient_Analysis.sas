@@ -49,6 +49,9 @@ data disch_xwalk;
 		;
 run;
 
+/*Rollup as far as we can to support both utilization metrics and details summary.*/
+/*There are some redundant columns (e.g. discharge status code and description) intentionally
+  mapped on here so we can naively code gen a summary below to get details_inpatient*/
 proc sql;
 	create table partial_aggregation as
 	select
@@ -131,6 +134,36 @@ proc sql;
 	;
 quit;
 
+proc sql noprint;
+	select
+		name_field
+	into :details_inpatient_dimensions separated by " "
+	from metadata_target
+	where upcase(name_table) eq "DETAILS_INPATIENT"
+		and (
+			upcase(key_table) eq "Y"
+			or upcase(sas_type) eq "CHAR" /*Capture duplicated code/description columns*/
+			)
+	order by field_position
+	;
+	select
+		name_field
+	into :details_inpatient_facts separated by " "
+	from metadata_target
+	where upcase(name_table) eq "DETAILS_INPATIENT"
+		and upcase(key_table) eq "N"
+		and upcase(sas_type) eq "NUM"
+	order by field_position
+	;
+quit;
+%put details_inpatient_dimensions = &details_inpatient_dimensions.;
+%put details_inpatient_facts = &details_inpatient_facts.;
+
+proc means noprint nway missing data = partial_aggregation;
+	class &details_inpatient_dimensions.;
+	var &details_inpatient_facts.;
+	output out = details_inpatient (drop = _TYPE_ _FREQ_) sum = ;
+run;
 
 /*Calculate the requested measures*/
 proc sql;
