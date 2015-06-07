@@ -30,7 +30,7 @@ libname post045 "&post045.";
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=member_ID~caseadmitid
 	,Force_Util=&post_force_util.
-	,Where_Claims = %str(prm_nyu_included_yn = "Y")
+	,Where_Claims = %str(lowcase(outclaims_prm.prm_line) eqt "o11")
 	,Suffix_Output = nyu
 	);
 
@@ -46,7 +46,6 @@ proc sql;
 		on claims.time_slice = mems.time_period 
 		and claims.member_ID = mems.member_ID
 
-	where PRM_Util_Type = "Visits"
 	order by 
 			claims.time_slice
 			,claims.caseadmitid
