@@ -56,8 +56,7 @@ run;
 proc sql;
 	create table partial_aggregation as
 	select
-		"&name_client." as name_client
-		,claims.time_slice as time_period
+		claims.time_slice as time_period
 		,mems.elig_status_1
 		,coalesce(claims.providerid,'Unknown') as prv_id_inpatient
 		,claims.dischargestatus as discharge_status_code
@@ -141,6 +140,7 @@ proc sql noprint;
 	into :details_inpatient_dimensions separated by " "
 	from metadata_target
 	where upcase(name_table) eq "DETAILS_INPATIENT"
+		and upcase(name_field) ne "NAME_CLIENT" /*Assigned later*/
 		and (
 			upcase(key_table) eq "Y"
 			or upcase(sas_type) eq "CHAR" /*Capture duplicated code/description columns*/
@@ -152,6 +152,7 @@ proc sql noprint;
 	into :details_inpatient_facts separated by " "
 	from metadata_target
 	where upcase(name_table) eq "DETAILS_INPATIENT"
+		and upcase(name_field) ne "NAME_CLIENT" /*Assigned later*/
 		and upcase(key_table) eq "N"
 		and upcase(sas_type) eq "NUM"
 	order by field_position
@@ -171,8 +172,7 @@ run;
 proc sql;
 	create table measures_non_riskadj as
 	select
-		detail.name_client
-		,detail.time_period
+		detail.time_period
 		,detail.elig_status_1
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
@@ -204,19 +204,16 @@ proc sql;
 	from details_inpatient as detail
 	left join
 		post010.basic_aggs_elig_status as aggs	
-			on detail.name_client = aggs.name_client
-			and detail.time_period = aggs.time_period
+			on detail.time_period = aggs.time_period
 			and detail.elig_status_1 = aggs.elig_status_1
 	group by 
 		detail.time_period
-		,detail.name_client
 		,detail.elig_status_1
 		,aggs.memmos_sum
 		,aggs.prm_costs_sum_all_services
 		,aggs.memmos_sum_riskadj
 	order by
-		detail.name_client
-		,detail.time_period
+		detail.time_period
 		,detail.elig_status_1
 	;
 quit;
@@ -236,8 +233,7 @@ proc sql;
 		,claims_agg_mcrm.sum_costs / risk.riskscr_1_cost_avg as sum_costs_riskadj
 	from (
 		select
-			name_client
-			,time_period
+			time_period
 			,elig_status_1
 			,mcrm_line
 			/*Flatten here to avoid having to repeat this nasty set of case logic
@@ -265,8 +261,7 @@ proc sql;
 			,sum(sum_costs_inpatient) as sum_costs
 		from partial_aggregation
 		group by
-			name_client
-			,time_period
+			time_period
 			,elig_status_1
 			,mcrm_line
 		) as claims_agg_mcrm
@@ -278,7 +273,7 @@ proc sql;
 quit;
 
 proc means noprint nway missing data = cost_util_riskadj_mcrm;
-	class name_client time_period elig_status_1;
+	class time_period elig_status_1;
 	var cnt_: sum_:;
 	output out = cost_util_riskadj (drop = _TYPE_ _FREQ_) sum = ;
 run;
@@ -286,8 +281,7 @@ run;
 proc sql;
 	create table measures_riskadj as
 	select
-		cost_util.name_client
-		,cost_util.time_period
+		cost_util.time_period
 		,cost_util.elig_status_1
 /*		,basic_aggs.memmos_sum*/
 		,cost_util.cnt_discharges_medical / basic_aggs.memmos_sum * 12 * 1000 as medical_per1k label="Medical Discharges per 1000"
@@ -299,12 +293,10 @@ proc sql;
 		,cost_util.cnt_discharges_acute_riskadj / basic_aggs.memmos_sum * 12 * 1000 as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
 	from cost_util_riskadj as cost_util
 	left join post010.basic_aggs_elig_status as basic_aggs on
-		cost_util.name_client eq basic_aggs.name_client
-			and cost_util.time_period eq basic_aggs.time_period
+		cost_util.time_period eq basic_aggs.time_period
 			and cost_util.elig_status_1 eq basic_aggs.elig_status_1
 	order by
-		cost_util.name_client
-		,cost_util.time_period
+		cost_util.time_period
 		,cost_util.elig_status_1
 	;
 quit;
@@ -315,7 +307,7 @@ proc transpose data = measures_riskadj
 	name = metric_id
 	label = metric_name
 	;
-	by name_client time_period elig_status_1;
+	by time_period elig_status_1;
 run;
 
 proc transpose data = measures_non_riskadj
@@ -323,7 +315,7 @@ proc transpose data = measures_non_riskadj
 	name = metric_id
 	label = metric_name
 	;
-	by name_client time_period elig_status_1;
+	by time_period elig_status_1;
 run;
 
 data post025.metrics_inpatient;
@@ -331,7 +323,8 @@ data post025.metrics_inpatient;
 	set measures_riskadj_long
 		measures_non_riskadj_long
 		;
-	by name_client time_period elig_status_1;
+	by time_period elig_status_1;
+	&assign_name_client.;
 	metric_category = "Inpatient";
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
@@ -341,6 +334,7 @@ run;
 data post025.details_inpatient;
 	format &details_inpatient_cgfrmt.;
 	set details_inpatient;
+	&assign_name_client.;
 	keep &details_inpatient_cgflds.;
 run;
 %LabelDataSet(post025.details_inpatient)
