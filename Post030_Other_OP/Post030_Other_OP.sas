@@ -19,6 +19,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 /*Library*/
 libname M015_out "&M015_out." access=readonly;
 libname post008 "&post008." access = readonly;
+libname post009 "&post009." access = readonly;
 libname post010 "&post010." access = readonly;
 libname post030 "&post030.";
 
@@ -70,7 +71,7 @@ proc sql;
 	;
 quit;
 
-/*** UTILIZATION RATES (NOT RISK ADJUSTED) ***/
+/*** UTILIZATION RATES ***/
 data ref_service_agg;
 	set M015_out.mr_line_info (keep =
 		mr_line
@@ -114,30 +115,55 @@ quit;
 	)
 
 proc sql;
-	create table agg_util as
+	create table agg_util_mcrm as
 	select
 		claims.time_slice as time_period
 		,claims.elig_status_1
 		,ref_service_agg.metric_id
 		,ref_service_agg.metric_name
+		,mr_to_mcrm.mcrm_line
 		,sum(prm_util) as _sum_prm_util
 	from claims_members as claims
 	inner join ref_service_agg as ref_service_agg
 		on claims.prm_line eq ref_service_agg.mr_line
+	left join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mr_to_mcrm on
+		claims.prm_line eq mr_to_mcrm.mr_line
 	group by
 		claims.time_slice
 		,claims.elig_status_1
 		,ref_service_agg.metric_id
 		,ref_service_agg.metric_name
+		,mr_to_mcrm.mcrm_line
+	;
+quit;
+
+proc sql;
+	create table agg_util as
+	select
+		src.time_period
+		,src.elig_status_1
+		,src.metric_id
+		,src.metric_name
+		,sum(src._sum_prm_util) as _sum_prm_util
+		,sum(src._sum_prm_util / risk.riskscr_1_util_avg) as _sum_prm_util_riskadj
+	from agg_util_mcrm as src
+	left join post009.riskscr_service as risk on
+		src.time_period eq risk.time_period
+			and src.elig_status_1 eq risk.elig_status_1
+			and src.mcrm_line eq risk.mcrm_line
+	group by
+		src.time_period
+		,src.elig_status_1
+		,src.metric_id
+		,src.metric_name
 	;
 quit;
 
 proc transpose data = post010.metrics_basic
-	out = memmos_riskscr (drop = _:)
+	out = memmos (drop = _:)
 	;
 	where lowcase(metric_id) in (
-		"riskscr_1_avg"
-		,"memmos_sum"
+		"memmos_sum"
 		);
 	by time_period elig_status_1;
 	var metric_value;
@@ -145,35 +171,38 @@ proc transpose data = post010.metrics_basic
 run;
 
 proc sql;
-	create table util_rates as
+	create table util_rates_wide as
 	select
 		agg_util.*
-		,memmos_riskscr.memmos_sum as _sum_memmos
-		,memmos_riskscr.riskscr_1_avg as _avg_riskscr
-		,_sum_prm_util * (1 / memmos_riskscr.memmos_sum) * 12 * 1000 as metric_value
+		,memmos.memmos_sum as _sum_memmos
+		,_sum_prm_util * (1 / memmos.memmos_sum) * 12 * 1000 as util_rate_raw
+		,_sum_prm_util_riskadj * (1 / memmos.memmos_sum) * 12 * 1000 as util_rate_riskadj
 	from agg_util as agg_util
-	left join memmos_riskscr as memmos_riskscr
-		on agg_util.time_period eq memmos_riskscr.time_period
-		and agg_util.elig_status_1 eq memmos_riskscr.elig_status_1
+	left join memmos as memmos
+		on agg_util.time_period eq memmos.time_period
+		and agg_util.elig_status_1 eq memmos.elig_status_1
 	order by
 		agg_util.time_period
 		,agg_util.elig_status_1
 	;
 quit;
 
-/*** UTILIZATION RATES (RISK ADJUSTED) ***/
-data util_rates_riskadj;
-	set util_rates;
+data util_rates;
+	set util_rates_wide;
+	metric_value = util_rate_raw;
+	output;
+	call missing(metric_value);
 	metric_id = catx("_",metric_id,"riskadj");
 	metric_name = catx(", ",metric_name,"Risk Adjusted");
-	metric_value = metric_value / _avg_riskscr;
+	metric_value = util_rate_riskadj;
+	output;
+	drop _:;
 run;
 
 /*** COMBINE THE RESULTS ***/
 data post030.metrics_outpatient;
 	format &metrics_key_value_cgfrmt.;
 	set util_rates
-		util_rates_riskadj
 		pct_office_visits_pcp
 		;
 	by time_period elig_status_1;
