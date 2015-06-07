@@ -18,7 +18,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /*Libnames*/
 libname post008 "&post008." access=readonly;
-libname post010 "&post010." access=readonly;
+libname post009 "&post009." access=readonly;
 libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -50,11 +50,12 @@ data disch_xwalk;
 run;
 
 proc sql;
-	create table details_inpatient as
+	create table partial_aggregation as
 	select
 		"&name_client." as name_client
 		,claims.time_slice as time_period
 		,mems.elig_status_1
+		,mr_to_mcrm.mcrm_line
 		,coalesce(claims.providerid,'Unknown') as prv_id_inpatient
 		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
@@ -109,9 +110,12 @@ proc sql;
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join disch_xwalk on
 			claims.dischargestatus eq disch_xwalk.disch_code
+		left join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mr_to_mcrm on
+			claims.prm_line eq mr_to_mcrm.mr_line
 	group by 
 		time_slice
 		,mems.elig_status_1
+		,mcrm_line
 		,prv_id_inpatient
 		,discharge_status_code
 		,discharge_status_desc
