@@ -55,14 +55,9 @@ proc sql;
 		"&name_client." as name_client
 		,claims.time_slice as time_period
 		,mems.elig_status_1
-		,mr_to_mcrm.mcrm_line
 		,coalesce(claims.providerid,'Unknown') as prv_id_inpatient
-		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
 		,coalesce(disch_xwalk.disch_desc, 'Other') as discharge_status_desc format=$256.
-		,sum(claims.prm_util) as sum_days_inpatient
-		,claims.prm_util as los_inpatient
-		,sum(claims.prm_costs) as sum_costs_inpatient
 		,claims.prm_drg as drg_inpatient
 		,claims.prm_drgversion as drg_version_inpatient
 		,case
@@ -74,7 +69,6 @@ proc sql;
 			when lowcase(claims.prm_line) eqt 'i12' then 'Surgical'
 			else 'None'
 			end as medical_surgical
-		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,case
 			when upcase(claims.prm_ahrq_pqi) in(
 				'PQI01'
@@ -105,6 +99,12 @@ proc sql;
 			else "N"
 			end
 			as preference_sensitive_yn
+		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
+		,claims.prm_util as los_inpatient
+		,mr_to_mcrm.mcrm_line
+		,sum(claims.discharges) as cnt_discharges_inpatient
+		,sum(claims.prm_util) as sum_days_inpatient
+		,sum(claims.prm_costs) as sum_costs_inpatient
 	from agg_claims_med_inpatient as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
@@ -115,19 +115,19 @@ proc sql;
 	group by 
 		time_slice
 		,mems.elig_status_1
-		,mcrm_line
 		,prv_id_inpatient
 		,discharge_status_code
 		,discharge_status_desc
-		,los_inpatient
 		,drg_inpatient
 		,drg_version_inpatient
 		,acute_yn
 		,medical_surgical
-		,inpatient_readmit_yn
 		,inpatient_pqi_yn
 		,inpatient_discharge_to_snf_yn
 		,preference_sensitive_yn
+		,inpatient_readmit_yn
+		,los_inpatient
+		,mcrm_line
 	;
 quit;
 
