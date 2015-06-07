@@ -36,6 +36,22 @@ libname post025 "&post025.";
 		,suffix_output = inpatient
 		)
 
+proc sql noprint;
+	select
+		count(*)
+	into :cnt_rows_non_days_util trimmed
+	from agg_claims_med_inpatient
+	where upcase(prm_util_type) ne "DAYS"
+	;
+quit;
+%put cnt_rows_non_days_util = &cnt_rows_non_days_util.;
+%AssertThat(
+	&cnt_rows_non_days_util.
+	,eq
+	,0
+	,ReturnMessage=It is assumed that all returned utilization will be of the same type and also days.
+	)
+
 data disch_xwalk;
 	infile "%GetParentFolder(0)Discharge_status_xwalk.csv"
 		lrecl=2048
