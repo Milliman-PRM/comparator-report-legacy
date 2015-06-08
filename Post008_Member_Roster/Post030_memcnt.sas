@@ -200,9 +200,17 @@ proc sql;
 	from post008.memcnt
 	where 
 		deceased_yn = "N" and 
-			(deceased_hospital_yn eq "Y" or endoflife_numer_yn_chemolt14days eq "Y" or endoflife_denom_yn_chemolt14days eq "Y" or 
-			endoflife_numer_yn_hospicelt3day eq "Y" or endoflife_denom_yn_hospicelt3day eq "Y" or endoflife_numer_yn_hospicenever eq "Y"
-			or endoflife_denom_yn_hospicenever eq "Y" or final_hospice_days ne 0 or costs_final_30_days_sum ne 0)
+			(
+				deceased_hospital_yn eq "Y"
+				or endoflife_numer_yn_chemolt14days eq "Y"
+				or endoflife_denom_yn_chemolt14days eq "Y"
+				or endoflife_numer_yn_hospicelt3day eq "Y"
+				or endoflife_denom_yn_hospicelt3day eq "Y"
+				or endoflife_numer_yn_hospicenever eq "Y"
+				or endoflife_denom_yn_hospicenever eq "Y"
+				or final_hospice_days ne 0
+				or costs_final_30_days_sum ne 0
+			)
 	;
 quit;
 
