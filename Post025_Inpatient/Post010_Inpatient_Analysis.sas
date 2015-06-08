@@ -255,7 +255,6 @@ proc sql;
 		,detail.elig_status_1
 		,aggs.memmos_sum
 		,aggs.prm_costs_sum_all_services
-		,aggs.memmos_sum_riskadj
 	order by
 		detail.time_period
 		,detail.elig_status_1
