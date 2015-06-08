@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Aaron Hoch, Kyle Baird, Shea Parkes
+### CODE OWNERS: Aaron Hoch, Kyle Baird, Shea Parkes, Michael Menser
 
 ### OBJECTIVE:
 	Validate the outputs against the given data mart to ensure we are supplying
@@ -91,6 +91,22 @@ data additional_client_names;
 	set Name_client_Unique;
 	where upcase(name_client) ne upcase("&name_client.");
 run;
+
 %AssertDataSetNotPopulated(additional_client_names)
+
+proc sql;
+	create table metric_id_all_values as
+	select distinct metric_id
+	from post050.metrics_key_value
+	;
+quit;
+
+data invalid_metric_id_values (WHERE = (validity = 0));
+	set metric_id_all_values;
+	validity = nvalid(metric_id, 'v7');
+run;
+
+%AssertDataSetNotPopulated(DataSetName = invalid_metric_id_values, 
+                           ReturnMessage = At least one of the metric id variables does not follow the conventions of SAS.);
 
 %put System Return Code = &syscc.;
