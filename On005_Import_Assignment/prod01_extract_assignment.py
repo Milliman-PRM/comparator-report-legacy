@@ -224,6 +224,16 @@ if __name__ == '__main__':
     import os
     sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
     import healthbi_env
+    if healthbi_env.META["project_id_prior"].lower() != "new":
+        print("PULLING REFERENCES FROM PRIOR PROJECT\n\n")
+        print([
+            shutil.copy(str(file_), healthbi_env.META["path_project_received_ref"])
+            for file_ in Path(
+                healthbi_env.META["path_project_data_prior"] + "_From_Client" + os.sep
+                ).rglob("*.xlsx")
+            if file_.is_file()
+            ], sep="\n")
+        print("\n")
     print('BEGINNING TO SCAN RECEIVED DATA FOR ASSIGNMENT INFORMATION.\n\n')
     main(
         Path(healthbi_env.META['path_project_received']).parent,
