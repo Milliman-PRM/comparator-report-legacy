@@ -16,6 +16,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 libname post008 "&post008." access = readonly;
+libname post009 "&post009." access = readonly;
 libname post010 "&post010." access = readonly;
 libname post040 "&post040.";
 
@@ -52,6 +53,9 @@ proc sql;
 		,sum(all_snf.Discharges) as cnt_discharges_snf
 		,sum(all_snf.PRM_Util) as sum_days_snf
 		,sum(all_snf.PRM_Costs) as sum_costs_snf
+		,sum(all_snf.discharges / risk.riskscr_1_util_avg) as _cnt_discharges_snf_riskadj
+		,sum(all_snf.prm_util / risk.riskscr_1_util_avg) as _sum_days_snf_riskadj
+		,sum(all_snf.prm_costs / risk.riskscr_1_cost_avg) as _sum_costs_snf_riskadj
 	from agg_claims_med_snf as all_snf
 	/*Limit to members active in the analysis*/
 	inner join post008.members as active
@@ -60,6 +64,12 @@ proc sql;
 	left join Post040.SNF_Readmissions as readmits
 		on all_snf.member_id = readmits.member_id
 		and all_snf.caseadmitid = readmits.caseadmitid
+	left join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mr_to_mcrm
+		on all_snf.prm_line eq mr_to_mcrm.mr_line
+	left join post009.riskscr_service as risk
+		on all_snf.time_slice eq risk.time_period
+			and active.elig_status_1 eq risk.elig_status_1
+			and mr_to_mcrm.mcrm_line eq risk.mcrm_line
 	group by
 		all_snf.time_slice
 		,active.elig_status_1
@@ -85,8 +95,8 @@ proc sql;
 			/aggs.memmos_sum * 12000
 			as SNF_per1k label="SNF Discharges per 1000"
 
-		,sum(detail.cnt_discharges_snf)
-			/aggs.memmos_sum_riskadj * 12000
+		,sum(detail._cnt_discharges_snf_riskadj)
+			/aggs.memmos_sum * 12000
 			as SNF_per1k_rskadj label="SNF Admissions per 1000 Risk Adjusted"
 
 		,sum(detail.sum_costs_snf)
