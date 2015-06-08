@@ -65,8 +65,8 @@ proc sql;
 			as pct_cancer_hospice_never label = "Percentage of Cancer Decedents Never Admitted to Hospice"
 
 		,sum(case when memcnt.final_hospice_days lt 3 and memcnt.final_hospice_days gt 0 then memcnt.memcnt else 0 end) /
-			sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
-			as pct_hospice_lt3days label = "Percentage of Decedents Admitted to Hospice for Less Than 3 Days"
+			sum(case when memcnt.final_hospice_days gt 0 then memcnt.memcnt else 0 end)
+			as pct_hospice_lt3days label = "Percentage of Hospice Decedents Admitted to Hospice for Less Than 3 Days"
 
 		,sum(case when memcnt.final_hospice_days eq 0 and memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
