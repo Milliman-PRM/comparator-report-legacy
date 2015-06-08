@@ -18,6 +18,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /*Libnames*/
 libname post008 "&post008." access=readonly;
+libname post009 "&post009." access=readonly;
 libname post010 "&post010." access=readonly;
 libname post025 "&post025.";
 
@@ -35,6 +36,22 @@ libname post025 "&post025.";
 		,suffix_output = inpatient
 		)
 
+proc sql noprint;
+	select
+		count(*)
+	into :cnt_rows_non_days_util trimmed
+	from agg_claims_med_inpatient
+	where upcase(prm_util_type) ne "DAYS"
+	;
+quit;
+%put cnt_rows_non_days_util = &cnt_rows_non_days_util.;
+%AssertThat(
+	&cnt_rows_non_days_util.
+	,eq
+	,0
+	,ReturnMessage=It is assumed that all returned utilization will be of the same type and also days.
+	)
+
 data disch_xwalk;
 	infile "%GetParentFolder(0)Discharge_status_xwalk.csv"
 		lrecl=2048
@@ -49,19 +66,17 @@ data disch_xwalk;
 		;
 run;
 
+/*Rollup as far as we can to support both utilization metrics and details summary.*/
+/*There are some redundant columns (e.g. discharge status code and description) intentionally
+  mapped on here so we can naively code gen a summary below to get details_inpatient*/
 proc sql;
-	create table details_inpatient as
+	create table partial_aggregation as
 	select
-		"&name_client." as name_client
-		,claims.time_slice as time_period
+		claims.time_slice as time_period
 		,mems.elig_status_1
 		,coalesce(claims.providerid,'Unknown') as prv_id_inpatient
-		,sum(claims.discharges) as cnt_discharges_inpatient
 		,claims.dischargestatus as discharge_status_code
 		,coalesce(disch_xwalk.disch_desc, 'Other') as discharge_status_desc format=$256.
-		,sum(claims.prm_util) as sum_days_inpatient
-		,claims.prm_util as los_inpatient
-		,sum(claims.prm_costs) as sum_costs_inpatient
 		,claims.prm_drg as drg_inpatient
 		,claims.prm_drgversion as drg_version_inpatient
 		,case
@@ -73,7 +88,6 @@ proc sql;
 			when lowcase(claims.prm_line) eqt 'i12' then 'Surgical'
 			else 'None'
 			end as medical_surgical
-		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,case
 			when upcase(claims.prm_ahrq_pqi) in(
 				'PQI01'
@@ -104,63 +118,77 @@ proc sql;
 			else "N"
 			end
 			as preference_sensitive_yn
+		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
+		,claims.prm_util as los_inpatient
+		,mr_to_mcrm.mcrm_line
+		,sum(claims.discharges) as cnt_discharges_inpatient
+		,sum(claims.prm_util) as sum_days_inpatient
+		,sum(claims.prm_costs) as sum_costs_inpatient
 	from agg_claims_med_inpatient as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join disch_xwalk on
 			claims.dischargestatus eq disch_xwalk.disch_code
+		left join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mr_to_mcrm on
+			claims.prm_line eq mr_to_mcrm.mr_line
 	group by 
 		time_slice
 		,mems.elig_status_1
 		,prv_id_inpatient
 		,discharge_status_code
 		,discharge_status_desc
-		,los_inpatient
 		,drg_inpatient
 		,drg_version_inpatient
 		,acute_yn
 		,medical_surgical
-		,inpatient_readmit_yn
 		,inpatient_pqi_yn
 		,inpatient_discharge_to_snf_yn
 		,preference_sensitive_yn
+		,inpatient_readmit_yn
+		,los_inpatient
+		,mcrm_line
 	;
 quit;
 
+proc sql noprint;
+	select
+		name_field
+	into :details_inpatient_dimensions separated by " "
+	from metadata_target
+	where upcase(name_table) eq "DETAILS_INPATIENT"
+		and upcase(name_field) ne "NAME_CLIENT" /*Assigned later*/
+		and (
+			upcase(key_table) eq "Y"
+			or upcase(sas_type) eq "CHAR" /*Capture duplicated code/description columns*/
+			)
+	order by field_position
+	;
+	select
+		name_field
+	into :details_inpatient_facts separated by " "
+	from metadata_target
+	where upcase(name_table) eq "DETAILS_INPATIENT"
+		and upcase(name_field) ne "NAME_CLIENT" /*Assigned later*/
+		and upcase(key_table) eq "N"
+		and upcase(sas_type) eq "NUM"
+	order by field_position
+	;
+quit;
+%put details_inpatient_dimensions = &details_inpatient_dimensions.;
+%put details_inpatient_facts = &details_inpatient_facts.;
 
-/*Calculate the requested measures*/
+proc means noprint nway missing data = partial_aggregation;
+	class &details_inpatient_dimensions.;
+	var &details_inpatient_facts.;
+	output out = details_inpatient (drop = _TYPE_ _FREQ_) sum = ;
+run;
+
+/***** CALCULATE MEASURES *****/
 proc sql;
 	create table measures as
 	select
-		detail.name_client
-		,detail.time_period
+		detail.time_period
 		,detail.elig_status_1
-		,"Inpatient" as metric_category
-
-		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as acute_per1k label="Acute Discharges per 1000"
-
-		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum_riskadj * 12000
-			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
-
-		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as surgical_per1k label="Surgical Discharges per 1000"
-
-		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum_riskadj * 12000
-			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
-
-		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as medical_per1k label="Medical Discharges per 1000"
-
-		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum_riskadj * 12000
-			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
-
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
@@ -188,44 +216,76 @@ proc sql;
 		,sum(case when upcase(detail.inpatient_readmit_yn) eq "Y" then detail.cnt_discharges_inpatient else 0 end)
 			/ sum(detail.cnt_discharges_inpatient)
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
-	from details_inpatient as detail
+
+		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as acute_per1k label="Acute Discharges per 1000"
+
+		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
+
+		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as surgical_per1k label="Surgical Discharges per 1000"
+
+		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
+
+		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as medical_per1k label="Medical Discharges per 1000"
+
+		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
+
+	from partial_aggregation as detail
 	left join
 		post010.basic_aggs_elig_status as aggs	
-			on detail.name_client = aggs.name_client
-			and detail.time_period = aggs.time_period
+			on detail.time_period = aggs.time_period
 			and detail.elig_status_1 = aggs.elig_status_1
+	left join post009.riskscr_service as risk on
+		detail.time_period eq risk.time_period
+			and detail.elig_status_1 eq risk.elig_status_1
+			and detail.mcrm_line eq risk.mcrm_line
 	group by 
 		detail.time_period
-		,detail.name_client
 		,detail.elig_status_1
 		,aggs.memmos_sum
 		,aggs.prm_costs_sum_all_services
-		,aggs.memmos_sum_riskadj
+	order by
+		detail.time_period
+		,detail.elig_status_1
 	;
 quit;
 
-
-
-/*Munge to target formats*/
-proc transpose data=measures 
-				out=metrics_transpose(rename=(COL1 = metric_value))
-				name=metric_id
-				label=metric_name;
-	by name_client time_period metric_category elig_status_1;
-run;
-
-data post025.details_inpatient;
-	format &details_inpatient_cgfrmt.;
-	set details_inpatient;
-	keep &details_inpatient_cgflds.;
+proc transpose data = measures
+	out = measures_long (rename = (col1 = metric_value))
+	name = metric_id
+	label = metric_name
+	;
+	by time_period elig_status_1;
 run;
 
 data post025.metrics_inpatient;
 	format &metrics_key_value_cgfrmt.;
-	set metrics_transpose;
+	set measures_long;
+	by time_period elig_status_1;
+	&assign_name_client.;
+	metric_category = "Inpatient";
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
 %LabelDataSet(post025.metrics_inpatient)
+
+data post025.details_inpatient;
+	format &details_inpatient_cgfrmt.;
+	set details_inpatient;
+	&assign_name_client.;
+	keep &details_inpatient_cgflds.;
+run;
+%LabelDataSet(post025.details_inpatient)
 
 %put return_code = &syscc.;
