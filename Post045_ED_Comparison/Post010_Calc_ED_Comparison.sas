@@ -15,6 +15,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
 libname post008 "&post008." access = readonly;
+libname post009 "&post009." access = readonly;
 libname post010 "&post010." access = readonly;
 libname post045 "&post045.";
 
@@ -28,25 +29,32 @@ libname post045 "&post045.";
 	,Time_Slice=&list_time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=member_ID~caseadmitid
+	,Dimensions=member_ID~caseadmitid~prm_line
 	,Force_Util=&post_force_util.
-	,Where_Claims = %str(prm_nyu_included_yn = "Y")
+	,Where_Claims = %str(lowcase(outclaims_prm.prm_line) eqt "o11")
 	,Suffix_Output = nyu
 	);
 
-/*Merge the newly created table with the member roster table.  This will be the main table used for calculation of metrics.*/
+/*Limit to relevant members.*/
 proc sql;
 	create table ED_cases_table as
 	select 
 		claims.*
 		,mems.elig_status_1
+		,mr_to_mcrm.mcrm_line
+		,risk.riskscr_1_util_avg
+		,claims.prm_util / risk.riskscr_1_util_avg as prm_util_riskadj
 	from agg_claims_med_nyu as claims 
 	inner join 
 		post008.members as mems 
 		on claims.time_slice = mems.time_period 
 		and claims.member_ID = mems.member_ID
-
-	where PRM_Util_Type = "Visits"
+	left join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mr_to_mcrm on
+		claims.prm_line eq mr_to_mcrm.mr_line
+	left join post009.riskscr_service as risk on
+		claims.time_slice eq risk.time_period
+			and mems.elig_status_1 eq risk.elig_status_1
+			and mr_to_mcrm.mcrm_line eq risk.mcrm_line
 	order by 
 			claims.time_slice
 			,claims.caseadmitid
@@ -66,8 +74,8 @@ proc sql;
 			/aggs.memmos_sum * 12000
 			as ED_per1k label="ED visits per 1000"
 
-		,calculated ED_per1k
-			/aggs.riskscr_1_avg
+		,sum(prm_util_riskadj)
+			/aggs.memmos_sum * 12000
 			as ED_per1k_rskadj label="ED visits per 1000 Risk Adjusted"
 
 		,sum(cases.prm_nyu_emergent_non_avoidable * PRM_Util)
@@ -107,8 +115,8 @@ proc sql;
 		,aggs.memmos_sum
 		,aggs.riskscr_1_avg
 	;
-quit; 
-		 
+quit;
+
 /*Transpose the dataset to get the data into a long format*/
 proc transpose data=measures
 		out=metrics_transpose(rename=(COL1 = metric_value))
