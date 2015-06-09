@@ -45,46 +45,62 @@ run;
 
 /*Check a variety of calculated metrics by re-calculating them from the Cost_Util table*/
 
-proc sql;
-	create table cost_util_rollup as
-	select
-		name_client
-		,time_period
-		,elig_status_1
-		,sum(prm_costs) as costs_check
-	from post050.cost_util
-	where upcase(prm_coverage_type) = "MEDICAL"
-	group by
-		name_client
-		,time_period
-		,elig_status_1	
-	;
-quit;
+
+%macro BasicMetricsTest(metric_id /*The metric_id to be verified*/
+						,cost_util_field /*The field to be summed from the cost_util table*/);
+		proc sql;
+			create table cost_util_rollup as
+			select
+				name_client
+				,time_period
+				,elig_status_1
+				,sum(&cost_util_field.) as check
+			from post050.cost_util
+			where upcase(prm_coverage_type) = "MEDICAL"
+			group by
+				name_client
+				,time_period
+				,elig_status_1	
+			;
+		quit;
 
 
-proc sql;
-	create table costs_check as
-	select
-		cost.name_client
-		,cost.time_period
-		,cost.elig_status_1
-		,costs_check
-		,metrics.metric_value as metric_costs
-	from cost_util_rollup as cost
-	left join post050.metrics_key_value as metrics on
-		cost.name_client = metrics.name_client and
-		cost.time_period = metrics.time_period and
-		cost.elig_status_1 = metrics.elig_status_1
-	where metrics.metric_id = "prm_costs_sum_all_services"
-	;
-quit;
+		proc sql;
+			create table &cost_util_field._check as
+			select
+				cost.name_client
+				,cost.time_period
+				,cost.elig_status_1
+				,check
+				,metrics.metric_value
+			from cost_util_rollup as cost
+			left join post050.metrics_key_value as metrics on
+				cost.name_client = metrics.name_client and
+				cost.time_period = metrics.time_period and
+				cost.elig_status_1 = metrics.elig_status_1
+			where metrics.metric_id = "&metric_id."
+			;
+		quit;
 
-data costs_diff;
-set costs_check;
-where round(costs_check) ne round(metric_costs);
-run;
+		data &metric_id._diff;
+		set &cost_util_field._check;
+		where round(check) ne round(metric_value);
+		run;
 
-%AssertDatasetNotPopulated(costs_diff,ReturnMessage=The costs calculated from the cost_util table do not match the metric value.)
+		%AssertDatasetNotPopulated(&metric_id._diff,ReturnMessage=The &metric_id. calculated from the cost_util table do not match the metrics_key_value table.)
+
+%mend BasicMetricsTest;
+
+
+/*Check sum of costs and sum of discharges*/
+%BasicMetricsTest(prm_costs_sum_all_services,prm_costs)
+%BasicMetricsTest(discharges_sum_all_services,prm_discharges)
+
+
+
+
+
+
 
 
 %put System Return Code = &syscc.;
