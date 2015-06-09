@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Michael Menser
+### CODE OWNERS: Michael Menser, Shea Parkes
 
 ### OBJECTIVE:
 	Validate that the two details tables (SNF and inpatient) and the cost_util table match up as expected.
