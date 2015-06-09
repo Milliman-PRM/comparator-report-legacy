@@ -13,12 +13,11 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
-libname post050 "&post050.";
+libname post050 "&post050." access = readonly;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Roll up the snf table to summarize the discharges, days and costs by combination of time period, eligibility
-status and client name.*/
+/*Roll up the SNF table in order to compare it to the cost_util table.*/
 proc sql;
 	create table details_snf_summary as
 	select
@@ -36,7 +35,7 @@ proc sql;
 	;
 quit;
 		
-/*Now do the same for the cost_util table.*/
+/*Now roll up the cost_util table.*/
 proc sql;
 	create table cost_util_summary as
 	select
