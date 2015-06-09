@@ -99,7 +99,7 @@ proc sql;
 	create table agg_claims_limited as
 	select
 		src.*
-		,link_mr_mcrm_line.mcrm_line length = 5 format = $5.
+		,link_mr_mcrm_line.mcrm_line
 
 	from agg_claims_coalesce as src
 	inner join post008.members as limit on
