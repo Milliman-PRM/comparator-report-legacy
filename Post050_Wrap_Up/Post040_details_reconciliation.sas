@@ -25,9 +25,9 @@ proc sql;
 		name_client
 		,time_period
 		,elig_status_1
-		,sum(cnt_discharges_snf) as total_discharges_snf
-		,sum(sum_days_snf) as total_days_snf
-		,sum(sum_costs_snf) as total_costs_snf
+		,sum(cnt_discharges_snf) as total_disch_snf_table
+		,sum(sum_days_snf) as total_days_snf_table
+		,sum(sum_costs_snf) as total_costs_snf_table
 	from Post050.details_SNF
 	group by
 		name_client
@@ -43,9 +43,9 @@ proc sql;
 		name_client
 		,time_period
 		,elig_status_1
-		,sum(prm_discharges) as total_discharges_snf
-		,sum(prm_days) as total_days_snf
-		,sum(prm_costs) as total_costs_snf
+		,sum(prm_discharges) as total_disch_util_table
+		,sum(prm_days) as total_days_util_table
+		,sum(prm_costs) as total_costs_util_table
 	from Post050.cost_util
 	where UPCASE(prm_line) = 'I31'
 	group by
@@ -54,3 +54,27 @@ proc sql;
 		,elig_status_1
 	;
 quit;
+
+/*Validate that the two tables match*/
+proc sql;
+	create table comparison as
+	select 
+		snf.*
+		,cost.total_disch_util_table
+		,cost.total_days_util_table
+		,cost.total_costs_util_table
+	from details_snf_summary as snf
+	full join
+	cost_util_summary as cost
+	on	snf.name_client = cost.name_client and
+		snf.time_period = cost.time_period and
+		snf.elig_status_1 = cost.elig_status_1 	
+	;
+quit;
+
+data differences;
+	set comparison;
+	where (total_disch_snf_table ne total_disch_util_table) or 
+		  (total_days_snf_table ne total_days_util_table) or 
+		  (total_costs_snf_table ne total_days_util_table);
+run;
