@@ -57,6 +57,7 @@ proc sql;
 		Discharges_total as total
 		on inpatient.name_client = total.name_client
 		and inpatient.time_period = total.time_period
+		and inpatient.elig_status_1 = total.elig_status_1
 	group by
 		total.name_client
 		,total.time_period
