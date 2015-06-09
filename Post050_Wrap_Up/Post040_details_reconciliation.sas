@@ -59,10 +59,15 @@ quit;
 proc sql;
 	create table comparison as
 	select 
-		snf.*
-		,cost.total_disch_util_table
-		,cost.total_days_util_table
-		,cost.total_costs_util_table
+		snf.name_client
+		,snf.time_period
+		,snf.elig_status_1
+		,round(snf.total_disch_snf_table,1) as total_disch_snf_table /*Round to prevent floating point issues.*/
+		,round(snf.total_days_snf_table,1) as total_days_snf_table
+		,round(snf.total_costs_snf_table,.01) as total_costs_snf_table
+		,round(cost.total_disch_util_table,1) as total_disch_util_table
+		,round(cost.total_days_util_table,1) as total_days_util_table
+		,round(cost.total_costs_util_table,.01) as total_costs_util_table
 	from details_snf_summary as snf
 	full join
 	cost_util_summary as cost
@@ -75,6 +80,10 @@ quit;
 data differences;
 	set comparison;
 	where (total_disch_snf_table ne total_disch_util_table) or 
-		  (total_days_snf_table ne total_days_util_table) or 
-		  (total_costs_snf_table ne total_days_util_table);
+		  (total_days_snf_table ne total_days_util_table) or
+		  (total_costs_snf_table ne total_costs_util_table);
 run;
+
+%AssertDataSetNotPopulated(differences,ReturnMessage=There are discreptancies between the SNF table and Util table.)
+
+%put System Return Code = &syscc.;
