@@ -159,6 +159,13 @@ proc sql;
 quit;
 
 
+%AssertThat(%upcase(&CCLF_exclusion_criteria.)
+	,eq
+	,MSSP
+	,ReturnMessage=Pioneer client does not have assignment files.
+	,FailAction=EndActiveSASSession
+	)
+
 
 /*** IMPUTE MISSING NPIs ON ASSIGNMENT DATA ***/
 
