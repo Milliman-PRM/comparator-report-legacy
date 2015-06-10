@@ -85,74 +85,79 @@ run;
 
 %AssertDataSetNotPopulated(differences_snf,ReturnMessage=There are discreptancies between the SNF table and Util table.)
 
-/*Roll up the inpatient table in order to compare it to the cost_util table.  Start with acute conditions.*/
-proc sql;
-	create table details_inp_summary_acute as
-	select
-		name_client
-		,time_period
-		,elig_status_1
-		,sum(cnt_discharges_inpatient) as total_disch_inpatient_table
-		,sum(sum_days_inpatient) as total_days_inpatient_table
-		,sum(sum_costs_inpatient) as total_costs_inpatient_table
-	from Post050.details_inpatient
-	where acute_yn = 'Y'
-	group by
-		name_client
-		,time_period
-		,elig_status_1
-	;
-quit;
+/*Create macro to compare inpatient table and cost_util table at different aggregation levels.*/
 
-/*Roll up the cost util table.*/
-proc sql;
-	create table cost_util_summary_acute as
-	select
-		name_client
-		,time_period
-		,elig_status_1
-		,sum(prm_discharges) as total_disch_util_table
-		,sum(prm_days) as total_days_util_table
-		,sum(prm_costs) as total_costs_util_table
-	from Post050.cost_util
-	where UPCASE(prm_line) eqt 'I' and UPCASE(prm_line) ne 'I31'
-	group by
-		name_client
-		,time_period
-		,elig_status_1
-	;
-quit;
+%macro Check_Details_Inp(details_inp_label, details_inp_field, details_inp_value)
+	/*Roll up the inpatient table in order to compare it to the cost_util table.*/
+	proc sql;
+		create table details_inp_summary_&details_inp_label as
+		select
+			name_client
+			,time_period
+			,elig_status_1
+			,sum(cnt_discharges_inpatient) as total_disch_inpatient_table
+			,sum(sum_days_inpatient) as total_days_inpatient_table
+			,sum(sum_costs_inpatient) as total_costs_inpatient_table
+		from Post050.details_inpatient
+		where &details_inp_field = &details_inp_value
+		group by
+			name_client
+			,time_period
+			,elig_status_1
+		;
+	quit;
 
-/*Validate that the two tables match*/
-proc sql;
-	create table comparison_acute as
-	select 
-		inp.name_client
-		,inp.time_period
-		,inp.elig_status_1
-		,round(inp.total_disch_inpatient_table,1) as total_disch_inpatient_table /*Round to prevent floating point issues.*/
-		,round(inp.total_days_inpatient_table,1) as total_days_inpatient_table
-		,round(inp.total_costs_inpatient_table,.01) as total_costs_inpatient_table
-		,round(cost.total_disch_util_table,1) as total_disch_util_table
-		,round(cost.total_days_util_table,1) as total_days_util_table
-		,round(cost.total_costs_util_table,.01) as total_costs_util_table
-	from details_inp_summary_acute as inp
-	full join
-	cost_util_summary_acute as cost
-	on	inp.name_client = cost.name_client and
-		inp.time_period = cost.time_period and
-		inp.elig_status_1 = cost.elig_status_1 	
-	;
-quit;
+	/*Roll up the cost util table.*/
+	proc sql;
+		create table cost_util_summary_&details_inp_label as
+		select
+			name_client
+			,time_period
+			,elig_status_1
+			,sum(prm_discharges) as total_disch_util_table
+			,sum(prm_days) as total_days_util_table
+			,sum(prm_costs) as total_costs_util_table
+		from Post050.cost_util
+		where &details_inp_field = &details_inp_value
+		group by
+			name_client
+			,time_period
+			,elig_status_1
+		;
+	quit;
 
-data differences_acute;
-	set comparison_acute;
-	where (total_disch_inpatient_table ne total_disch_util_table) or 
-		  (total_days_inpatient_table ne total_days_util_table) or
-		  (total_costs_inpatient_table ne total_costs_util_table);
-run;
+	/*Validate that the two tables match*/
+	proc sql;
+		create table comparison_&details_inp_label as
+		select 
+			inp.name_client
+			,inp.time_period
+			,inp.elig_status_1
+			,round(inp.total_disch_inpatient_table,1) as total_disch_inpatient_table /*Round to prevent floating point issues.*/
+			,round(inp.total_days_inpatient_table,1) as total_days_inpatient_table
+			,round(inp.total_costs_inpatient_table,.01) as total_costs_inpatient_table
+			,round(cost.total_disch_util_table,1) as total_disch_util_table
+			,round(cost.total_days_util_table,1) as total_days_util_table
+			,round(cost.total_costs_util_table,.01) as total_costs_util_table
+		from details_inp_summary_&details_inp_label as inp
+		full join
+		cost_util_summary_&details_inp_label as cost
+		on	inp.name_client = cost.name_client and
+			inp.time_period = cost.time_period and
+			inp.elig_status_1 = cost.elig_status_1 	
+		;
+	quit;
 
-%AssertDataSetNotPopulated(differences_acute,ReturnMessage=There are discreptancies between the inpatient table and Util table
-at the acute level.)
+	data differences_&details_inp_label;
+		set comparison_&details_inp_label;
+		where (total_disch_inpatient_table ne total_disch_util_table) or 
+		  	(total_days_inpatient_table ne total_days_util_table) or
+		  	(total_costs_inpatient_table ne total_costs_util_table);
+	run;
+
+	%AssertDataSetNotPopulated(differences_&details_inp_label, ReturnMessage=There are discreptancies between the inpatient table and Util table
+	at the &details_inp_label level.);
+
+%mend
 
 %put System Return Code = &syscc.;
