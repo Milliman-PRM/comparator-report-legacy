@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Michael Menser
+### CODE OWNERS: Michael Menser, Jason Altieri
 
 ### OBJECTIVE:
 	Validate that the two details tables (SNF and inpatient) and the cost_util table match up as expected.
@@ -87,11 +87,11 @@ run;
 
 /*Create macro to compare inpatient table and cost_util table at different aggregation levels.*/
 
-%macro Check_Details_Inp(details_inp_label /* */
-						 ,details_inp_field /* */
-						 ,details_inp_value /* */
-						 ,cost_util_include /* */
-						 ,cost_util_exclude /* */);
+%macro Check_Details_Inp(details_inp_label /*Suffix to be written on the labels of the generated tables.*/
+						 ,details_inp_field /*Field to check in inpatient table.*/
+						 ,details_inp_value /*Only include lines with this value of the above field in inpatient table.*/
+						 ,cost_util_include /*Only include lines where the prm_line starts with this expression in the cost_util table.*/
+						 ,cost_util_exclude /*Throw out lines where the prm_line equals this, even if they are included by above parameter.*/);
 
 	/*Roll up the inpatient table in order to compare it to the cost_util table.*/
 	proc sql;
@@ -178,5 +178,29 @@ run;
 				,details_inp_value=none
 				,cost_util_include=I
 				,cost_util_exclude=%str("I31","I11a", "I11b", "I11c", "I12"))
+
+%Check_Details_Inp(details_inp_label=medical
+				,details_inp_field=medical_surgical
+				,details_inp_value=medical
+				,cost_util_include=I11
+				,cost_util_exclude=%str("I31"))
+
+%Check_Details_Inp(details_inp_label=surgical
+				,details_inp_field=medical_surgical
+				,details_inp_value=surgical
+				,cost_util_include=I12
+				,cost_util_exclude=%str("I31"))
+
+/*Lastly, there should be no non-acute cases in the inpatient table. Check this*/
+
+proc sql;
+	create table non_acute_inpatient as
+		select *
+		from Post050.Details_inpatient
+		where acute_yn = 'N'
+	;
+quit;
+
+%AssertDataSetNotPopulated(non_acute_inpatient, ReturnMessage=There are non-acute cases in the inpatient table.)
 
 %put System Return Code = &syscc.;
