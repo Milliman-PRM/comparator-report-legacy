@@ -87,15 +87,15 @@ run;
 
 /*Create macro to compare inpatient table and cost_util table at different aggregation levels.*/
 
-%macro Check_Details_Inp(details_inp_label 
-						 ,details_inp_field 
-						 ,details_inp_value
-						 ,cost_util_include
-						 ,cost_util_exclude)
+%macro Check_Details_Inp(details_inp_label /* */
+						 ,details_inp_field /* */
+						 ,details_inp_value /* */
+						 ,cost_util_include /* */
+						 ,cost_util_exclude /* */);
 
 	/*Roll up the inpatient table in order to compare it to the cost_util table.*/
 	proc sql;
-		create table details_inp_summary_&details_inp_label as
+		create table details_inp_summary_&details_inp_label. as
 		select
 			name_client
 			,time_period
@@ -104,7 +104,7 @@ run;
 			,sum(sum_days_inpatient) as total_days_inpatient_table
 			,sum(sum_costs_inpatient) as total_costs_inpatient_table
 		from Post050.details_inpatient
-		where &details_inp_field = &details_inp_value
+		where upcase(&details_inp_field.) = %upcase("&details_inp_value.")
 		group by
 			name_client
 			,time_period
@@ -114,7 +114,7 @@ run;
 
 	/*Roll up the cost util table.*/
 	proc sql;
-		create table cost_util_summary_&details_inp_label as
+		create table cost_util_summary_&details_inp_label. as
 		select
 			name_client
 			,time_period
@@ -123,8 +123,8 @@ run;
 			,sum(prm_days) as total_days_util_table
 			,sum(prm_costs) as total_costs_util_table
 		from Post050.cost_util
-		where LOWCASE(prm_line) eqt %LOWCASE(&cost_util_include) and
-			LOWCASE(prm_line) not in(%LOWCASE(&cost_util_exclude))
+		where LOWCASE(prm_line) eqt %LOWCASE("&cost_util_include.") and
+			LOWCASE(prm_line) not in(%LOWCASE(&cost_util_exclude.))
 		group by
 			name_client
 			,time_period
@@ -134,7 +134,7 @@ run;
 
 	/*Validate that the two tables match*/
 	proc sql;
-		create table comparison_&details_inp_label as
+		create table comparison_&details_inp_label. as
 		select 
 			inp.name_client
 			,inp.time_period
@@ -145,30 +145,38 @@ run;
 			,round(cost.total_disch_util_table,1) as total_disch_util_table
 			,round(cost.total_days_util_table,1) as total_days_util_table
 			,round(cost.total_costs_util_table,.01) as total_costs_util_table
-		from details_inp_summary_&details_inp_label as inp
+		from details_inp_summary_&details_inp_label. as inp
 		full join
-		cost_util_summary_&details_inp_label as cost
+		cost_util_summary_&details_inp_label. as cost
 		on	inp.name_client = cost.name_client and
 			inp.time_period = cost.time_period and
 			inp.elig_status_1 = cost.elig_status_1 	
 		;
 	quit;
 
-	data differences_&details_inp_label;
-		set comparison_&details_inp_label;
+	data differences_&details_inp_label.;
+		set comparison_&details_inp_label.;
 		where (total_disch_inpatient_table ne total_disch_util_table) or 
 		  	(total_days_inpatient_table ne total_days_util_table) or
 		  	(total_costs_inpatient_table ne total_costs_util_table);
 	run;
 
-	%AssertDataSetNotPopulated(differences_&details_inp_label, ReturnMessage=There are discreptancies between the inpatient table and Util table
-	at the &details_inp_label level.);
+	%AssertDataSetNotPopulated(differences_&details_inp_label., ReturnMessage=There are discreptancies between the inpatient table and Util table at the &details_inp_label. level.);
 
-%mend
+%mend Check_Details_Inp;
 
 /*Check inpatient and cost_util tables at different levels*/
 
-%Check_Details_Inpatient(details_inp_label = acute,
-						 details_inp_field = 
+%Check_Details_Inp(details_inp_label=acute
+				,details_inp_field=acute_yn
+				,details_inp_value=Y
+				,cost_util_include=I
+				,cost_util_exclude=%str("I31"))
+
+%Check_Details_Inp(details_inp_label=none
+				,details_inp_field=medical_surgical
+				,details_inp_value=none
+				,cost_util_include=I
+				,cost_util_exclude=%str("I31","I11a", "I11b", "I11c", "I12"))
 
 %put System Return Code = &syscc.;
