@@ -87,7 +87,12 @@ run;
 
 /*Create macro to compare inpatient table and cost_util table at different aggregation levels.*/
 
-%macro Check_Details_Inp(details_inp_label, details_inp_field, details_inp_value)
+%macro Check_Details_Inp(details_inp_label 
+						 ,details_inp_field 
+						 ,details_inp_value
+						 ,cost_util_include
+						 ,cost_util_exclude)
+
 	/*Roll up the inpatient table in order to compare it to the cost_util table.*/
 	proc sql;
 		create table details_inp_summary_&details_inp_label as
@@ -118,7 +123,8 @@ run;
 			,sum(prm_days) as total_days_util_table
 			,sum(prm_costs) as total_costs_util_table
 		from Post050.cost_util
-		where &details_inp_field = &details_inp_value
+		where LOWCASE(prm_line) eqt %LOWCASE(&cost_util_include) and
+			LOWCASE(prm_line) not in(%LOWCASE(&cost_util_exclude))
 		group by
 			name_client
 			,time_period
@@ -159,5 +165,10 @@ run;
 	at the &details_inp_label level.);
 
 %mend
+
+/*Check inpatient and cost_util tables at different levels*/
+
+%Check_Details_Inpatient(details_inp_label = acute,
+						 details_inp_field = 
 
 %put System Return Code = &syscc.;
