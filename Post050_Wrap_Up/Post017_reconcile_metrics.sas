@@ -185,6 +185,11 @@ run;
 					,cost_util_field=prm_discharges
 					,cost_util_include=I11);
 
+%Per1000MetricsTest(label=medical_general_per1k
+					,metric_id=medical_general_per1k
+					,cost_util_field=prm_discharges
+					,cost_util_include=I11a);
+
 %Per1000MetricsTest(label=surgical_per1k
 					,metric_id=surgical_per1k
 					,cost_util_field=prm_discharges
