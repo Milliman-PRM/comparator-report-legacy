@@ -121,6 +121,7 @@ proc sql;
 		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,claims.prm_util as los_inpatient
 		,mr_to_mcrm.mcrm_line
+		,claims.prm_line /* Required for a couple metrics that exist above mcrm_line */
 		,sum(claims.discharges) as cnt_discharges_inpatient
 		,sum(claims.prm_util) as sum_days_inpatient
 		,sum(claims.prm_costs) as sum_costs_inpatient
@@ -147,6 +148,7 @@ proc sql;
 		,inpatient_readmit_yn
 		,los_inpatient
 		,mcrm_line
+		,prm_line
 	;
 quit;
 
@@ -240,6 +242,14 @@ proc sql;
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
 			/ aggs.memmos_sum * 12 * 1000
 			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
+
+		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as medical_general_per1k label="General Medical Discharges per 1000"
+
+		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
+			/ aggs.memmos_sum * 12 * 1000
+			as medical_general_per1k_riskadj label="General Medical Discharges per 1000 Risk Adjusted"
 
 	from partial_aggregation as detail
 	left join
