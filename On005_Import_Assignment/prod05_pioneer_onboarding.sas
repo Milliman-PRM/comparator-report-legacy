@@ -320,6 +320,7 @@ quit;
 			,:codegen_keep separated by " "
 		from metadata_target
 		where upcase(name_table) eq "%upcase(&name_dset_target.)"
+		order by field_position
 		;
 	quit;
 	%put codegen_keep = &codegen_keep.;
