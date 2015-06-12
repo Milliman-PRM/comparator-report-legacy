@@ -9,6 +9,7 @@
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "&M008_cde.func06_build_metadata_table.sas";
 
 %AssertThat(
 	%upcase(&cclf_exclusion_criteria.)
@@ -19,6 +20,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 	)
 
 /* Libnames */
+libname ref_prod "&path_product_ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
 libname M020_Out "&M020_Out." access=readonly;
 libname M035_Out "&M035_Out." access=readonly;
@@ -142,5 +144,235 @@ data members;
 	end;
 run;
 
-%put System Return Code = &syscc.;
+/*** TAKE A GUESS AT WHO ARE OUR IN NETWORK PROVIDERS ***/
+%let spec_codes_pcp = 
+	"01"
+	,"08"
+	,"11"
+	,"38"
+	,"50"
+	,"97"
+	;
 
+proc sql;
+	create table claims_pcp_em as
+	select
+		coalesce(bene_xref.crnt_hic_num,base_claims.bene_hic_num) as member_id
+		,base_claims.cur_clm_uniq_id
+		,base_claims.clm_line_num
+		,base_claims.clm_prvdr_spclty_cd
+		,base_claims.clm_line_from_dt
+		,base_claims.clm_line_thru_dt
+		,base_claims.clm_line_hcpcs_cd
+		,base_claims.clm_prvdr_tax_num
+		,base_claims.rndrg_prvdr_npi_num
+		,base_claims.clm_line_alowd_chrg_amt
+	from M020_out.cclf5_partb_phys as base_claims
+	inner join M015_out.cpt_em as ref_em
+		on base_claims.clm_line_hcpcs_cd eq ref_em.em_cpt
+	left join (
+		select distinct
+			crnt_hic_num
+			,prvs_hic_num
+		from M020_out.cclf9_bene_xref
+		) as bene_xref
+		on base_claims.bene_hic_num eq bene_xref.prvs_hic_num
+	where base_claims.clm_prvdr_spclty_cd in (&spec_codes_pcp.)
+	order by
+		calculated member_id
+		,base_claims.cur_clm_uniq_id
+		,base_claims.clm_line_num
+	;
+quit;
+
+proc sql;
+	create table distinct_visits as
+	select distinct
+		member_id
+		,rndrg_prvdr_npi_num
+		,clm_line_thru_dt
+	from claims_pcp_em
+	where rndrg_prvdr_npi_num is not null
+	;
+quit;
+
+proc freq
+	data = distinct_visits
+	order = freq
+	noprint
+	;
+	tables
+		rndrg_prvdr_npi_num
+		/ out = cummulative_percents
+		outcum
+		;
+	attrib _all_ label = " ";
+run;
+
+proc sql noprint;
+	select
+		min(count)
+	into :visit_cutoff trimmed
+	from cummulative_percents
+	where cum_pct le 60
+	;
+quit;
+%put visit_cutoff = &visit_cutoff.;
+
+proc sql;
+	create table client_provider as
+	select
+		source_list.rndrg_prvdr_npi_num as prv_id
+		,"NPI" as prv_id_name
+		,"ACO" as prv_net_hier_1 label = "ACO"
+		,"Y" as prv_net_aco_yn
+		,case
+			when npi.entity_type_cd eq "1" then case
+				when npi.prvdr_credential_text is null then cat(propcase(strip(npi.prvdr_last_name)), ", ", propcase(strip(npi.prvdr_first_name)))
+				else cat(propcase(strip(npi.prvdr_last_name)), " ", compress(npi.prvdr_credential_text,". "), ", ", propcase(strip(npi.prvdr_first_name)))
+				end
+			when npi.entity_type_cd eq "2" then propcase(coalescec(npi.prvdr_org_name, npi.prvdr_other_org_name, "Unknown"))
+			else "Unknown"
+			end as prv_name format=$128. length=128 label = 'ACO Provider'
+		,taxonomy_desc.classification as prv_hier_1 label = "Provider Primary Specialty"
+	from cummulative_percents as source_list
+	left join ref_prod.&filename_sas_npi. as npi
+		on source_list.rndrg_prvdr_npi_num eq npi.npi
+	left join M015_out.prv_taxonomy_ref as taxonomy_desc
+		on npi.health_prvdr_taxonomy_cd_1 eq taxonomy_desc.taxonomy_code
+	where source_list.count ge &visit_cutoff.
+	order by source_list.rndrg_prvdr_npi_num
+	;
+quit;
+
+/*** ASSIGN MEMBERS TO PROVIDERS ***/
+proc sql;
+	create table member_em_visits as
+	select
+		distinct_visits.member_id
+		,distinct_visits.rndrg_prvdr_npi_num
+		,count(*) as cnt_visits
+		,max(distinct_visits.clm_line_thru_dt) as recent_visit_date format = YYMMDDd10.
+	from distinct_visits as distinct_visits
+	inner join client_provider as prv_roster
+		on distinct_visits.rndrg_prvdr_npi_num eq prv_roster.prv_id
+	group by
+		member_id
+		,rndrg_prvdr_npi_num
+	order by
+		member_id
+		,calculated cnt_visits desc
+		,calculated recent_visit_date desc
+	;
+quit;
+
+data member_providers_assigned;
+	set member_em_visits;
+	by
+		member_id
+		descending cnt_visits
+		descending recent_visit_date
+		;
+	if first.member_id;
+	keep
+		member_id
+		rndrg_prvdr_npi_num
+		;
+run;
+
+proc sql;
+	create table client_member as
+	select
+		members.*
+		,coalesce(assigned.rndrg_prvdr_npi_num,"Unknown") as mem_prv_id_align label = "Assigned Physician"
+		,coalesce(prv.prv_name,"Unknown") as mem_report_hier_2 length = 64 format = $64. label = "Assigned Physician (Hier)"
+	from members as members
+	left join member_providers_assigned as assigned
+		on members.member_id eq assigned.member_id
+	left join client_provider as prv
+		on assigned.rndrg_prvdr_npi_num eq prv.prv_id
+	order by members.member_id
+	;
+quit;
+
+/*** MUNGE TO TARGET FORMATS ***/
+%macro output(name_dset_source,name_dset_target);
+	proc sql noprint;
+		select
+			catx(" ",name_field,sas_format)
+			,name_field
+		into :codegen_format separated by " "
+			,:codegen_keep separated by " "
+		from metadata_target
+		where upcase(name_table) eq "%upcase(&name_dset_target.)"
+		;
+	quit;
+	%put codegen_keep = &codegen_keep.;
+	%put codegen_keep = &codegen_keep.;
+
+	proc sql noprint;
+		select tgt.name_field
+		into :fields_lacking separated by ','
+		from (
+			select *
+			from metadata_target
+			where upcase(name_table) eq "%upcase(&name_dset_target.)"
+			) as tgt
+		left join (
+			select name
+			from dictionary.columns
+			where
+				upcase(libname) eq 'WORK'
+				and upcase(memname) eq "%upcase(&name_dset_source.)"
+			) as thus_far on
+			upcase(tgt.name_field) eq upcase(thus_far.name)
+		where thus_far.name is null
+		order by tgt.field_position
+		;
+	quit;
+	%put fields_lacking = &fields_lacking.;
+
+	data M018_out.&name_dset_target.;
+		format &codegen_format.;
+		set &name_dset_source.;
+		call missing(&fields_lacking.);
+		keep &codegen_keep.;
+	run;
+	%LabelDataSet(M018_out.&name_dset_target.)
+%mend output;
+
+%build_metadata_table(
+	references_client
+	,name_dset_out=metadata_target
+	)
+
+proc sql;
+	create table dsets_target as
+	select distinct
+		name_table
+	from metadata_target
+	;
+quit;
+
+data _null_;
+	set dsets_target;
+	format
+		name_dset_source $32.
+		name_dset_target $32.
+		;
+	if exist(name_table) then name_dset_source = name_table;
+	else name_dset_source = "_null_";
+	name_dset_target = name_table;
+
+	call execute(
+		cats(
+			'%nrstr(%output('
+			,name_dset_source
+			,','
+			,name_dset_target
+			,'))'
+			)
+		);
+run;
+
+%put System Return Code = &syscc.;
