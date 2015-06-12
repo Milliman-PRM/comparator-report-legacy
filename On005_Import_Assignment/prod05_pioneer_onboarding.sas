@@ -293,8 +293,14 @@ proc sql;
 	create table client_member as
 	select
 		members.*
-		,coalesce(assigned.rndrg_prvdr_npi_num,"Unknown") as mem_prv_id_align label = "Assigned Physician"
-		,coalesce(prv.prv_name,"Unknown") as mem_report_hier_2 length = 64 format = $64. label = "Assigned Physician (Hier)"
+		,case
+			when upcase(members.assignment_indicator) eq "N" then "Unassigned"
+			else coalesce(assigned.rndrg_prvdr_npi_num,"Unknown")
+			end as mem_prv_id_align label = "Assigned Physician"
+		,case
+			when upcase(members.assignment_indicator) eq "N" then "Unassigned"
+			else coalesce(prv.prv_name,"Unknown")
+			end as mem_report_hier_2 length = 64 format = $64. label = "Assigned Physician (Hier)"
 	from members as members
 	left join member_providers_assigned as assigned
 		on members.member_id eq assigned.member_id
