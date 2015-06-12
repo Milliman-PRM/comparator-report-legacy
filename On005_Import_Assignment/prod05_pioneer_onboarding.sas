@@ -5,7 +5,10 @@
 	Create client reference files for Pioneer ACOs
 
 ### DEVELOPER NOTES:
-	Pioneer ACOs do not receive quarterly assignment files.
+	Pioneer ACOs do not receive quarterly assignment files.  As such, we will
+	attempt to assign providers to members using claims data.  At this point,
+	our current needs to do not require exact assignment information.  Full CMS
+	assignment logic was not implemented at this time.
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
@@ -128,9 +131,9 @@ data members_basic;
 
 	mem_dependent_status = "P";
 
-	label mem_report_hier_1 = "All Members";
+	label mem_report_hier_1 = "All Members (Hier)";
 	mem_report_hier_1 = "All";
-	label mem_report_hier_3 = "Not Implemented";
+	label mem_report_hier_3 = "Not Implemented (Hier)";
 	mem_report_hier_3 = "Not Implemented";
 	drop date_latestpaid;
 run;
@@ -149,7 +152,7 @@ data members;
 	else if max_date_latestpaid eq &max_date_latestpaid. then assignment_indicator = "Y"; *Opt-Ins are assigned, but not reported.;
 	else if max_date_latestpaid ne &max_date_latestpaid. then do;
 		if death_date_latestpaid ne . then assignment_indicator = "Y"; *If they no longer show up because of death, then assigned.;
-		else assignment_indicator = "N"; *Opt-outs/excluded are not assigned.;
+		else assignment_indicator = "N"; *Opt-outs/excluded are not assigned. These are likely people included in the quarterly CMS excluded file.;
 	end;
 run;
 
@@ -200,6 +203,8 @@ proc sql;
 		member_id
 		,rndrg_prvdr_npi_num
 		,clm_line_thru_dt
+		/*Do not worry about denied/reversed claims for our purposes, because we only care
+		  that it happened, and who they were going to, not whether or not it was paid.*/
 	from claims_pcp_em
 	where rndrg_prvdr_npi_num is not null
 	;
