@@ -23,7 +23,13 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 libname ref_prod "&path_product_ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
 libname M020_Out "&M020_Out." access=readonly;
-libname M035_Out "&M035_Out." access=readonly;
+libname
+	%sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
+		,M035_out "&M035_out." /*If it is a warm start stacked member rosters will be seeded here*/
+		,M035_old "&M035_old." /*Otherwise, grab from prior project*/
+		))
+	access=readonly
+	;
 libname M018_Out "&M018_Out.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -44,7 +50,10 @@ quit;
 %setup_xref
 
 data members_all;
-	set M035_out.member_raw_stack_warm_start
+	set %sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
+		,M035_out.member_raw_stack_warm_start
+		,M035_old.member_raw_stack
+		))
 		M020_out.cclf8_bene_demog (in = current_month)
 		;
 	*Make a ficticious date_latestpaid for the current month.
