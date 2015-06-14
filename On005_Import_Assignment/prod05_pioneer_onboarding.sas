@@ -45,7 +45,11 @@ proc sql noprint;
 	select
 		max(date_latestpaid) format = best12.
 	into :max_date_latestpaid_history trimmed
-	from M035_out.member_raw_stack_warm_start
+	from
+		%sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
+			,M035_out.member_raw_stack_warm_start
+			,M035_old.member_raw_stack
+			))
 	;
 quit;
 %put max_date_latestpaid_history = &max_date_latestpaid_history. %sysfunc(putn(&max_date_latestpaid_history.,YYMMDDd10.));
