@@ -335,6 +335,7 @@ quit;
 	%put codegen_keep = &codegen_keep.;
 	%put codegen_keep = &codegen_keep.;
 
+	%let fields_lacking =;
 	proc sql noprint;
 		select tgt.name_field
 		into :fields_lacking separated by ','
@@ -360,7 +361,9 @@ quit;
 	data M018_out.&name_dset_target.;
 		format &codegen_format.;
 		set &name_dset_source.;
-		call missing(&fields_lacking.);
+		%if %length(&fields_lacking.) gt 0 %then %do;
+			call missing(&fields_lacking.);
+		%end;
 		keep &codegen_keep.;
 	run;
 	%LabelDataSet(M018_out.&name_dset_target.)
