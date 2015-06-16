@@ -248,7 +248,7 @@ proc sql;
 		,case when upcase(roster.riskscr_1_type) = upcase("CMS HCC Risk Score")
 					then hcc_rs.riskscr_mm
 				when upcase(roster.riskscr_1_type) = upcase("MARA Risk Score")
-					then mara_rs.riskscr_tot
+					then 12 /*TODO: use member months from MARA calculations once they have been coded. \HealthBI\Issue #1860.*/
 				else .
 			end as riskscr_mm
 	from member_roster as roster
