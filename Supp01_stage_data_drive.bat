@@ -1,4 +1,4 @@
-rem ### CODE OWNERS: Shea Parkes
+rem ### CODE OWNERS: Shea Parkes, Kyle Baird
 rem
 rem ### OBJECTIVE:
 rem   Provide a convenience script to setup the data drive.
