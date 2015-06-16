@@ -56,6 +56,7 @@ risk_score_type,memcnt,N,N
 riskscr_avg,memcnt,N,N
 riskscr_wgt,memcnt,N,N
 memcnt,memcnt,N,N
+riskscore_credibility,memcnt,N,N
 name_client,details_inpatient,Y,N
 elig_status_1,details_inpatient,Y,N
 time_period,details_inpatient,Y,N
