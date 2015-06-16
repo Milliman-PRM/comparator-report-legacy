@@ -163,6 +163,7 @@ run;
 			    time_slice 			char	format= $32. 
 				,hicno 				char	format= $40.
 				,score_community 	num		format= best12.
+				,riskscr_mm			num		format= best12.
 				);
 		quit;		
 	%end;
@@ -244,7 +245,12 @@ proc sql;
 					then mara_rs.riskscr_tot
 				else .
 			end as riskscr_1
-
+		,case when upcase(roster.riskscr_1_type) = upcase("CMS HCC Risk Score")
+					then hcc_rs.riskscr_mm
+				when upcase(roster.riskscr_1_type) = upcase("MARA Risk Score")
+					then mara_rs.riskscr_tot
+				else .
+			end as riskscr_mm
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
