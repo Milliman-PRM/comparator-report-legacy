@@ -69,6 +69,7 @@ medical_surgical,details_inpatient,Y,N
 inpatient_pqi_yn,details_inpatient,Y,N
 inpatient_discharge_to_snf_yn,details_inpatient,Y,N
 preference_sensitive_yn,details_inpatient,Y,N
+inpatient_readmit_potential_yn,details_inpatient,Y,N
 inpatient_readmit_yn,details_inpatient,Y,N
 los_inpatient,details_inpatient,Y,N
 cnt_discharges_inpatient,details_inpatient,N,N
