@@ -160,6 +160,7 @@ proc sql;
 		,sum(mems.memmos) as riskscr_wgt
 		,sum(mems.riskscr_1 * mems.memmos) / calculated riskscr_wgt as riskscr_avg
 		,count(*) as memcnt
+		,sum(case when mems.riskscr_memmos ge 3 then mems.memmos else 0 end) / calculated riskscr_wgt as riskscr_cred
 	from post008.Members as mems
 	left join decedents_agg_recent as decedents
 		on mems.member_id = decedents.member_id 
