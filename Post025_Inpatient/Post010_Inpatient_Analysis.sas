@@ -30,7 +30,7 @@ libname post025 "&post025.";
 		,PaidThru=&list_paid_thru.
 		,Ongoing_Util_Basis=&post_ongoing_util_basis.
 		,Force_Util=&post_force_util.
-		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_all_cause_yn~prm_ahrq_pqi
+		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_potential_yn~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&list_time_period.
 		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
 		,suffix_output = inpatient
@@ -118,6 +118,7 @@ proc sql;
 			else "N"
 			end
 			as preference_sensitive_yn
+		,claims.prm_readmit_potential_yn as inpatient_readmit_potential_yn
 		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,claims.prm_util as los_inpatient
 		,mr_to_mcrm.mcrm_line
@@ -145,6 +146,7 @@ proc sql;
 		,inpatient_pqi_yn
 		,inpatient_discharge_to_snf_yn
 		,preference_sensitive_yn
+		,inpatient_readmit_potential_yn
 		,inpatient_readmit_yn
 		,los_inpatient
 		,mcrm_line
@@ -216,7 +218,7 @@ proc sql;
 			as pct_IP_disch_to_SNF label="Percentage of IP Stays Discharged to SNF"
 
 		,sum(case when upcase(detail.inpatient_readmit_yn) eq "Y" then detail.cnt_discharges_inpatient else 0 end)
-			/ sum(detail.cnt_discharges_inpatient)
+			/ sum(case when upcase(detail.inpatient_readmit_potential_yn) eq "Y" then detail.cnt_discharges_inpatient else 0 end)
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
