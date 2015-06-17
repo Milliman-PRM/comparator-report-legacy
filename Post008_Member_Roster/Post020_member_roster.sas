@@ -250,7 +250,7 @@ proc sql;
 				when upcase(roster.riskscr_1_type) = upcase("MARA Risk Score")
 					then 12 /*TODO: use member months from MARA calculations once they have been coded. \HealthBI\Issue #1860.*/
 				else .
-			end as riskscr_mm
+			end as riskscr_memmos
 	from member_roster as roster
 	left join M035_Out.member as member
 		on roster.member_id eq member.member_id
