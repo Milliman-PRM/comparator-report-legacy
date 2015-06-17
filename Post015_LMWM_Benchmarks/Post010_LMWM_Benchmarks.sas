@@ -35,22 +35,14 @@ proc sql noprint;
 		,bench.admits_per1k
 		,bench.util_per1k
 		/*** ^^^ COLUMNS HELPFUL FOR DEVELOPMENT/DIAGNOSTICS ^^^ ***/
+		,riskscr.riskscr_1_util_avg as riskscr_service_avg_util
+		,riskscr.riskscr_1_cost_avg as riskscr_service_avg_cost
 		,case
-			when upcase(bench.loosely_well) eq "LOOSELY" then riskscr.riskscr_1_util_avg
-			else 1.0 /*No risk adjustment done to well managed benchmarks*/
-			end
-			as riskscr_service_avg_util
-		,case
-			when upcase(bench.loosely_well) eq "LOOSELY" then riskscr.riskscr_1_cost_avg
-			else 1.0 /*No risk adjustment done to well managed benchmarks*/
-			end
-			as riskscr_service_avg_cost
-		,case
-			when bench.admits_per1k is not null then bench.admits_per1k * calculated riskscr_service_avg_util
+			when bench.admits_per1k is not null then bench.admits_per1k * riskscr_service_avg_util
 			else 0
 			end
 			as benchmark_discharges_per1k
-		,coalesce(bench.util_per1k,0) * calculated riskscr_service_avg_util as benchmark_util_per1k
+		,coalesce(bench.util_per1k,0) * riskscr_service_avg_util as benchmark_util_per1k
 		,case
 			when upcase(bench.util_type) eq "DAYS" then calculated benchmark_util_per1k
 			else 0
