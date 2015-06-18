@@ -31,7 +31,7 @@ data time_windows;
 		;
 
 	time_period = 'Current';
-	paid_thru = &Date_LatestPaid_Round.;
+	paid_thru = min(&Date_LatestPaid_Round., mdy(3, 31, 2015));
 	inc_end = intnx('month', paid_thru, -&months_runout_min., 'end');
 
 	/*Now round to nearest calendar quarter.*/
