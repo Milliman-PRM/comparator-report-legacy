@@ -126,7 +126,7 @@ class AssignmentWorksheet(object):
             }
 
         for row_num, row in enumerate(self.ws_obj.rows):
-            if row_num <= self.header_row:
+            if (row_num + 1) <= self.header_row:
                 continue
             if row[key_col_nums['hicno']].value is None:
                 break
