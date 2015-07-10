@@ -46,6 +46,27 @@ data time_windows;
 	inc_start = intnx('month', inc_start, -3, 'beg');
 
 	output;
+	
+	time_period = 'Prior';
+	paid_thru = intnx('month', paid_thru, -3, 'end');
+	inc_end = intnx('month', inc_end, -3, 'end');
+	inc_start = intnx('month', inc_start, -3, 'beg');
+
+	output;
+	
+	time_period = 'Prior';
+	paid_thru = intnx('month', paid_thru, -3, 'end');
+	inc_end = intnx('month', inc_end, -3, 'end');
+	inc_start = intnx('month', inc_start, -3, 'beg');
+
+	output;
+	
+	time_period = 'Prior';
+	paid_thru = intnx('month', paid_thru, -3, 'end');
+	inc_end = intnx('month', inc_end, -3, 'end');
+	inc_start = intnx('month', inc_start, -3, 'beg');
+
+	output;
 
 run;
 
@@ -63,7 +84,7 @@ data post008.time_windows;
 		inc_end_riskscr_features
 		YYMMDDd10.
 		;
-	if intnx('month', inc_start, -3, 'beg') ge &Date_CredibleStart. then do;
+	if intnx('month', inc_start, -12, 'beg') ge &Date_CredibleStart. then do;
 		riskscr_period_type = 'Prospective';
 		inc_start_riskscr_features = intnx('month', inc_start, -3, 'beg');
 		inc_end_riskscr_features = intnx('month', inc_end, -3, 'end');
