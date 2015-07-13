@@ -30,44 +30,27 @@ data time_windows;
 		YYMMDDd10.
 		;
 
-	time_period = 'Current';
 	paid_thru = &Date_LatestPaid_Round.;
 	inc_end = intnx('month', paid_thru, -&months_runout_min., 'end');
 
 	/*Now round to nearest calendar quarter.*/
 	inc_end = intnx('month', inc_end, -mod(month(inc_end), 3), 'end');
 	inc_start = intnx('month', inc_end, -11, 'beg');
+	time_period = cat('Current_',year(inc_start),'Q',ceil(month(inc_start)/3));
 
 	output;
 
-	time_period = 'Prior';
-	paid_thru = intnx('month', paid_thru, -3, 'end');
-	inc_end = intnx('month', inc_end, -3, 'end');
-	inc_start = intnx('month', inc_start, -3, 'beg');
+	do until(intnx('month', inc_start, -3, 'beg') lt &Date_CredibleStart.);
 
-	output;
+		paid_thru = intnx('month', paid_thru, -3, 'end');
+		inc_end = intnx('month', inc_end, -3, 'end');
+		inc_start = intnx('month', inc_start, -3, 'beg');
+		time_period = cat('Prior_',year(inc_start),'Q',ceil(month(inc_start)/3));
+
+		output;
+
+	end;
 	
-	time_period = 'Prior';
-	paid_thru = intnx('month', paid_thru, -3, 'end');
-	inc_end = intnx('month', inc_end, -3, 'end');
-	inc_start = intnx('month', inc_start, -3, 'beg');
-
-	output;
-	
-	time_period = 'Prior';
-	paid_thru = intnx('month', paid_thru, -3, 'end');
-	inc_end = intnx('month', inc_end, -3, 'end');
-	inc_start = intnx('month', inc_start, -3, 'beg');
-
-	output;
-	
-	time_period = 'Prior';
-	paid_thru = intnx('month', paid_thru, -3, 'end');
-	inc_end = intnx('month', inc_end, -3, 'end');
-	inc_start = intnx('month', inc_start, -3, 'beg');
-
-	output;
-
 run;
 
 data post008.time_windows;
@@ -86,8 +69,8 @@ data post008.time_windows;
 		;
 	if intnx('month', inc_start, -12, 'beg') ge &Date_CredibleStart. then do;
 		riskscr_period_type = 'Prospective';
-		inc_start_riskscr_features = intnx('month', inc_start, -3, 'beg');
-		inc_end_riskscr_features = intnx('month', inc_end, -3, 'end');
+		inc_start_riskscr_features = intnx('month', inc_start, -12, 'beg');
+		inc_end_riskscr_features = intnx('month', inc_end, -12, 'end');
 		end;
 	else do;
 		riskscr_period_type = 'Concurrent';
