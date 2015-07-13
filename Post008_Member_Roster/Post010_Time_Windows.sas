@@ -36,6 +36,7 @@ data time_windows;
 	/*Now round to nearest calendar quarter.*/
 	inc_end = intnx('month', inc_end, -mod(month(inc_end), 3), 'end');
 	inc_start = intnx('month', inc_end, -11, 'beg');
+
 	time_period = cat('Current_',year(inc_start),'Q',ceil(month(inc_start)/3));
 
 	output;
