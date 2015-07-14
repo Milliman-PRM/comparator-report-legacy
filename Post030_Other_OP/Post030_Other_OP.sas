@@ -35,7 +35,7 @@ libname post030 "&post030.";
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~prm_line
 	,Time_Slice=&list_time_period.
-	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d"))
+	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d", "p57", "p59"))
 	,Suffix_Output=raw
 	)
 
@@ -65,7 +65,7 @@ proc sql;
 		,sum(prm_util) as _sum_visits_combined
 		,calculated _sum_visits_pcp / calculated _sum_visits_combined as metric_value
 	from claims_members
-	where lowcase(prm_line) in ("p32c","p32d")
+	where lowcase(prm_line) in ("p32c","p32d", "p57", "p59")
 	group by time_slice
 			,elig_status_1
 	;
@@ -89,6 +89,14 @@ data ref_service_agg;
 	else if lowcase(mr_line) eq "o41h" then do;
 		metric_id = "observation_stays_per1k";
 		metric_name = "Observation Stays Utilization per 1000";
+	end;
+	else if lowcase(mr_line) eq "p57" then do;
+		metric_id = "fop_high_tech_imaging_proc_per1k";
+		metric_name = "FOP High Tech Imaging Procedure Utilization per 1000";
+	end;
+	else if lowcase(mr_line) eq "p59" then do;
+		metric_id = "office_high_tech_imaging_proc_per1k";
+		metric_name = "Office High Tech Imaging Procedure Utilization per 1000";
 	end;
 	else delete;
 run;
