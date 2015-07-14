@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes, Kyle Baird
+### CODE OWNERS: Shea Parkes, Kyle Baird, Sarah Prusinski
 
 ### OBJECTIVE:
 	Define time windows of interest in Comparator Reporting.
@@ -37,7 +37,7 @@ data time_windows;
 	inc_end = intnx('month', inc_end, -mod(month(inc_end), 3), 'end');
 	inc_start = intnx('month', inc_end, -11, 'beg');
 
-	time_period = cat('Current_',year(inc_start),'Q',ceil(month(inc_start)/3));
+	time_period = cat(year(inc_start),'Q',ceil(month(inc_start)/3),' - ',year(inc_end),'Q',ceil(month(inc_end)/3));
 
 	output;
 
@@ -46,7 +46,7 @@ data time_windows;
 		paid_thru = intnx('month', paid_thru, -3, 'end');
 		inc_end = intnx('month', inc_end, -3, 'end');
 		inc_start = intnx('month', inc_start, -3, 'beg');
-		time_period = cat('Prior_',year(inc_start),'Q',ceil(month(inc_start)/3));
+		time_period = cat(year(inc_start),'Q',ceil(month(inc_start)/3),' - ',year(inc_end),'Q',ceil(month(inc_end)/3));
 
 		output;
 
@@ -85,5 +85,7 @@ run;
 %LabelDataSet(post008.time_windows)
 
 %AssertDataSetPopulated(post008.time_windows,ReturnMessage=Not enough data was likely provided to compute meaningful metrics for any time period.)
+
+%AssertRecordCount(post008.time_windows,eq,%GetRecordCount(time_windows),ReturnMessage=Time_Period construction loop does not have exit condition that matches ultimate filter condition.)
 
 %put System Return Code = &syscc.;
