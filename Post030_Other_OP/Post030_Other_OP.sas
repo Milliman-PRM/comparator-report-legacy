@@ -83,9 +83,6 @@ data ref_service_agg;
 		metric_name $256.
 		;
 	if lowcase(mr_line) in ("o14a","o14b","o14c") then do;
-		/*This name no longer sorts as well with the other high tech imaging metric ids that 
-		were shortened in order to prevent their reaching 32 characters in length when _riskadj
-		was added to the end.  You may consider shortening this one as the others are shortened.*/
 		metric_id = "high_tech_imaging_per1k";
 		metric_name = "High Tech Imaging Utilization per 1000";
 	end;
@@ -93,11 +90,11 @@ data ref_service_agg;
 		metric_id = "observation_stays_per1k";
 		metric_name = "Observation Stays Utilization per 1000";
 	end;
-	else if substr(lowcase(mr_line),1,3) eq "p57" then do;
+	else if lowcase(mr_line) eq: "p57" then do;
 		metric_id = "hi_tec_img_fop_per1k";
 		metric_name = "FOP High Tech Imaging Procedure Utilization per 1000";
 	end;
-	else if substr(lowcase(mr_line),1,3) eq "p59" then do;
+	else if lowcase(mr_line) eq: "p59" then do;
 		metric_id = "hi_tec_img_office_per1k";
 		metric_name = "Office High Tech Imaging Procedure Utilization per 1000";
 	end;
