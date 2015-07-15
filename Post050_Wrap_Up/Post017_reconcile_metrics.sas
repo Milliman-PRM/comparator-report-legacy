@@ -200,6 +200,16 @@ run;
 					,cost_util_field=prm_util
 					,cost_util_include=O14);
 
+%Per1000MetricsTest(label = hi_tec_img_fop_per1k,
+					metric_id = hi_tec_img_fop_per1k,
+					cost_util_field = prm_util,
+					cost_util_include = P57);
+
+%Per1000MetricsTest(label = hi_tec_img_office_per1k,
+					metric_id = hi_tec_img_office_per1k,
+					cost_util_field = prm_util,
+					cost_util_include = P59);
+
 %Per1000MetricsTest(label=observation_stays_per1k
 					,metric_id=observation_stays_per1k
 					,cost_util_field=prm_util
