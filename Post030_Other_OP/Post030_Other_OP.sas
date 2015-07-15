@@ -83,7 +83,10 @@ data ref_service_agg;
 		metric_name $256.
 		;
 	if lowcase(mr_line) in ("o14a","o14b","o14c") then do;
-		metric_id = "hi_tec_img_per1k";
+		/*This name no longer sorts as well with the other high tech imaging metric ids that 
+		were shortened in order to prevent their reaching 32 characters in length when _riskadj
+		was added to the end.  You may consider shortening this one as the others are shortened.*/
+		metric_id = "high_tech_imaging_per1k";
 		metric_name = "High Tech Imaging Utilization per 1000";
 	end;
 	else if lowcase(mr_line) eq "o41h" then do;
