@@ -136,6 +136,9 @@ proc sql;
 			,aggs.memmos_sum
 			,aggs.prm_costs_sum_all_services
 			,aggs.memmos_sum_riskadj
+	having
+		sum(detail.cnt_discharges_snf) gt 0
+		and sum(detail.sum_days_snf) gt 0
 	;
 quit;
 
@@ -159,7 +162,6 @@ data post040.metrics_SNF;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
-	where metric_value ne .;
 run;
 %LabelDataSet(post040.metrics_SNF)
 
