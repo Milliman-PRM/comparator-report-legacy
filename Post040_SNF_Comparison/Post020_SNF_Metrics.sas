@@ -159,6 +159,7 @@ data post040.metrics_SNF;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
+	where metric_value ne .;
 run;
 %LabelDataSet(post040.metrics_SNF)
 
