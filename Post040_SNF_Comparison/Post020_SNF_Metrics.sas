@@ -136,6 +136,9 @@ proc sql;
 			,aggs.memmos_sum
 			,aggs.prm_costs_sum_all_services
 			,aggs.memmos_sum_riskadj
+	having
+		sum(detail.cnt_discharges_snf) gt 0
+		and sum(detail.sum_days_snf) gt 0
 	;
 quit;
 
