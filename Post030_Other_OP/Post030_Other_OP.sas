@@ -35,7 +35,7 @@ libname post030 "&post030.";
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~prm_line
 	,Time_Slice=&list_time_period.
-	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d"))
+	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d") or lowcase(Outclaims_prm.prm_line) eqt "p57" or lowcase(Outclaims_prm.prm_line) eqt "p59")
 	,Suffix_Output=raw
 	)
 
@@ -89,6 +89,14 @@ data ref_service_agg;
 	else if lowcase(mr_line) eq "o41h" then do;
 		metric_id = "observation_stays_per1k";
 		metric_name = "Observation Stays Utilization per 1000";
+	end;
+	else if lowcase(mr_line) eq: "p57" then do;
+		metric_id = "hi_tec_img_fop_per1k";
+		metric_name = "FOP High Tech Imaging Procedure Utilization per 1000";
+	end;
+	else if lowcase(mr_line) eq: "p59" then do;
+		metric_id = "hi_tec_img_office_per1k";
+		metric_name = "Office High Tech Imaging Procedure Utilization per 1000";
 	end;
 	else delete;
 run;
