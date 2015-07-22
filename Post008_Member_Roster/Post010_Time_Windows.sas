@@ -37,7 +37,11 @@ data time_windows;
 	inc_end = intnx('month', inc_end, -mod(month(inc_end), 3), 'end');
 	inc_start = intnx('month', inc_end, -11, 'beg');
 
-	time_period = cat(year(inc_start),'Q',ceil(month(inc_start)/3),' - ',year(inc_end),'Q',ceil(month(inc_end)/3));
+	time_period = cats(
+		year(inc_start), 'Q', ceil(month(inc_start)/3)
+		,'_'
+		,year(inc_end), 'Q', ceil(month(inc_end)/3)
+		);
 
 	output;
 
@@ -46,8 +50,11 @@ data time_windows;
 		paid_thru = intnx('month', paid_thru, -3, 'end');
 		inc_end = intnx('month', inc_end, -3, 'end');
 		inc_start = intnx('month', inc_start, -3, 'beg');
-		time_period = cat(year(inc_start),'Q',ceil(month(inc_start)/3),' - ',year(inc_end),'Q',ceil(month(inc_end)/3));
-
+		time_period = cats(
+			year(inc_start), 'Q', ceil(month(inc_start)/3)
+			,'_'
+			,year(inc_end), 'Q', ceil(month(inc_end)/3)
+			);
 		output;
 
 	end;
