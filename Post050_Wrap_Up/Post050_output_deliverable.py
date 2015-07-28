@@ -16,10 +16,10 @@ from email.message import EmailMessage
 
 LOCAL_SMTP = 'smtp.milliman.com'
 
-PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\NYP\NewYorkMillimanShare")
+PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\0273NYP\NewYorkMillimanShare")
 assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
-WHITELIST_CLIENT_INITIALS = ["NYP"]
+WHITELIST_CLIENT_IDS = ["0273NYP"]
 FILE_EXTENSIONS_SCRAPE = [
     ".sqlite",
     ".sas7bdat",
@@ -64,11 +64,11 @@ if __name__ == '__main__':
         )
     import healthbi_env
 
-    CLIENT_INITIALS = healthbi_env.META["client_initials"]
+    CLIENT_ID = healthbi_env.META["client_id"]
 
-    if CLIENT_INITIALS.lower() not in \
-        [whitelist.lower() for whitelist in WHITELIST_CLIENT_INITIALS]:
-        print("Client Code {} is not available for sharing".format(CLIENT_INITIALS))
+    if CLIENT_ID.lower() not in \
+        [whitelist.lower() for whitelist in WHITELIST_CLIENT_IDS]:
+        print("Client ID {} is not available for sharing".format(CLIENT_ID))
         sys.exit(0)
 
     POSTBOARDING_ARGS = load_params(
