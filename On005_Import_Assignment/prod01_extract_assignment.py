@@ -44,7 +44,7 @@ class AssignmentWorksheet(object):
 
     def _sniff_header(self):
         """Inspect the header for interesting information"""
-        for row in self.ws_obj.get_squared_range(0, 0, 24, 24):
+        for row in self.ws_obj.get_squared_range(0, 0, 24, 16):
             for cell in row:
                 if cell.value is None:
                     continue
@@ -101,7 +101,7 @@ class AssignmentWorksheet(object):
         """Calculate a score that represents the worth of this sheet"""
         interesting_rows = {cell.row for cell in self.key_cells.values()}
 
-        if 'hicno' not in self.key_cells:
+        if 'hicno' not in self.key_cells.keys():
             self.intrinsic_value = 0
         elif not self.date_end:
             self.intrinsic_value = 0
