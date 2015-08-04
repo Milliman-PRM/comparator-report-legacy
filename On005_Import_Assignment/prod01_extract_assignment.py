@@ -101,7 +101,7 @@ class AssignmentWorksheet(object):
         """Calculate a score that represents the worth of this sheet"""
         interesting_rows = {cell.row for cell in self.key_cells.values()}
 
-        if 'hicno' not in self.key_cells.keys():
+        if 'hicno' not in self.key_cells:
             self.intrinsic_value = 0
         elif not self.date_end:
             self.intrinsic_value = 0
