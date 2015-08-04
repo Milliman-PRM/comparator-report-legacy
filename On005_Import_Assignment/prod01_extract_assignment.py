@@ -44,7 +44,7 @@ class AssignmentWorksheet(object):
 
     def _sniff_header(self):
         """Inspect the header for interesting information"""
-        for row in self.ws_obj.get_squared_range(0, 0, 24, 24):
+        for row in self.ws_obj.get_squared_range(0, 0, 24, 16):
             for cell in row:
                 if cell.value is None:
                     continue
