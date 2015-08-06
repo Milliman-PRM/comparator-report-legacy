@@ -95,6 +95,12 @@ quit;
 	,suffix_output = wide
 	)
 
+proc means data = post008.members noprint;
+	class elig_status_1;
+	var age;
+	output out = avg_age (drop = _FREQ_ _TYPE_) mean = ;
+run;
+
 proc sql;
 	create table decedents_agg_recent as
 	select
@@ -115,6 +121,7 @@ proc sql;
 				when claims.DischargeStatus eq '20' then 1
 				else 0 end) eq 1 then 'Y'
 			else 'N' end as deceased_hospital_yn
+		,age.age
 	from post008.members as roster
 	left join post008.time_windows as windows on
 		roster.time_period eq windows.time_period
@@ -125,6 +132,8 @@ proc sql;
 		roster.time_period eq claims.time_slice
 		and roster.member_id eq claims.member_id
 		and (decedents.death_date_excluded - claims.prm_todate) between 0 and 30
+	left join avg_age as age
+		on age.elig_status_1 eq roster.elig_status_1
 	where
 		decedents.death_date_excluded ne .
 	group by
