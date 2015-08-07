@@ -141,11 +141,6 @@ quit;
 %AssertNoDuplicates(decedents_agg_recent,member_id time_period,ReturnMessage=Extra records were created.)
 
 
-proc means data = post008.members noprint;
-	class elig_status_1;
-	var age;
-	output out = avg_age (drop = _FREQ_ _TYPE_) mean = ;
-run;
 
 /**** GENERATE CLEAN MEMCNT TABLE ****/
 	
@@ -165,13 +160,11 @@ proc sql;
 		,sum(mems.riskscr_1 * mems.memmos) / calculated riskscr_wgt as riskscr_avg
 		,count(*) as memcnt
 		,sum(case when mems.riskscr_memmos ge 3 then mems.memmos else 0 end) / calculated riskscr_wgt as riskscr_cred
-		,avg(age.age) as avg_age
+		,sum(mems.age * mems.memmos) / calculated riskscr_wgt as age_avg
 	from post008.Members as mems
 	left join decedents_agg_recent as decedents
 		on mems.member_id = decedents.member_id 
 		and mems.time_period = decedents.time_period
-	left join avg_age as age
-		on age.elig_status_1 = mems.elig_status_1
 	group by
 		mems.time_period
 		,mems.elig_status_1
