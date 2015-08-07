@@ -187,9 +187,9 @@ quit;
 
 
 data post008.memcnt;
-	format &memcnt_cgfrmt.;
+	format &memcnt_cgfrmt. age_avg best12.;
 	set memcnt_to_export;
-	keep &memcnt_cgflds.;
+	keep &memcnt_cgflds. age_avg;
 run;
 
 %LabelDataSet(post008.memcnt);

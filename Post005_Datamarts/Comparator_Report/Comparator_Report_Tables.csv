@@ -44,6 +44,7 @@ time_period,memcnt,Y,N
 elig_status_1,memcnt,Y,N
 deceased_yn,memcnt,Y,N
 deceased_hospital_yn,memcnt,Y,N
+age_avg,memcnt,Y,N
 endoflife_numer_yn_chemolt14days,memcnt,Y,N
 endoflife_denom_yn_chemolt14days,memcnt,Y,N
 endoflife_numer_yn_hospicelt3day,memcnt,Y,N
