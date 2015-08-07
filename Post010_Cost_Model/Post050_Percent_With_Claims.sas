@@ -36,7 +36,6 @@ libname M035_Out "&M035_Out." access=readonly;
 proc sql noprint;
 	create table no_mem_w_claims as
 	select count(*) as Numerator
-	into :num_members_with_claims
 	from agg_claims_med_member;
 quit;
 
@@ -47,20 +46,30 @@ quit;
 proc sql noprint;
 	create table no_members as
 	select count(*) as Denominator
-	into :num_members
 	from M035_out.Member
-	where assignment_indicator = 'Y';
+	/*where assignment_indicator = 'Y';*/
 quit;
 
 %put Number of Members = &num_members.;
 
+/*Calculate the percentage of members with claims.*/
+
+data percent_members_w_claims;
+	merge No_mem_w_claims No_members;
+	percent = numerator / denominator;
+run;
+
 proc sql noprint;
-	create table percent_members_w_claims as
-	select &num_members_with_claims. as members_with_claims, 
-		   &num_members. as members,
-		   calculated members_with_claims / calculated members as percent;
+	select numerator, denominator, percent
+	into :members_with_claims, :members, :pct_members_with_claims
+	from Percent_members_w_claims;
 quit;
 
+%put Number of members with claims = &members_with_claims.;
+%put Number of members = &members.;
+%put Percentage = &pct_members_with_claims.;
+
+%put System Return Code = &syscc.;
 
 
 
