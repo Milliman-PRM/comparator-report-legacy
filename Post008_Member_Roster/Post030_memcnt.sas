@@ -167,7 +167,7 @@ proc sql;
 		and mems.time_period = decedents.time_period
 	group by
 		mems.time_period
-		,mems.elig_status_1
+		,elig_status_1
 		,deceased_yn
 		,deceased_hospital_yn
 		,&puad_quality_metrics_select.
