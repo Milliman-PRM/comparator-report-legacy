@@ -24,47 +24,56 @@ libname M035_Out "&M035_Out." access=readonly;
 /*Aggregate claims by member, so we get all members with claims.  Limit to last 12 months.*/
 
 %agg_claims(
-	IncStart=%eval(&Date_LatestPaid. - 365)
-	,IncEnd=&Date_LatestPaid.
-	,PaidThru=&Date_LatestPaid.
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
 	,Med_Rx=Med
 	,Dimensions=member_id
-	,Time_Slice=Last_12_Months
+	,Time_Slice=&list_time_period.
 	,Where_Elig=(member.assignment_indicator = 'Y')
 	,Suffix_Output=member
 	)
 
 proc sql noprint;
-	create table no_mem_w_claims as
-	select count(*) as Numerator
-	from agg_claims_med_member;
+	create table perc_claims_measures as
+	select
+		members.time_period
+		,members.elig_status_1
+		,(sum(case when claims.rowcnt = . then 0 else 1 end)) / (count(members.member_id)) 
+			as percent_members_w_claims label="Percentage of Members with Claims"
+
+	from Post008.members as members 
+	left join agg_claims_med_member as claims
+		on members.member_id = claims.member_id and
+		   members.time_period = claims.time_slice
+	group by
+		members.time_period
+		,members.elig_status_1
+	order by
+		members.time_period
+		,members.elig_status_1
+	;
 quit;
-
-/*Now get the number of members.*/
-
-proc sql noprint;
-	create table no_members as
-	select count(*) as Denominator
-	from M035_out.Member
-	where assignment_indicator = 'Y';
-quit;
-
-/*Calculate the percentage of members with claims.*/
-
-data Post010.percent_members_w_claims;
-	merge No_mem_w_claims No_members;
-	percent = numerator / denominator;
+		 
+proc transpose data = perc_claims_measures
+	out = perc_claims_measures_long (rename = (col1 = metric_value))
+	name = metric_id
+	label = metric_name
+	;
+	by time_period elig_status_1;
 run;
 
-proc sql noprint;
-	select numerator, denominator, percent
-	into :members_with_claims, :members, :pct_members_with_claims
-	from Post010.Percent_members_w_claims;
-quit;
+data post010.metrics_claims_percentage;
+	format &metrics_key_value_cgfrmt.;
+	set perc_claims_measures_long;
+	by time_period elig_status_1;
+	&assign_name_client.;
+	metric_category = "Cost Model";
+	keep &metrics_key_value_cgflds.;
+	attrib _all_ label = ' ';
+run;
 
-%put Number of members with claims = &members_with_claims.;
-%put Number of members = &members.;
-%put Percentage = &pct_members_with_claims.;
+%LabelDataSet(post010.metrics_claims_percentage)
 
 %put System Return Code = &syscc.;
 
