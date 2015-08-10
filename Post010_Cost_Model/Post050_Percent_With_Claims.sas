@@ -40,8 +40,6 @@ proc sql noprint;
 	from agg_claims_med_member;
 quit;
 
-%put Number of Members With Claims = &num_members_with_claims.;
-
 /*Now get the number of members.*/
 
 proc sql noprint;
@@ -51,11 +49,9 @@ proc sql noprint;
 	where assignment_indicator = 'Y';
 quit;
 
-%put Number of Members = &num_members.;
-
 /*Calculate the percentage of members with claims.*/
 
-data percent_members_w_claims;
+data Post010.percent_members_w_claims;
 	merge No_mem_w_claims No_members;
 	percent = numerator / denominator;
 run;
@@ -63,7 +59,7 @@ run;
 proc sql noprint;
 	select numerator, denominator, percent
 	into :members_with_claims, :members, :pct_members_with_claims
-	from Percent_members_w_claims;
+	from Post010.Percent_members_w_claims;
 quit;
 
 %put Number of members with claims = &members_with_claims.;
