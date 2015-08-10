@@ -68,7 +68,7 @@ data post010.metrics_claims_percentage;
 	set perc_claims_measures_long;
 	by time_period elig_status_1;
 	&assign_name_client.;
-	metric_category = "Cost Model";
+	metric_category = "Basic";
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
