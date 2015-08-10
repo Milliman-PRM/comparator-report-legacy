@@ -30,6 +30,7 @@ libname M035_Out "&M035_Out." access=readonly;
 	,Med_Rx=Med
 	,Dimensions=member_id
 	,Time_Slice=Last_12_Months
+	,Where_Elig=(member.assignment_indicator = 'Y')
 	,Suffix_Output=member
 	)
 
@@ -47,7 +48,7 @@ proc sql noprint;
 	create table no_members as
 	select count(*) as Denominator
 	from M035_out.Member
-	/*where assignment_indicator = 'Y';*/
+	where assignment_indicator = 'Y';
 quit;
 
 %put Number of Members = &num_members.;
