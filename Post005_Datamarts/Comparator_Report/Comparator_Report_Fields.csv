@@ -29,6 +29,7 @@ endoflife_numer_yn_hospicelt3day,,char,1,N,Y~N,N,,Did the deceased members have 
 endoflife_denom_yn_hospicelt3day,,char,1,N,Y~N,N,,Should these members be considered when evaluating who had a final hospice stay of less than 3 days?
 endoflife_numer_yn_hospicenever,,char,1,N,Y~N,N,,Did these deceased members never have a hospice stay?
 endoflife_denom_yn_hospicenever,,char,1,N,Y~N,N,,Should these members be considered when evaluating who never had a hospice stay?
+age_avg,,float,,N,,N,,Average age of members; weighted by member months
 final_hospice_days,,integer,,N,,N,,"For deceased members, how many days were they in the hospice immediately prior to death?"
 costs_final_30_days_sum,,float,,N,,N,,Total cost in the final 30 days of life.
 risk_score_type,,varchar,32,N,CMS HCC Risk Score~MARA Risk Score,N,,Description of the model used to compute risk scores.
