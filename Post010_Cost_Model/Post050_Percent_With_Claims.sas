@@ -31,7 +31,7 @@ libname post010 "&post010.";
 	,Med_Rx=Med
 	,Dimensions=member_id
 	,Time_Slice=&list_time_period.
-	,Where_Elig=(member.assignment_indicator = 'Y')
+	/*No member limits applied because outputs are merged against official roster below.*/
 	,Suffix_Output=member
 	)
 
@@ -44,7 +44,7 @@ libname post010 "&post010.";
 			,Med_Rx=Rx
 			,Dimensions=member_id
 			,Time_Slice=&list_time_period.
-			,Where_Elig=(member.assignment_indicator = 'Y')
+			/*No member limits applied because outputs are merged against official roster below.*/
 			,Suffix_Output=member
 			);
 	%end;
