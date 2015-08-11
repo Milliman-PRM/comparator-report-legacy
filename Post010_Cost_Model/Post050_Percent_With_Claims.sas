@@ -2,7 +2,7 @@
 ### CODE OWNERS: Michael Menser
 
 ### OBJECTIVE:
-	Calculate the percentage of assigned members who had at least one claim in the 12 month reporting period.
+	Add a "percentage of members who had claims in the specified time slice" metric to the key metrics table. 
 
 ### DEVELOPER NOTES:
 
