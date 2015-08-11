@@ -19,7 +19,7 @@ libname post010 "&post010.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Aggregate claims by member, so we get all members with claims.  Limit to last 12 months.*/
+/*Aggregate medical claims by member, so we get all members with medical claims.*/
 
 %agg_claims(
 	IncStart=&list_inc_start.
@@ -31,6 +31,31 @@ libname post010 "&post010.";
 	,Where_Elig=(member.assignment_indicator = 'Y')
 	,Suffix_Output=member
 	)
+
+/*If we have the Rx claims data, aggregate those by member also*/
+
+%macro conditional_rx;
+	%if upcase(&rx_claims_exist.) eq "YES" %then %do;
+		%agg_claims(
+			IncStart=&list_inc_start.
+			,IncEnd=&list_inc_end.
+			,PaidThru=&list_paid_thru.
+			,Med_Rx=Rx
+			,Dimensions=member_id
+			,Time_Slice=&list_time_period.
+			,Where_Elig=(member.assignment_indicator = 'Y')
+			,Suffix_Output=member
+			);
+	%end;
+	%else %do;
+		data agg_claims_rx_member;
+			set _Null_;
+			format member_id $40.;
+		run;
+	%end;
+%mend conditional_rx;
+
+%conditional_rx;
 
 proc sql noprint;
 	create table perc_claims_measures as
