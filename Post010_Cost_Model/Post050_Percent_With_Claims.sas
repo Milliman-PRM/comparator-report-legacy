@@ -35,7 +35,7 @@ libname post010 "&post010.";
 /*If we have the Rx claims data, aggregate those by member also*/
 
 %macro conditional_rx;
-	%if upcase(&rx_claims_exist.) eq "YES" %then %do;
+	%if %upcase(&rx_claims_exist.) eq YES %then %do;
 		%agg_claims(
 			IncStart=&list_inc_start.
 			,IncEnd=&list_inc_end.
@@ -57,18 +57,27 @@ libname post010 "&post010.";
 
 %conditional_rx;
 
+/*Calculate % of members with Med claims, Rx claims, and any claims.*/
+
 proc sql noprint;
-	create table perc_claims_measures as
+	create table claims_percentages as
 	select
 		members.time_period
 		,members.elig_status_1
-		,(sum(case when claims.member_id = '' then 0 else 1 end)) / (count(members.member_id)) 
-			as percent_members_w_claims label="Percentage of Members with Claims"
+		,(sum(case when medical.member_id = '' then 0 else 1 end)) / (count(members.member_id)) 
+			as percent_members_w_claims_med label="Percentage of Members with Medical Claims"
+		,(sum(case when rx.member_id = '' then 0 else 1 end)) / (count(members.member_id))
+			as percent_members_w_claims_rx label="Percentage of Members with Rx Claims"
+		,(sum(case when (medical.member_id = '' AND rx.member_id = '') then 0 else 1 end)) / (count(members.member_id))
+			as percent_members_w_claims_any label="Percentage of Members with Any Claims"
 
 	from Post008.members as members 
-	left join agg_claims_med_member as claims
-		on members.member_id = claims.member_id and
-		   members.time_period = claims.time_slice
+	left join agg_claims_med_member as medical
+		on members.member_id = medical.member_id and
+		   members.time_period = medical.time_slice
+	left join agg_claims_rx_member as rx
+		on members.member_id = rx.member_id and
+		   members.time_period = rx.time_slice
 	group by
 		members.time_period
 		,members.elig_status_1
@@ -77,18 +86,18 @@ proc sql noprint;
 		,members.elig_status_1
 	;
 quit;
-		 
-proc transpose data = perc_claims_measures
-	out = perc_claims_measures_long (rename = (col1 = metric_value))
+ 
+proc transpose data = claims_percentages
+	out = claims_percentages_long (rename = (col1 = metric_value))
 	name = metric_id
 	label = metric_name
 	;
 	by time_period elig_status_1;
 run;
 
-data post010.metrics_claims_percentage;
+data post010.metrics_claims_percentages;
 	format &metrics_key_value_cgfrmt.;
-	set perc_claims_measures_long;
+	set claims_percentages_long;
 	by time_period elig_status_1;
 	&assign_name_client.;
 	metric_category = "Basic";
@@ -96,7 +105,7 @@ data post010.metrics_claims_percentage;
 	attrib _all_ label = ' ';
 run;
 
-%LabelDataSet(post010.metrics_claims_percentage)
+%LabelDataSet(post010.metrics_claims_percentages)
 
 %put System Return Code = &syscc.;
 
