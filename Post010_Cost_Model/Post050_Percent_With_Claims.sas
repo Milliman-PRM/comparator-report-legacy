@@ -37,7 +37,7 @@ proc sql noprint;
 	select
 		members.time_period
 		,members.elig_status_1
-		,(sum(case when claims.rowcnt = . then 0 else 1 end)) / (count(members.member_id)) 
+		,(sum(case when claims.member_id = '' then 0 else 1 end)) / (count(members.member_id)) 
 			as percent_members_w_claims label="Percentage of Members with Claims"
 
 	from Post008.members as members 
