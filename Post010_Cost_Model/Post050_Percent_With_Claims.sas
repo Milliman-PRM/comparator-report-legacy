@@ -102,6 +102,15 @@ proc transpose data = claims_percentages
 	by time_period elig_status_1;
 run;
 
+proc sql noprint;
+	select round(max(metric_value),0.0001)
+	into :max_pct_with_claims trimmed
+	from claims_percentages_long
+	;
+quit;
+%put &=max_pct_with_claims.;
+%AssertThat(&max_pct_with_claims.,le,1,ReturnMessage=An inprobable percentage of members were determined to have claims.)
+
 data post010.metrics_claims_percentages;
 	format &metrics_key_value_cgfrmt.;
 	set claims_percentages_long;
