@@ -51,7 +51,8 @@ libname post010 "&post010.";
 	%else %do;
 		data agg_claims_rx_member;
 			set _Null_;
-			format member_id $40.;
+			format member_id $40.
+				   time_slice $32.;
 		run;
 	%end;
 %mend conditional_rx;
