@@ -106,6 +106,42 @@ proc sql;
 			else 'N'
 			end as inpatient_pqi_yn
 		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI01' 
+			then 'Y' else 'N' end as inpatient_diab_stc_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI03' 
+			then 'Y' else 'N' end as inpatient_diab_ltc_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI05' 
+			then 'Y' else 'N' end as inpatient_COPD_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI07' 
+			then 'Y' else 'N' end as inpatient_hypertension_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI08' 
+			then 'Y' else 'N' end as inpatient_CHF_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI10' 
+			then 'Y' else 'N' end as inpatient_dehydration_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI11' 
+			then 'Y' else 'N' end as inpatient_pneumonia_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI12' 
+			then 'Y' else 'N' end as inpatient_UTI_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI13' 
+			then 'Y' else 'N' end as inpatient_angina_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI14' 
+			then 'Y' else 'N' end as inpatient_diab_uncontrol_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI15' 
+			then 'Y' else 'N' end as inpatient_asthma_yn
+		,case
+			when upcase(claims.prm_ahrq_pqi) eq 'PQI16' 
+			then 'Y' else 'N' end as inpatient_diab_leg_ampu_yn
+		,case
 			when claims.dischargestatus = '03' then 'Y'
 			else 'N'
 			end as inpatient_discharge_to_snf_yn
@@ -144,6 +180,18 @@ proc sql;
 		,acute_yn
 		,medical_surgical
 		,inpatient_pqi_yn
+		,inpatient_diab_stc_yn
+		,inpatient_diab_ltc_yn
+		,inpatient_COPD_yn
+		,inpatient_hypertension_yn
+		,inpatient_CHF_yn
+		,inpatient_dehydration_yn
+		,inpatient_pneumonia_yn
+		,inpatient_UTI_yn
+		,inpatient_angina_yn
+		,inpatient_diab_uncontrol_yn
+		,inpatient_asthma_yn
+		,inpatient_diab_leg_ampu_yn
 		,inpatient_discharge_to_snf_yn
 		,preference_sensitive_yn
 		,inpatient_readmit_potential_yn
@@ -196,6 +244,54 @@ proc sql;
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
+
+		,sum(case when detail.inpatient_diab_stc_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as diab_stc_per1k label = "Diabetes Short Term Consequences Admits per 1000"
+		
+		,sum(case when detail.inpatient_diab_ltc_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as diab_ltc_per1k label = "Diabetes Long Term Consequences Admits per 1000"
+
+		,sum(case when detail.inpatient_COPD_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as COPD_per1k label = "Chronic Obstructive Pulmonary Disease Admits per 1000"
+
+		,sum(case when detail.inpatient_hypertension_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as hypertension_per1k label = "Hypertension Admits per 1000"
+
+		,sum(case when detail.inpatient_CHF_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as CHF_per1k label = "Congestive Heart Failure Admits per 1000"
+
+		,sum(case when detail.inpatient_dehydration_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as dehydration_per1k label = "Dehydration Admits per 1000"
+
+		,sum(case when detail.inpatient_pneumonia_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as pneumonia_per1k label = "Pneumonia Admits per 1000"
+
+		,sum(case when detail.inpatient_UTI_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as UTI_per1k label = "Urinary Tract Infection Admits per 1000"
+
+		,sum(case when detail.inpatient_angina_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as angina_per1k label = "Angina Admits per 1000"
+
+		,sum(case when detail.inpatient_diab_uncontrol_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as diab_uncontrol_per1k label = "Uncontrolled Diabetes Admits per 1000"
+
+		,sum(case when detail.inpatient_asthma_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as asthma_per1k label = "Adult Asthma Admits per 1000"
+
+		,sum(case when detail.inpatient_diab_leg_ampu_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
+			/ aggs.memmos_sum * 12000
+			as diab_leg_ampu_per1k label = "Diabetic Lower-Extremity Amputation Rate per 1000"
 
 		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
