@@ -1,11 +1,11 @@
 /*
-### CODE OWNERS: Michael Menser
+### CODE OWNERS: Michael Menser, Shea Parkes
 
 ### OBJECTIVE:
-	Add a "percentage of members who had claims in the specified time slice" metric to the key metrics table.  We
-	want a medical claims percentage, an Rx claims percentage, and a general percentage. 
+	Calculate the percentage of members with claims.
 
 ### DEVELOPER NOTES:
+	Likely to be quite a boring metric if the population comes from an ACO with claims based assignment (e.g. Medicare MSSP)
 
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
@@ -20,7 +20,9 @@ libname post010 "&post010.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Aggregate medical claims by member, so we get all members with medical claims.*/
+
+
+/*** Find members with claims ***/
 
 %agg_claims(
 	IncStart=&list_inc_start.
@@ -32,8 +34,6 @@ libname post010 "&post010.";
 	,Where_Elig=(member.assignment_indicator = 'Y')
 	,Suffix_Output=member
 	)
-
-/*If we have the Rx claims data, aggregate those by member also*/
 
 %macro conditional_rx;
 	%if %upcase(&rx_claims_exist.) eq YES %then %do;
@@ -51,26 +51,30 @@ libname post010 "&post010.";
 	%else %do;
 		data agg_claims_rx_member;
 			set _Null_;
-			format member_id $40.
-				   time_slice $32.;
+			format
+				member_id $40.
+				time_slice $32.
+				;
 		run;
 	%end;
 %mend conditional_rx;
 
 %conditional_rx;
 
-/*Calculate % of members with Med claims, Rx claims, and any claims.*/
+
+
+/*Calculate % of members with claims.*/
 
 proc sql noprint;
 	create table claims_percentages as
 	select
 		members.time_period
 		,members.elig_status_1
-		,(sum(case when medical.member_id = '' then 0 else 1 end)) / (count(members.member_id)) 
+		,(sum(case when medical.member_id is null then 0 else 1 end)) / (count(members.member_id)) 
 			as percent_members_w_claims_med label="Percentage of Members with Medical Claims"
-		,(sum(case when rx.member_id = '' then 0 else 1 end)) / (count(members.member_id))
+		,(sum(case when rx.member_id is null then 0 else 1 end)) / (count(members.member_id))
 			as percent_members_w_claims_rx label="Percentage of Members with Rx Claims"
-		,(sum(case when (medical.member_id = '' AND rx.member_id = '') then 0 else 1 end)) / (count(members.member_id))
+		,(sum(case when (medical.member_id is null AND rx.member_id is null) then 0 else 1 end)) / (count(members.member_id))
 			as percent_members_w_claims_any label="Percentage of Members with Any Claims"
 
 	from Post008.members as members 
@@ -89,8 +93,6 @@ proc sql noprint;
 	;
 quit;
  
-/*Write percentages out to the Post010 library.  This allows the metrics to appear in the key metrics table
-in Post050.*/
 
 proc transpose data = claims_percentages
 	out = claims_percentages_long (rename = (col1 = metric_value))
