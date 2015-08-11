@@ -1,97 +1,97 @@
-name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,require_label_ifnotallnull,notes_develop,notes_client;
-name_client,,varchar,256,N,,N,,Client Name;
-time_period,,varchar,32,N,,N,,Period for the information;
-prm_line,,char,5,N,,N,,Detailed service category code. This can be rolled up to the mcrm_line level.;
-prm_line_desc,,varchar,128,N,,N,,PRM Service Category Description;
-"mcrm_line,,varchar,8,N,,N,This is the service category needed to roll up the information from Outclaims PRM into something that will compare with the benchmarks.,""Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category.""";
-elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.;
-prv_net_aco_yn,,char,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?;
-prm_util_type,,varchar,16,N,,N,Utilization Type,Utilization Type;
-prm_discharges,,integer,,N,,N,Indicator of discharges. Should summarize to count of discharges. Only populated for Inpatient claims.,Indicates a discharges for an inpatient claim.;
-prm_days,,integer,,N,,N,Count of days for an inpatient claim.,Count of days for the claim line for inpatient claims.;
-prm_util,,integer,,N,,N,Utilization,Utilization Count.  Refer to PRM_Util_Type to understand the units for a given record.;
-prm_memmos,,float,,N,,N,,Number of Member Months;
-"prm_costs,,float,,N,,N,Costs,""Costs chosen for the client.  This could be allowed, billed, or paid amount.""";
-prm_allowed,,float,,N,,N,,Allowed costs;
-prm_paid,,float,,N,,N,,Paid costs;
-"prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,""What type of coverage does this correspond to? (e.g. Medical, Rx)""";
-type_benchmark,,varchar,8,N,Loosely~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed);
-riskscr_service_avg_util,,float,,N,,N,Service level risk factor used for utilization,This is the service level risk adjustment factor applied to the published loosely or well managed benchmark utilization value.;
-riskscr_service_avg_cost,,float,,N,,N,Service level risk factor used for costs,This is the service level risk adjustment factor applied to the published loosely or well managed benchmark cost value.;
-"benchmark_discharges_per1k,,float,,N,,N,,""Rate of Discharges per 1,000 member years.""";
-"benchmark_days_per1k,,float,,N,,N,,""Rate of Days per 1,000 member years.""";
-"benchmark_util_per1k,,float,,N,,N,,""Rate of Utilization per 1,000 member years.""";
-deceased_yn,,char,1,N,Y~N,N,,Are these members deceased as of the end of this time period?;
-deceased_hospital_yn,,char,1,N,Y~N,N,,Did the deceased members die in the hospital?;
-endoflife_numer_yn_chemolt14days,,char,1,N,Y~N,N,,Did the deceased members recently receive chemotherapy?;
-endoflife_denom_yn_chemolt14days,,char,1,N,Y~N,N,,Should these members be considered when evaluating who recently received chemotherapy?;
-endoflife_numer_yn_hospicelt3day,,char,1,N,Y~N,N,,Did the deceased members have a final hospice stay of less than 3 days?;
-endoflife_denom_yn_hospicelt3day,,char,1,N,Y~N,N,,Should these members be considered when evaluating who had a final hospice stay of less than 3 days?;
-endoflife_numer_yn_hospicenever,,char,1,N,Y~N,N,,Did these deceased members never have a hospice stay?;
-endoflife_denom_yn_hospicenever,,char,1,N,Y~N,N,,Should these members be considered when evaluating who never had a hospice stay?;
-age_avg,,float,,N,,N,,Average age of members; weighted by member months
-"final_hospice_days,,integer,,N,,N,,""For deceased members, how many days were they in the hospice immediately prior to death?""";
-costs_final_30_days_sum,,float,,N,,N,,Total cost in the final 30 days of life.;
-risk_score_type,,varchar,32,N,CMS HCC Risk Score~MARA Risk Score,N,,Description of the model used to compute risk scores.;
-riskscr_avg,,float,,N,,N,,Average risk score for the corresponding members.;
-memcnt,,integer,,N,,N,,Count of members with the corresponding statuses.;
-riskscr_cred,,float,,N,,N,,The percent of members with credible claims history in the risk score period.;
-prv_id_inpatient,,varchar,40,N,,N,,Provider ID of the corresponding inpatient facility.;
-discharge_status_code,,char,2,N,,N,,Discharge status code for these stays.;
-discharge_status_desc,,varchar,256,N,,N,,Description of the discharge status code for these stays.;
-drg_inpatient,,char,3,N,,N,,DRG for these stays.;
-drg_version_inpatient,,char,5,N,,N,,DRG Version for these stays.;
-acute_yn,,char,1,N,Y~N,N,,Were these stays at an acute facility?;
-medical_surgical,,char,8,N,Medical~Surgical~None,N,,What type of services did these stays contain (i.e. Medical or Surgical)?;
-inpatient_pqi_yn,,char,1,N,Y~N,N,,Were these stays for a PQI?;
-inpatient_diab_stc_yn,,char,1,N,Y~N,N,,Were these stays for diabetes's short-term consequences?;
-inpatient_diab_ltc_yn,,char,1,N,Y~N,N,,Were these stays for diabetes's long-term consequences?;
-inpatient_COPD_yn,,char,1,N,Y~N,N,,Were these stays for chronic obstructive pulmonary disease?;
-inpatient_hypertension_yn,,char,1,N,Y~N,N,,Were these stays for hypertension?;
-inpatient_CHF_yn,,char,1,N,Y~N,N,,Were these stays for congestive heart failure?;
-inpatient_dehydration_yn,,char,1,N,Y~N,N,,Were these stays for dehydration?;
-inpatient_pneumonia_yn,,char,1,N,Y~N,N,,Were these stays for pneumonia?;
-inpatient_UTI_yn,,char,1,N,Y~N,N,,Were these stays for a urinary tract infection?;
-inpatient_angina_yn,,char,1,N,Y~N,N,,Were these stays for angina?;
-inpatient_diab_uncontrol_yn,,char,1,N,Y~N,N,,Were these stays for uncontrolled diabetes?;
-inpatient_asthma_yn,,char,1,N,Y~N,N,,Were these stays for adult asthma?;
-inpatient_diab_leg_ampu_yn,,char,1,N,Y~N,N,,Were these stays for diabetics with lower-extremity amputations?;
-inpatient_discharge_to_snf_yn,,char,1,N,Y~N,N,,Where these inpatient stays discarged to a SNF?;
-inpatient_readmit_potential_yn,,char,1,N,Y~N,N,,Inpatient lines that are eligible to have readmissions;
-inpatient_readmit_yn,,char,1,N,Y~N,N,,Was there a readmission troublingly soon after this discharge?;
-preference_sensitive_yn,,char,1,N,Y~N,N,,Were these stays for a Preference Sensitive reason?;
-los_inpatient,,integer,,N,,N,,What was the Length of Stay for these stays?;
-cnt_discharges_inpatient,,integer,,N,,N,,Count of discharges for these stays.;
-sum_days_inpatient,,integer,,N,,N,,Sum of days for these stays.;
-sum_costs_inpatient,,float,,N,,N,,Sum of costs for these stays.;
-prv_id_snf,,varchar,40,N,,N,,Provider ID of the corresponding SNF.;
-snf_readmit_yn,,char,1,N,Y~N,N,,Did these SNF stays occur in the midst of an All-Cause IP Readmission window?;
-los_snf,,integer,,N,,N,,What was the Length of Stay for these stays?;
-cnt_discharges_snf,,integer,,N,,N,,Count of discharges for these stays.;
-sum_days_snf,,integer,,N,,N,,Sum of days for these stays.;
-sum_costs_snf,,float,,N,,N,,Sum of costs for these stays.;
-metric_category,,varchar,32,N,inpatient~discharge_status~snf~er~outpatient~end_of_life~basic,N,,Category of metrics; loosely correlated to anticipated reporting views.
-"metric_id,,varchar,32,N,,N,,""Code-friendly name/description of metric (no spaces, max of 32 characters)""";
-metric_name,,varchar,256,N,,N,,Human-friendly name/description of the metric.;
-metric_value,,float,,N,,N,,Value of the metric.;
-inc_start,,date,,N,,N,,The earliest incurred date.;
-inc_end,,date,,N,,N,,The latest incurred date.;
-paid_thru,,date,,N,,N,,The latest paid date.;
-inc_start_riskscr_features,,date,,N,,N,,The earliest incurred date considered in the risk score feature period.;
-inc_end_riskscr_features,,date,,N,,N,,The latest incurred date considered in the risk score feature period.;
-riskscr_period_type,,char,12,N,Prospective~Concurrent,N,,The timeline basis of the risk scores provided (e.g. Prospective or Concurrent);
-meta_field,,varchar,32,N,,N,,Field Name;
-"meta_field_label,,varchar,64,Y,,N,""Not the key, but no duplicates allowed!"",Field Description. Primarily used to identify contents of abstracted fields (e.g. elig_status_1)";
-meta_field_comment,,varchar,4096,N,,N,,Field Comment;
-meta_project,,varchar,64,N,,N,,Project Metadata Name;
-"meta_project_string,,varchar,1024,Y,,N,,""Project Metadata Value (String). One of meta_project_string, meta_project_date, or meta_project_integer will be populated.""";
-"meta_project_date,,date,,Y,,N,,""Project Metadata Value (Date). One of meta_project_string, meta_project_date, or meta_project_integer will be populated.""";
-"meta_project_integer,,integer,,Y,,N,,""Project Metadata Value (Integer). One of meta_project_string, meta_project_date, or meta_project_integer will be populated.""";
-meta_project_notes,,varchar,256,N,,N,,Describes provided metadata.;
-mcrm_line_desc_L1,,varchar,128,N,,N,,MCRM Service Category Description (Level 1);
-mcrm_line_desc_L2,,varchar,128,Y,,N,,MCRM Service Category Description (Level 2);
-mcrm_line_desc_L3,,varchar,128,Y,,N,,MCRM Service Category Description (Level 3);
-mcrm_line_desc_L4,,varchar,128,Y,,N,,MCRM Service Category Description (Level 4);
-mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5);
-mcrm_line_desc_L6,,varchar,128,Y,,N,,MCRM Service Category Description (Level 6);
-riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations;
+name_field,label,data_type,data_size,allow_nulls,whitelist_nonnull_values,require_label_ifnotallnull,notes_develop,notes_client
+name_client,,varchar,256,N,,N,,Client Name
+time_period,,varchar,32,N,,N,,Period for the information
+prm_line,,char,5,N,,N,,Detailed service category code. This can be rolled up to the mcrm_line level.
+prm_line_desc,,varchar,128,N,,N,,PRM Service Category Description
+mcrm_line,,varchar,8,N,,N,This is the service category needed to roll up the information from Outclaims PRM into something that will compare with the benchmarks.,"Service category code. For example, I11 for Inpatient Medical, O13a for Outpatient Radiology - General. This is a service line level category."
+elig_status_1,,varchar,64,N,,Y,,Most predominant eligibility status. Likely equates to Medicare Status.
+prv_net_aco_yn,,char,1,N,Y~N,N,Indicator of whether the provider is apart of the ACOs assignment network or not.,Was this service performed by a provider that was specifically within the ACO?
+prm_util_type,,varchar,16,N,,N,Utilization Type,Utilization Type
+prm_discharges,,integer,,N,,N,Indicator of discharges. Should summarize to count of discharges. Only populated for Inpatient claims.,Indicates a discharges for an inpatient claim.
+prm_days,,integer,,N,,N,Count of days for an inpatient claim.,Count of days for the claim line for inpatient claims.
+prm_util,,integer,,N,,N,Utilization,Utilization Count.  Refer to PRM_Util_Type to understand the units for a given record.
+prm_memmos,,float,,N,,N,,Number of Member Months
+prm_costs,,float,,N,,N,Costs,"Costs chosen for the client.  This could be allowed, billed, or paid amount."
+prm_allowed,,float,,N,,N,,Allowed costs
+prm_paid,,float,,N,,N,,Paid costs
+prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,"What type of coverage does this correspond to? (e.g. Medical, Rx)"
+type_benchmark,,varchar,8,N,Loosely~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed)
+riskscr_service_avg_util,,float,,N,,N,Service level risk factor used for utilization,This is the service level risk adjustment factor applied to the published loosely or well managed benchmark utilization value.
+riskscr_service_avg_cost,,float,,N,,N,Service level risk factor used for costs,This is the service level risk adjustment factor applied to the published loosely or well managed benchmark cost value.
+benchmark_discharges_per1k,,float,,N,,N,,"Rate of Discharges per 1,000 member years."
+benchmark_days_per1k,,float,,N,,N,,"Rate of Days per 1,000 member years."
+benchmark_util_per1k,,float,,N,,N,,"Rate of Utilization per 1,000 member years."
+deceased_yn,,char,1,N,Y~N,N,,Are these members deceased as of the end of this time period?
+deceased_hospital_yn,,char,1,N,Y~N,N,,Did the deceased members die in the hospital?
+endoflife_numer_yn_chemolt14days,,char,1,N,Y~N,N,,Did the deceased members recently receive chemotherapy?
+endoflife_denom_yn_chemolt14days,,char,1,N,Y~N,N,,Should these members be considered when evaluating who recently received chemotherapy?
+endoflife_numer_yn_hospicelt3day,,char,1,N,Y~N,N,,Did the deceased members have a final hospice stay of less than 3 days?
+endoflife_denom_yn_hospicelt3day,,char,1,N,Y~N,N,,Should these members be considered when evaluating who had a final hospice stay of less than 3 days?
+endoflife_numer_yn_hospicenever,,char,1,N,Y~N,N,,Did these deceased members never have a hospice stay?
+endoflife_denom_yn_hospicenever,,char,1,N,Y~N,N,,Should these members be considered when evaluating who never had a hospice stay?
+age_avg,,float,,N,,N,,Average age of members weighted by member months
+final_hospice_days,,integer,,N,,N,,"For deceased members, how many days were they in the hospice immediately prior to death?"
+costs_final_30_days_sum,,float,,N,,N,,Total cost in the final 30 days of life.
+risk_score_type,,varchar,32,N,CMS HCC Risk Score~MARA Risk Score,N,,Description of the model used to compute risk scores.
+riskscr_avg,,float,,N,,N,,Average risk score for the corresponding members.
+memcnt,,integer,,N,,N,,Count of members with the corresponding statuses.
+riskscr_cred,,float,,N,,N,,The percent of members with credible claims history in the risk score period.
+prv_id_inpatient,,varchar,40,N,,N,,Provider ID of the corresponding inpatient facility.
+discharge_status_code,,char,2,N,,N,,Discharge status code for these stays.
+discharge_status_desc,,varchar,256,N,,N,,Description of the discharge status code for these stays.
+drg_inpatient,,char,3,N,,N,,DRG for these stays.
+drg_version_inpatient,,char,5,N,,N,,DRG Version for these stays.
+acute_yn,,char,1,N,Y~N,N,,Were these stays at an acute facility?
+medical_surgical,,char,8,N,Medical~Surgical~None,N,,What type of services did these stays contain (i.e. Medical or Surgical)?
+inpatient_pqi_yn,,char,1,N,Y~N,N,,Were these stays for a PQI?
+inpatient_diab_stc_yn,,char,1,N,Y~N,N,,Were these stays for diabetes's short-term consequences?
+inpatient_diab_ltc_yn,,char,1,N,Y~N,N,,Were these stays for diabetes's long-term consequences?
+inpatient_COPD_yn,,char,1,N,Y~N,N,,Were these stays for chronic obstructive pulmonary disease?
+inpatient_hypertension_yn,,char,1,N,Y~N,N,,Were these stays for hypertension?
+inpatient_CHF_yn,,char,1,N,Y~N,N,,Were these stays for congestive heart failure?
+inpatient_dehydration_yn,,char,1,N,Y~N,N,,Were these stays for dehydration?
+inpatient_pneumonia_yn,,char,1,N,Y~N,N,,Were these stays for pneumonia?
+inpatient_UTI_yn,,char,1,N,Y~N,N,,Were these stays for a urinary tract infection?
+inpatient_angina_yn,,char,1,N,Y~N,N,,Were these stays for angina?
+inpatient_diab_uncontrol_yn,,char,1,N,Y~N,N,,Were these stays for uncontrolled diabetes?
+inpatient_asthma_yn,,char,1,N,Y~N,N,,Were these stays for adult asthma?
+inpatient_diab_leg_ampu_yn,,char,1,N,Y~N,N,,Were these stays for diabetics with lower-extremity amputations?
+inpatient_discharge_to_snf_yn,,char,1,N,Y~N,N,,Where these inpatient stays discarged to a SNF?
+inpatient_readmit_potential_yn,,char,1,N,Y~N,N,,Inpatient lines that are eligible to have readmissions
+inpatient_readmit_yn,,char,1,N,Y~N,N,,Was there a readmission troublingly soon after this discharge?
+preference_sensitive_yn,,char,1,N,Y~N,N,,Were these stays for a Preference Sensitive reason?
+los_inpatient,,integer,,N,,N,,What was the Length of Stay for these stays?
+cnt_discharges_inpatient,,integer,,N,,N,,Count of discharges for these stays.
+sum_days_inpatient,,integer,,N,,N,,Sum of days for these stays.
+sum_costs_inpatient,,float,,N,,N,,Sum of costs for these stays.
+prv_id_snf,,varchar,40,N,,N,,Provider ID of the corresponding SNF.
+snf_readmit_yn,,char,1,N,Y~N,N,,Did these SNF stays occur in the midst of an All-Cause IP Readmission window?
+los_snf,,integer,,N,,N,,What was the Length of Stay for these stays?
+cnt_discharges_snf,,integer,,N,,N,,Count of discharges for these stays.
+sum_days_snf,,integer,,N,,N,,Sum of days for these stays.
+sum_costs_snf,,float,,N,,N,,Sum of costs for these stays.
+metric_category,,varchar,32,N,inpatient~discharge_status~snf~er~outpatient~end_of_life~basic,N,,Category of metrics loosely correlated to anticipated reporting views.
+metric_id,,varchar,32,N,,N,,"Code-friendly name/description of metric (no spaces, max of 32 characters)"
+metric_name,,varchar,256,N,,N,,Human-friendly name/description of the metric.
+metric_value,,float,,N,,N,,Value of the metric.
+inc_start,,date,,N,,N,,The earliest incurred date.
+inc_end,,date,,N,,N,,The latest incurred date.
+paid_thru,,date,,N,,N,,The latest paid date.
+inc_start_riskscr_features,,date,,N,,N,,The earliest incurred date considered in the risk score feature period.
+inc_end_riskscr_features,,date,,N,,N,,The latest incurred date considered in the risk score feature period.
+riskscr_period_type,,char,12,N,Prospective~Concurrent,N,,The timeline basis of the risk scores provided (e.g. Prospective or Concurrent)
+meta_field,,varchar,32,N,,N,,Field Name
+meta_field_label,,varchar,64,Y,,N,"Not the key, but no duplicates allowed!",Field Description. Primarily used to identify contents of abstracted fields (e.g. elig_status_1)
+meta_field_comment,,varchar,4096,N,,N,,Field Comment
+meta_project,,varchar,64,N,,N,,Project Metadata Name
+meta_project_string,,varchar,1024,Y,,N,,"Project Metadata Value (String). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
+meta_project_date,,date,,Y,,N,,"Project Metadata Value (Date). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
+meta_project_integer,,integer,,Y,,N,,"Project Metadata Value (Integer). One of meta_project_string, meta_project_date, or meta_project_integer will be populated."
+meta_project_notes,,varchar,256,N,,N,,Describes provided metadata.
+mcrm_line_desc_L1,,varchar,128,N,,N,,MCRM Service Category Description (Level 1)
+mcrm_line_desc_L2,,varchar,128,Y,,N,,MCRM Service Category Description (Level 2)
+mcrm_line_desc_L3,,varchar,128,Y,,N,,MCRM Service Category Description (Level 3)
+mcrm_line_desc_L4,,varchar,128,Y,,N,,MCRM Service Category Description (Level 4)
+mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5)
+mcrm_line_desc_L6,,varchar,128,Y,,N,,MCRM Service Category Description (Level 6)
+riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations
