@@ -2,7 +2,8 @@
 ### CODE OWNERS: Michael Menser
 
 ### OBJECTIVE:
-	Add a "percentage of members who had claims in the specified time slice" metric to the key metrics table. 
+	Add a "percentage of members who had claims in the specified time slice" metric to the key metrics table.  We
+	want a medical claims percentage, an Rx claims percentage, and a general percentage. 
 
 ### DEVELOPER NOTES:
 
@@ -87,6 +88,9 @@ proc sql noprint;
 	;
 quit;
  
+/*Write percentages out to the Post010 library.  This allows the metrics to appear in the key metrics table
+in Post050.*/
+
 proc transpose data = claims_percentages
 	out = claims_percentages_long (rename = (col1 = metric_value))
 	name = metric_id
