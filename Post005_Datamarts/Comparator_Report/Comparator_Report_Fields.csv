@@ -60,6 +60,17 @@ inpatient_discharge_to_snf_yn,,char,1,N,Y~N,N,,Where these inpatient stays disca
 inpatient_readmit_potential_yn,,char,1,N,Y~N,N,,Inpatient lines that are eligible to have readmissions
 inpatient_readmit_yn,,char,1,N,Y~N,N,,Was there a readmission troublingly soon after this discharge?
 preference_sensitive_yn,,char,1,N,Y~N,N,,Were these stays for a Preference Sensitive reason?
+bariatric_yn,,char,1,N,Y~N,N,,Were these stays because of bariatric surgery?
+CABG_yn,,char,1,N,Y~N,N,,Were these stays because of coronary artery bypass grafting surgery?
+CABG_PTCA_yn,,char,1,N,Y~N,N,,Were these stays because of coronary artery bypass grafting and percutaneous transluminal coronary angioplasty surgeries?
+hip_yn,,char,1,N,Y~N,N,,Were these stays because of hip replacement surgery?
+hip_knee_yn,,char,1,N,Y~N,N,,Were these stays because of hip and knee replacement surgery?
+hysterectomy_yn,,char,1,N,Y~N,N,,Were these stays because of a hysterectomy?
+knee_yn,,char,1,N,Y~N,N,,Were these stays because of knee replacement surgery?
+laminectomy_yn,,char,1,N,Y~N,N,,Were these stays because of a laminectomy?
+PTCA_yn,,char,1,N,Y~N,N,,Were these stays because of a percutaneous transluminal coronary angioplasty?
+TURP_yn,,char,1,N,Y~N,N,,Were these stays because of a transurethral resection of the prostate?
+uterine_yn,,char,1,N,Y~N,N,,Were these stays because of uterine & adnexa surgery?
 los_inpatient,,integer,,N,,N,,What was the Length of Stay for these stays?
 cnt_discharges_inpatient,,integer,,N,,N,,Count of discharges for these stays.
 sum_days_inpatient,,integer,,N,,N,,Sum of days for these stays.

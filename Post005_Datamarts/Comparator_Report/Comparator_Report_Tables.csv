@@ -83,6 +83,17 @@ inpatient_asthma_yn,details_inpatient,Y,N
 inpatient_diab_leg_ampu_yn,details_inpatient,Y,N
 inpatient_discharge_to_snf_yn,details_inpatient,Y,N
 preference_sensitive_yn,details_inpatient,Y,N
+bariatric_yn,details_inpatient,Y,N
+CABG_yn,details_inpatient,Y,N
+CABG_PTCA_yn,details_inpatient,Y,N
+hip_yn,details_inpatient,Y,N
+hip_knee_yn,details_inpatient,Y,N
+hysterectomy_yn,details_inpatient,Y,N
+knee_yn,details_inpatient,Y,N
+laminectomy_yn,details_inpatient,Y,N
+PTCA_yn,details_inpatient,Y,N
+TURP_yn,details_inpatient,Y,N
+uterine_yn,details_inpatient,Y,N
 inpatient_readmit_potential_yn,details_inpatient,Y,N
 inpatient_readmit_yn,details_inpatient,Y,N
 los_inpatient,details_inpatient,Y,N
