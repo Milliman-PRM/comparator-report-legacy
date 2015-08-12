@@ -160,7 +160,7 @@ proc sql;
 			then "Y" else "N" end as CABG_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "CABG/PTCA (DRG)" 
 			then "Y" else "N" end as CABG_PTCA_yn
-		,case when substr(upcase(claims.prm_pref_sensitive_category,1,3)) eq "HIP" or upcase(claims.prm_pref_sensitive_category) eq "KNEE REPLACEMENT"
+		,case when upcase(claims.prm_pref_sensitive_category) eq "HIP REPLACEMENT"
 			then "Y" else "N" end as hip_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "HIP/KNEE REPLACEMENT (DRG)" 
 			then "Y" else "N" end as hip_knee_yn
