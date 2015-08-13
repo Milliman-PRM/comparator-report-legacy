@@ -158,12 +158,8 @@ proc sql;
 			then "Y" else "N" end as bariatric_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "CABG" 
 			then "Y" else "N" end as CABG_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "CABG/PTCA (DRG)" 
-			then "Y" else "N" end as CABG_PTCA_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "HIP REPLACEMENT"
 			then "Y" else "N" end as hip_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "HIP/KNEE REPLACEMENT (DRG)" 
-			then "Y" else "N" end as hip_knee_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "HYSTERECTOMY" 
 			then "Y" else "N" end as hysterectomy_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "KNEE REPLACEMENT" 
@@ -172,10 +168,8 @@ proc sql;
 			then "Y" else "N" end as laminectomy_yn
 		,case when upcase(claims.prm_pref_sensitive_category) eq "PTCA" 
 			then "Y" else "N" end as PTCA_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "TURP" or upcase(claims.prm_pref_sensitive_category) eq "TURP (DRG)" 
+		,case when upcase(claims.prm_pref_sensitive_category) eq "TURP" 
 			then "Y" else "N" end as TURP_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "UTERINE & ADNEXA (DRG)" 
-			then "Y" else "N" end as uterine_yn
 		,claims.prm_readmit_potential_yn as inpatient_readmit_potential_yn
 		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,claims.prm_util as los_inpatient
@@ -218,15 +212,12 @@ proc sql;
 		,preference_sensitive_yn
 		,bariatric_yn
 		,CABG_yn
-		,CABG_PTCA_yn
 		,hip_yn
-		,hip_knee_yn
 		,hysterectomy_yn
 		,knee_yn
 		,laminectomy_yn
 		,PTCA_yn
 		,TURP_yn
-		,uterine_yn
 		,inpatient_readmit_potential_yn
 		,inpatient_readmit_yn
 		,los_inpatient
@@ -338,17 +329,9 @@ proc sql;
 			/ aggs.memmos_sum * 12000
 			as CABG_per1k label = "Coronary Artery Bypass Grafting Surgeries per 1000"
 
-		,sum(case when detail.CABG_PTCA_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as CABG_PTCA_per1k label = "Coronary Artery Bypass Grafting and Percutaneous Transluminal Coronary Angioplasties per 1000"
-
 		,sum(case when detail.hip_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as hip_per1k label = "Hip Replacement Surgeries per 1000"
-
-		,sum(case when detail.hip_knee_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as hip_knee_per1k label = "Hip and Knee Replacement Surgeries per 1000"
 
 		,sum(case when detail.hysterectomy_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
@@ -369,10 +352,6 @@ proc sql;
 		,sum(case when detail.turp_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as turp_per1k label = "Transurethral Resections of the Prostrate per 1000"
-
-		,sum(case when detail.uterine_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as uterine_per1k label = "Uterine & Adnexa Surgeries per 1000"
 
 		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
 			/ sum(detail.cnt_discharges_inpatient)
