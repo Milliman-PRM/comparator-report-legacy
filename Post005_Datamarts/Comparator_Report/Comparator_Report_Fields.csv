@@ -44,22 +44,12 @@ drg_version_inpatient,,char,5,N,,N,,DRG Version for these stays.
 acute_yn,,char,1,N,Y~N,N,,Were these stays at an acute facility?
 medical_surgical,,char,8,N,Medical~Surgical~None,N,,What type of services did these stays contain (i.e. Medical or Surgical)?
 inpatient_pqi_yn,,char,1,N,Y~N,N,,Were these stays for a PQI?
-inpatient_diab_stc_yn,,char,1,N,Y~N,N,,Were these stays for diabetes's short-term consequences?
-inpatient_diab_ltc_yn,,char,1,N,Y~N,N,,Were these stays for diabetes's long-term consequences?
-inpatient_COPD_yn,,char,1,N,Y~N,N,,Were these stays for chronic obstructive pulmonary disease?
-inpatient_hypertension_yn,,char,1,N,Y~N,N,,Were these stays for hypertension?
-inpatient_CHF_yn,,char,1,N,Y~N,N,,Were these stays for congestive heart failure?
-inpatient_dehydration_yn,,char,1,N,Y~N,N,,Were these stays for dehydration?
-inpatient_pneumonia_yn,,char,1,N,Y~N,N,,Were these stays for pneumonia?
-inpatient_UTI_yn,,char,1,N,Y~N,N,,Were these stays for a urinary tract infection?
-inpatient_angina_yn,,char,1,N,Y~N,N,,Were these stays for angina?
-inpatient_diab_uncontrol_yn,,char,1,N,Y~N,N,,Were these stays for uncontrolled diabetes?
-inpatient_asthma_yn,,char,1,N,Y~N,N,,Were these stays for adult asthma?
-inpatient_diab_leg_ampu_yn,,char,1,N,Y~N,N,,Were these stays for diabetics with lower-extremity amputations?
+prm_ahrq_pqi,,char,5,N,N,Y,,What PQI did they have?
 inpatient_discharge_to_snf_yn,,char,1,N,Y~N,N,,Where these inpatient stays discarged to a SNF?
 inpatient_readmit_potential_yn,,char,1,N,Y~N,N,,Inpatient lines that are eligible to have readmissions
 inpatient_readmit_yn,,char,1,N,Y~N,N,,Was there a readmission troublingly soon after this discharge?
 preference_sensitive_yn,,char,1,N,Y~N,N,,Were these stays for a Preference Sensitive reason?
+prm_pref_sensitive_category,,char,50,N,N,Y,,What preference-sensitive condition afflicts them?
 bariatric_yn,,char,1,N,Y~N,N,,Were these stays because of bariatric surgery?
 CABG_yn,,char,1,N,Y~N,N,,Were these stays because of coronary artery bypass grafting surgery?
 hip_yn,,char,1,N,Y~N,N,,Were these stays because of hip replacement surgery?

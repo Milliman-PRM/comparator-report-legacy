@@ -105,42 +105,7 @@ proc sql;
 				) then 'Y'
 			else 'N'
 			end as inpatient_pqi_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI01' 
-			then 'Y' else 'N' end as inpatient_diab_stc_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI03' 
-			then 'Y' else 'N' end as inpatient_diab_ltc_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI05' 
-			then 'Y' else 'N' end as inpatient_COPD_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI07' 
-			then 'Y' else 'N' end as inpatient_hypertension_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI08' 
-			then 'Y' else 'N' end as inpatient_CHF_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI10' 
-			then 'Y' else 'N' end as inpatient_dehydration_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI11' 
-			then 'Y' else 'N' end as inpatient_pneumonia_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI12' 
-			then 'Y' else 'N' end as inpatient_UTI_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI13' 
-			then 'Y' else 'N' end as inpatient_angina_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI14' 
-			then 'Y' else 'N' end as inpatient_diab_uncontrol_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI15' 
-			then 'Y' else 'N' end as inpatient_asthma_yn
-		,case
-			when upcase(claims.prm_ahrq_pqi) eq 'PQI16' 
-			then 'Y' else 'N' end as inpatient_diab_leg_ampu_yn
+		,claims.prm_ahrq_pqi
 		,case
 			when claims.dischargestatus = '03' then 'Y'
 			else 'N'
@@ -154,22 +119,7 @@ proc sql;
 			else "N"
 			end
 			as preference_sensitive_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "BARIATRIC SURGERY" 
-			then "Y" else "N" end as bariatric_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "CABG" 
-			then "Y" else "N" end as CABG_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "HIP REPLACEMENT"
-			then "Y" else "N" end as hip_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "HYSTERECTOMY" 
-			then "Y" else "N" end as hysterectomy_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "KNEE REPLACEMENT" 
-			then "Y" else "N" end as knee_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "LAMINECTOMY/SPINAL FUSION" 
-			then "Y" else "N" end as laminectomy_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "PTCA" 
-			then "Y" else "N" end as PTCA_yn
-		,case when upcase(claims.prm_pref_sensitive_category) eq "TURP" 
-			then "Y" else "N" end as TURP_yn
+		,claims.prm_pref_sensitive_category
 		,claims.prm_readmit_potential_yn as inpatient_readmit_potential_yn
 		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,claims.prm_util as los_inpatient
@@ -196,28 +146,10 @@ proc sql;
 		,acute_yn
 		,medical_surgical
 		,inpatient_pqi_yn
-		,inpatient_diab_stc_yn
-		,inpatient_diab_ltc_yn
-		,inpatient_COPD_yn
-		,inpatient_hypertension_yn
-		,inpatient_CHF_yn
-		,inpatient_dehydration_yn
-		,inpatient_pneumonia_yn
-		,inpatient_UTI_yn
-		,inpatient_angina_yn
-		,inpatient_diab_uncontrol_yn
-		,inpatient_asthma_yn
-		,inpatient_diab_leg_ampu_yn
+		,prm_ahrq_pqi
 		,inpatient_discharge_to_snf_yn
 		,preference_sensitive_yn
-		,bariatric_yn
-		,CABG_yn
-		,hip_yn
-		,hysterectomy_yn
-		,knee_yn
-		,laminectomy_yn
-		,PTCA_yn
-		,TURP_yn
+		,prm_pref_sensitive_category
 		,inpatient_readmit_potential_yn
 		,inpatient_readmit_yn
 		,los_inpatient
@@ -261,6 +193,60 @@ run;
 
 /***** CALCULATE MEASURES *****/
 proc sql;
+    create table measures_pqi as
+    select
+        time_period
+        ,elig_status_1
+        ,'PQI Measures' as metric_category
+        ,cats(PRM_ahrq_pqi, 'admit_per_1k') as metric_id label = "NAME OF FORMER VARIABLE"
+        ,catx(' ','Admits per 1000 for',PRM_ahrq_pqi) as metric_name label = "LABEL OF FORMER VARIABLE"
+        ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
+    from partial_aggregation
+	left join post010.basic_aggs_elig_status as aggs
+		on partial_aggregation.time_period = aggs.time_period
+		and partial_aggregation.elig_status_1 = aggs.elig_status_1
+	where prm_ahrq_pqi ne 'none'
+	group by 
+		time_period
+		,elig_status_1
+		,aggs.memmos_sum
+	order by 
+		time_period
+		,elig_status_1
+quit;
+
+proc sql;
+    create table measures_psa as
+    select
+        time_period
+        ,elig_status_1
+        ,'PSA Measures' as metric_category
+        ,cats(PRM_pref_sensitive_category, 'admit_per_1k') as metric_id label = "NAME OF FORMER VARIABLE"
+        ,catx(' ','Admits per 1000 for',prm_pref_sensitive_category) as metric_name label = "LABEL OF FORMER VARIABLE"
+        ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
+    from partial_aggregation
+	left join post010.basic_aggs_elig_status as aggs
+			on partial_aggregation.time_period = aggs.time_period
+			and partial_aggregation.elig_status_1 = aggs.elig_status_1
+	where prm_pref_sensitive_category in(
+		'Bariatric Surgery'
+		,'CABG'
+		,'Hip Replacement'
+		,'Hysterectomy'
+		,'Knee Replacement'
+		,'Laminectomy/Spinal Fusion'
+		,'PTCA'
+		,'TURP')
+	group by 
+		time_period
+		,elig_status_1
+		,aggs.memmos_sum
+	order by 
+		time_period
+		,elig_status_1
+quit;
+
+proc sql;
 	create table measures as
 	select
 		detail.time_period
@@ -269,90 +255,10 @@ proc sql;
 			/ aggs.memmos_sum * 12000
 			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
 
-		,sum(case when detail.inpatient_diab_stc_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as diab_stc_per1k label = "Diabetes Short Term Consequences Admits per 1000"
-		
-		,sum(case when detail.inpatient_diab_ltc_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as diab_ltc_per1k label = "Diabetes Long Term Consequences Admits per 1000"
-
-		,sum(case when detail.inpatient_COPD_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as COPD_per1k label = "Chronic Obstructive Pulmonary Disease Admits per 1000"
-
-		,sum(case when detail.inpatient_hypertension_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as hypertension_per1k label = "Hypertension Admits per 1000"
-
-		,sum(case when detail.inpatient_CHF_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as CHF_per1k label = "Congestive Heart Failure Admits per 1000"
-
-		,sum(case when detail.inpatient_dehydration_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as dehydration_per1k label = "Dehydration Admits per 1000"
-
-		,sum(case when detail.inpatient_pneumonia_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as pneumonia_per1k label = "Pneumonia Admits per 1000"
-
-		,sum(case when detail.inpatient_UTI_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as UTI_per1k label = "Urinary Tract Infection Admits per 1000"
-
-		,sum(case when detail.inpatient_angina_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as angina_per1k label = "Angina Admits per 1000"
-
-		,sum(case when detail.inpatient_diab_uncontrol_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as diab_uncontrol_per1k label = "Uncontrolled Diabetes Admits per 1000"
-
-		,sum(case when detail.inpatient_asthma_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as asthma_per1k label = "Adult Asthma Admits per 1000"
-
-		,sum(case when detail.inpatient_diab_leg_ampu_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as diab_leg_ampu_per1k label = "Diabetic Lower-Extremity Amputation Rate per 1000"
-
 		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as pref_sens_per1k label="Preference Sensitive Admits per 1000"
 		
-		,sum(case when detail.bariatric_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as bariatric_per1k label = "Bariatric Surgeries per 1000"
-
-		,sum(case when detail.CABG_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as CABG_per1k label = "Coronary Artery Bypass Grafting Surgeries per 1000"
-
-		,sum(case when detail.hip_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as hip_per1k label = "Hip Replacement Surgeries per 1000"
-
-		,sum(case when detail.hysterectomy_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as hysterectomy_per1k label = "Hysterectomies per 1000"
-
-		,sum(case when detail.knee_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as knee_per1k label = "Knee Replacement Surgeries per 1000"
-
-		,sum(case when detail.laminectomy_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as laminectomy_per1k label = "Laminectomies per 1000"
-
-		,sum(case when detail.ptca_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as ptca_per1k label = "Percutaneous Transluminal Coronary Angioplasties per 1000"
-
-		,sum(case when detail.turp_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as turp_per1k label = "Transurethral Resections of the Prostrate per 1000"
-
 		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
 			/ sum(detail.cnt_discharges_inpatient)
 			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
@@ -435,7 +341,7 @@ run;
 
 data post025.metrics_inpatient;
 	format &metrics_key_value_cgfrmt.;
-	set measures_long;
+	set measures_long measure_pqi measure_psa;
 	by time_period elig_status_1;
 	&assign_name_client.;
 	metric_category = "Inpatient";
