@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jason Altieri, Shea Parkes
+### CODE OWNERS: Jason Altieri, Shea Parkes, Nathan Mytelka
 
 ### OBJECTIVE:
 	Use the PRM outputs to create the Admissiion/Readmission report for NYP.
@@ -374,35 +374,35 @@ proc sql;
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as acute_per1k label="Acute Discharges per 1000"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as surgical_per1k label="Surgical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_per1k label="Medical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_general_per1k label="General Medical Discharges per 1000"
 
 		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_general_per1k_riskadj label="General Medical Discharges per 1000 Risk Adjusted"
 
 	from partial_aggregation as detail
