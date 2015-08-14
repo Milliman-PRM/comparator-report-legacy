@@ -198,8 +198,8 @@ proc sql;
         time_period
         ,elig_status_1
         ,'PQI Measures' as metric_category
-        ,cats(PRM_ahrq_pqi, 'admit_per_1k') as metric_id label = "NAME OF FORMER VARIABLE"
-        ,catx(' ','Admits per 1000 for',PRM_ahrq_pqi) as metric_name label = "LABEL OF FORMER VARIABLE"
+        ,cats(PRM_ahrq_pqi, '_admit_per_1k') as metric_id
+        ,catx(' ','Admits per 1000 for',PRM_ahrq_pqi) as metric_name
         ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
     from partial_aggregation
 	left join post010.basic_aggs_elig_status as aggs
@@ -221,8 +221,8 @@ proc sql;
         time_period
         ,elig_status_1
         ,'PSA Measures' as metric_category
-        ,cats(PRM_pref_sensitive_category, 'admit_per_1k') as metric_id label = "NAME OF FORMER VARIABLE"
-        ,catx(' ','Admits per 1000 for',prm_pref_sensitive_category) as metric_name label = "LABEL OF FORMER VARIABLE"
+        ,cats(PRM_pref_sensitive_category, '_admit_per_1k') as metric_id
+        ,catx(' ','Admits per 1000 for',prm_pref_sensitive_category) as metric_name
         ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
     from partial_aggregation
 	left join post010.basic_aggs_elig_status as aggs
