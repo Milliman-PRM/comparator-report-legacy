@@ -195,45 +195,52 @@ run;
 proc sql;
     create table measures_pqi as
     select
-        time_period
-        ,elig_status_1
-        ,cats(PRM_ahrq_pqi, '_admit_per_1k') as metric_id
-        ,catx(' ','Admits per 1000 for',PRM_ahrq_pqi) as metric_name
-        ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
-    from partial_aggregation
-	left join post010.basic_aggs_elig_status as aggs
-		on partial_aggregation.time_period = aggs.time_period
-		and partial_aggregation.elig_status_1 = aggs.elig_status_1
-	where inpatient_pqi_yn eq 'Y'
+        partial.time_period
+        ,partial.elig_status_1
+        ,cats(partial.PRM_ahrq_pqi, '_admit_per_1k') as metric_id as metric_id format=$32. length=32
+        ,catx(' ','Admits per 1000 for', partial.PRM_ahrq_pqi) as metric_name
+        ,sum(partial.cnt_discharges_inpatient) / basic.memmos_sum * 12000 as metric_value
+		/*,basic.memmos_sum*/
+    from partial_aggregation as partial
+	left join post010.basic_aggs_elig_status as basic
+		on partial.time_period = basic.time_period
+		and partial.elig_status_1 = basic.elig_status_1
+	where partial.inpatient_pqi_yn eq 'Y'
 	group by 
-		time_period
-		,elig_status_1
-		,aggs.memmos_sum
+		partial.time_period
+		,partial.elig_status_1
+		,basic.memmos_sum
+		,metric_id
+		,metric_name
 	order by 
-		time_period
-		,elig_status_1
+		partial.time_period
+		,partial.elig_status_1
+	;
 quit;
 
 proc sql;
     create table measures_psa as
     select
-        time_period
-        ,elig_status_1
-        ,cats(PRM_pref_sensitive_category, '_admit_per_1k') as metric_id
-        ,catx(' ','Admits per 1000 for',prm_pref_sensitive_category) as metric_name
-        ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
-    from partial_aggregation
-	left join post010.basic_aggs_elig_status as aggs
-			on partial_aggregation.time_period = aggs.time_period
-			and partial_aggregation.elig_status_1 = aggs.elig_status_1
-	where preference_sensitive_yn eq 'Y'
+        partial.time_period
+        ,partial.elig_status_1
+        ,lowcase(cats('psa_admits_', compress(partial.PRM_pref_sensitive_category,,'ak'))) as metric_id format=$32. length=32
+        ,catx(' ', 'Admits per 1000 for PSA -', partial.prm_pref_sensitive_category) as metric_name
+        ,sum(partial.cnt_discharges_inpatient) / basic.memmos_sum * 12000 as metric_value
+    from partial_aggregation as partial
+	left join post010.basic_aggs_elig_status as basic
+			on partial.time_period = basic.time_period
+			and partial.elig_status_1 = basic.elig_status_1
+	where partial.preference_sensitive_yn eq 'Y'
 	group by 
-		time_period
-		,elig_status_1
-		,aggs.memmos_sum
+		partial.time_period
+		,partial.elig_status_1
+		,basic.memmos_sum
+		,metric_id
+		,metric_name
 	order by 
 		time_period
 		,elig_status_1
+	;
 quit;
 
 proc sql;
@@ -331,7 +338,7 @@ run;
 
 data post025.metrics_inpatient;
 	format &metrics_key_value_cgfrmt.;
-	set measures_long measure_pqi measure_psa;
+	set measures_long measures_pqi measures_psa;
 	by time_period elig_status_1;
 	&assign_name_client.;
 	metric_category = "Inpatient";
