@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jason Altieri, Shea Parkes
+### CODE OWNERS: Jason Altieri, Shea Parkes, Nathan Mytelka
 
 ### OBJECTIVE:
 	Use the PRM outputs to create the Admissiion/Readmission report for NYP.
@@ -105,6 +105,7 @@ proc sql;
 				) then 'Y'
 			else 'N'
 			end as inpatient_pqi_yn
+		,claims.prm_ahrq_pqi
 		,case
 			when claims.dischargestatus = '03' then 'Y'
 			else 'N'
@@ -118,6 +119,7 @@ proc sql;
 			else "N"
 			end
 			as preference_sensitive_yn
+		,claims.prm_pref_sensitive_category
 		,claims.prm_readmit_potential_yn as inpatient_readmit_potential_yn
 		,claims.prm_readmit_all_cause_yn as inpatient_readmit_yn
 		,claims.prm_util as los_inpatient
@@ -144,8 +146,10 @@ proc sql;
 		,acute_yn
 		,medical_surgical
 		,inpatient_pqi_yn
+		,prm_ahrq_pqi
 		,inpatient_discharge_to_snf_yn
 		,preference_sensitive_yn
+		,prm_pref_sensitive_category
 		,inpatient_readmit_potential_yn
 		,inpatient_readmit_yn
 		,los_inpatient
@@ -189,6 +193,57 @@ run;
 
 /***** CALCULATE MEASURES *****/
 proc sql;
+    create table measures_pqi as
+    select
+        partial.time_period
+        ,partial.elig_status_1
+        ,cats(partial.PRM_ahrq_pqi, '_admit_per_1k') as metric_id as metric_id format=$32. length=32
+        ,catx(' ','Admits per 1000 for', partial.PRM_ahrq_pqi) as metric_name
+        ,sum(partial.cnt_discharges_inpatient) / basic.memmos_sum * 12000 as metric_value
+		/*,basic.memmos_sum*/
+    from partial_aggregation as partial
+	left join post010.basic_aggs_elig_status as basic
+		on partial.time_period = basic.time_period
+		and partial.elig_status_1 = basic.elig_status_1
+	where partial.inpatient_pqi_yn eq 'Y'
+	group by 
+		partial.time_period
+		,partial.elig_status_1
+		,basic.memmos_sum
+		,metric_id
+		,metric_name
+	order by 
+		partial.time_period
+		,partial.elig_status_1
+	;
+quit;
+
+proc sql;
+    create table measures_psa as
+    select
+        partial.time_period
+        ,partial.elig_status_1
+        ,lowcase(cats('psa_admits_', compress(partial.PRM_pref_sensitive_category,,'ak'))) as metric_id format=$32. length=32
+        ,catx(' ', 'Admits per 1000 for PSA -', partial.prm_pref_sensitive_category) as metric_name
+        ,sum(partial.cnt_discharges_inpatient) / basic.memmos_sum * 12000 as metric_value
+    from partial_aggregation as partial
+	left join post010.basic_aggs_elig_status as basic
+			on partial.time_period = basic.time_period
+			and partial.elig_status_1 = basic.elig_status_1
+	where partial.preference_sensitive_yn eq 'Y'
+	group by 
+		partial.time_period
+		,partial.elig_status_1
+		,basic.memmos_sum
+		,metric_id
+		,metric_name
+	order by 
+		time_period
+		,elig_status_1
+	;
+quit;
+
+proc sql;
 	create table measures as
 	select
 		detail.time_period
@@ -200,7 +255,7 @@ proc sql;
 		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			/ aggs.memmos_sum * 12000
 			as pref_sens_per1k label="Preference Sensitive Admits per 1000"
-
+		
 		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
 			/ sum(detail.cnt_discharges_inpatient)
 			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
@@ -222,35 +277,35 @@ proc sql;
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as acute_per1k label="Acute Discharges per 1000"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as surgical_per1k label="Surgical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_per1k label="Medical Discharges per 1000"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
 
 		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_general_per1k label="General Medical Discharges per 1000"
 
 		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12 * 1000
+			/ aggs.memmos_sum * 12000
 			as medical_general_per1k_riskadj label="General Medical Discharges per 1000 Risk Adjusted"
 
 	from partial_aggregation as detail
@@ -283,7 +338,7 @@ run;
 
 data post025.metrics_inpatient;
 	format &metrics_key_value_cgfrmt.;
-	set measures_long;
+	set measures_long measures_pqi measures_psa;
 	by time_period elig_status_1;
 	&assign_name_client.;
 	metric_category = "Inpatient";
