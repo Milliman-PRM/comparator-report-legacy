@@ -197,7 +197,6 @@ proc sql;
     select
         time_period
         ,elig_status_1
-        ,'PQI Measures' as metric_category
         ,cats(PRM_ahrq_pqi, '_admit_per_1k') as metric_id
         ,catx(' ','Admits per 1000 for',PRM_ahrq_pqi) as metric_name
         ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
@@ -205,7 +204,7 @@ proc sql;
 	left join post010.basic_aggs_elig_status as aggs
 		on partial_aggregation.time_period = aggs.time_period
 		and partial_aggregation.elig_status_1 = aggs.elig_status_1
-	where prm_ahrq_pqi ne 'none'
+	where inpatient_pqi_yn eq 'Y'
 	group by 
 		time_period
 		,elig_status_1
@@ -220,7 +219,6 @@ proc sql;
     select
         time_period
         ,elig_status_1
-        ,'PSA Measures' as metric_category
         ,cats(PRM_pref_sensitive_category, '_admit_per_1k') as metric_id
         ,catx(' ','Admits per 1000 for',prm_pref_sensitive_category) as metric_name
         ,sum(cnt_discharges_inpatient)/memmos_sum * 12000 as metric_value
@@ -228,15 +226,7 @@ proc sql;
 	left join post010.basic_aggs_elig_status as aggs
 			on partial_aggregation.time_period = aggs.time_period
 			and partial_aggregation.elig_status_1 = aggs.elig_status_1
-	where prm_pref_sensitive_category in(
-		'Bariatric Surgery'
-		,'CABG'
-		,'Hip Replacement'
-		,'Hysterectomy'
-		,'Knee Replacement'
-		,'Laminectomy/Spinal Fusion'
-		,'PTCA'
-		,'TURP')
+	where preference_sensitive_yn eq 'Y'
 	group by 
 		time_period
 		,elig_status_1
