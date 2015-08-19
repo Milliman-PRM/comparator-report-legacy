@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jason Altieri, Shea Parkes, Nathan Mytelka
+### CODE OWNERS: Jason Altieri, Shea Parkes, Nathan Mytelka, Michael Menser
 
 ### OBJECTIVE:
 	Use the PRM outputs to create the Admissiion/Readmission report for NYP.
@@ -257,12 +257,16 @@ proc sql;
 			as pref_sens_per1k label="Preference Sensitive Admits per 1000"
 		
 		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
-			/ sum(detail.cnt_discharges_inpatient)
-			as pct_1_day_LOS label="One Day LOS as a Percent of Total Discharges"
+			as Num_1_Day_LOS label="Number of One Day LOSs"
+
+		,sum(detail.cnt_discharges_inpatient)
+			as Denom_1_Day_LOS label="Number of inpatient discharges"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' and detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
-			/ sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			as pct_1_day_LOS_medical label="One Day LOS as a Percent of Medical Discharges"
+			as Num_1_Day_LOS_Medical label="Number of Medical One Day LOSs"
+			
+		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
+			as Denom_1_day_LOS_Medical label="Number of medical inpatient discharges"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.sum_costs_inpatient else 0 end)
 			/ aggs.prm_costs_sum_all_services
