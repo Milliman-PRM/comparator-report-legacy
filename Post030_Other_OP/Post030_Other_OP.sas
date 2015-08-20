@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen, Kyle Baird
+### CODE OWNERS: Anna Chen, Kyle Baird, David Pierce
 
 ### OBJECTIVE:
 	Calculate the Other Outpatient Metrics.  
@@ -35,7 +35,7 @@ libname post030 "&post030.";
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~prm_line
 	,Time_Slice=&list_time_period.
-	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d") or lowcase(Outclaims_prm.prm_line) eqt "p57" or lowcase(Outclaims_prm.prm_line) eqt "p59")
+	,Where_Claims=%str(lowcase(Outclaims_prm.prm_line) eqt "o" or lowcase(Outclaims_prm.prm_line) in ("p32c","p32d") or lowcase(Outclaims_prm.prm_line) eqt "p57" or lowcase(Outclaims_prm.prm_line) eqt "p59") or lowcase(Outclaims_prm.prm_line) eqt "p33"
 	,Suffix_Output=raw
 	)
 
@@ -97,6 +97,14 @@ data ref_service_agg;
 	else if lowcase(mr_line) eq: "p59" then do;
 		metric_id = "hi_tec_img_office_per1k";
 		metric_name = "Office High Tech Imaging Procedure Utilization per 1000";
+	end;
+	else if lowcase(mr_line) eq: "p33" then do;
+		metric_id = "urgent_care_prof_per1k";
+		metric_name = "Office Urgent Care Visits per 1000";
+	end;
+	else if lowcase(mr_line) eq: "p32" then do;
+		metric_id = "office_visits_per1k";
+		metric_name = "Office Visits per 1000";
 	end;
 	else delete;
 run;
