@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen, Kyle Baird
+### CODE OWNERS: Anna Chen, Kyle Baird, David Pierce
 
 ### OBJECTIVE:
 	Calculate the Other Outpatient Metrics.  
@@ -104,7 +104,7 @@ data ref_service_agg;
 	end;
 	else if lowcase(mr_line) eq: "p32" then do;
 		metric_id = "office_visits_per1k";
-		metric_name = "Offic Visits per 1000";
+		metric_name = "Office Visits per 1000";
 	end;
 	else delete;
 run;
