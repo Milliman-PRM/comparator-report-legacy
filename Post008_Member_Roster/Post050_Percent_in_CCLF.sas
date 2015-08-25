@@ -98,7 +98,11 @@ proc sql;
 	inner join post008.time_windows as periods on
 		src.date_start le periods.inc_end
 		and src.date_end ge (periods.inc_end - &elig_lookback_days.)
-	where upcase(src.cover_medical) eq 'Y'
+	left join M035_Out.member as death on
+		src.member_id eq death.member_id
+	where
+		upcase(src.cover_medical) eq 'Y'
+		or death.death_date is not null
 	;
 quit;
 
