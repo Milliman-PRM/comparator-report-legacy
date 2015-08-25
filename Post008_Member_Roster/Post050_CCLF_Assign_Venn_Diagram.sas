@@ -174,7 +174,7 @@ proc sql noprint;
 quit;
 %put &=max_pct_cclf_mems_in_assignment.;
 %put &=min_pct_cclf_mems_in_assignment.;
-%AssertThat(&max_pct_cclf_mems_in_assignment.,lt,1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
+%AssertThat(&max_pct_cclf_mems_in_assignment.,le,1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
 %AssertThat(&min_pct_cclf_mems_in_assignment.,gt,0.1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
 
 
