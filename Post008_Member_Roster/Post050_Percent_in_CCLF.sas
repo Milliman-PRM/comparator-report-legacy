@@ -81,7 +81,7 @@ data periods_assign;
 	&codegen_member_selection.
 run;
 
-%AssertNoDuplicates(assignment_buckets,member_id time_period,ReturnMessage=Duplicate member and time window records created.)
+%AssertNoDuplicates(periods_assign,member_id time_period,ReturnMessage=Duplicate member and time window records created.)
 
 
 
