@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Shea Parkes
+### CODE OWNERS: Shea Parkes, Michael Mensor
 
 ### OBJECTIVE:
 	Compare/contrast rosters from CCLF data and Assignment files.
