@@ -90,19 +90,26 @@ run;
 
 proc sql;
 	create table periods_cclf as
-	select distinct
+	select
 		src.member_id
 		,src.elig_status_1
 		,periods.time_period
+		,max(case when upcase(src.cover_medical) eq 'Y' then 1 else 0 end) as had_recent_coverage
+		,max(case when death.death_date ne . then 1 else 0 end) as died_in_period
 	from M035_Out.Member_Time as src
 	inner join post008.time_windows as periods on
 		src.date_start le periods.inc_end
 		and src.date_end ge (periods.inc_end - &elig_lookback_days.)
-	left join M035_Out.member as death on
+	left join M035_Out.member(where = (death_date ne .)) as death on
 		src.member_id eq death.member_id
+		and death.death_date between periods.inc_start and periods.inc_end
 	where
 		upcase(src.cover_medical) eq 'Y'
 		or death.death_date is not null
+	group by
+		src.member_id
+		,src.elig_status_1
+		,periods.time_period
 	;
 quit;
 
@@ -119,7 +126,7 @@ proc sql;
 		,'Percent of CCLF Members with Assignment Information' as metric_name
 		,'pct_cclf_mems_in_assignment' as metric_id
 		,avg(case when assign.member_id is null then 0 else 1 end) as metric_value
-	from periods_cclf as cclf
+	from periods_cclf(where = (died_in_period eq 0)) as cclf
 	left join periods_assign as assign on
 		cclf.time_period eq assign.time_period
 		and cclf.member_id eq assign.member_id
