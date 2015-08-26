@@ -431,7 +431,6 @@ quit;
 %put observed_start = &observed_start. %sysfunc(putn(&observed_start.,YYMMDD10.));
 
 /* Determine breakouts at the *FILE* level. */
-
 proc sql;
 	create table assign_file_windows as
 	select distinct
@@ -503,7 +502,10 @@ data assignment_extended_edges;
 
 run;
 
-/*Plug file level gaps (not member level gaps)*/
+/*
+	Plug file level gaps (not member level gaps).
+	This massaging is just used to find gaps, so priority doesn't matter.
+*/
 %massage_windows(
 	assignment_broken_years
 	,assignment_broken_years_massage
@@ -552,6 +554,7 @@ proc sql;
 quit;
 
 
+/*Stack all our file-level bits and do the file-level massaging.*/
 data assignment_all_priorities;
 	set
 		assignment_broken_years
@@ -581,12 +584,17 @@ proc sql;
 		date_start = file_start
 		date_end = file_end
 		)) as assign
+	/*This inner join will:
+		1. Remove files/file segments that were over-ridden by higher priorities.
+		2. Cartesian files as needed to fill gaps and edges.
+	*/
 	inner join assignment_files_massaged as files on
 		assign.file_start eq files.file_start
 		and assign.file_end eq files.file_end
 	;
 quit;
 
+/*Still need to add in the latent negation now that we've moved to the member level.*/
 proc sql;
 	create table assignment_latent_negation as
 	select
@@ -616,6 +624,7 @@ data assignment_final_stack;
 		;
 run;
 
+/*This massaging compresses in the latent negation as well as choosing an actual NPI*/
 %massage_windows(
 	assignment_final_stack
 	,assignment_final_massage
