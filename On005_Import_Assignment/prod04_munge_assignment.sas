@@ -430,8 +430,19 @@ quit;
 %put observed_end = &observed_end. %sysfunc(putn(&observed_end.,YYMMDD10.));
 %put observed_start = &observed_start. %sysfunc(putn(&observed_start.,YYMMDD10.));
 
+/* Determine breakouts at the *FILE* level. */
+proc sql;
+	create table assign_file_windows as
+	select distinct
+		date_start as file_start
+		,date_end as file_end
+	from assign_extract
+	order by file_start
+	;
+quit;
+
 data assignment_broken_years;
-	set assign_extract;
+	set assign_file_windows;
 
 	format assignment_indicator $1.;
 	assignment_indicator = 'Y';
@@ -446,17 +457,21 @@ data assignment_broken_years;
 	*/
 
 	/*Bust up yearly assignments if we find them.*/
-	if date_start eq intnx('month',date_end,-11,'beg') then do;
-		date_end = intnx('month',date_end,-3,'end');
+	format date_start date_end YYMMDDd10.;
+	if file_start eq intnx('month',file_end,-11,'beg') then do;
+		date_start = file_start;
+		date_end = intnx('month',file_end,-3,'end');
 		priority = 1;
 		output;
-		date_start = date_end + 1;
-		date_end = intnx('month',date_start,2,'end');
+		date_start = intnx('month',file_end,-2,'beg');
+		date_end = file_end;
 		priority = 3;
 		output;
 		end;
 	else do;
 		/*Assumed quarterly*/
+		date_start = file_start;
+		date_end = file_end;
 		priority = 2;
 		output;
 		end;
@@ -487,26 +502,19 @@ data assignment_extended_edges;
 
 run;
 
-/*Plug file level gaps (not member level gaps)*/
-proc sql;
-	create table assignment_file_windows as
-	select distinct
-		date_start
-		,date_end
-		,'Dummy' as Dimension
-	from assignment_broken_years
-	;
-quit;
-
+/*
+	Plug file level gaps (not member level gaps).
+	This massaging is just used to find gaps, so priority doesn't matter.
+*/
 %massage_windows(
-	assignment_file_windows
-	,assignment_file_windows_massage
+	assignment_broken_years
+	,assignment_broken_years_massage
 	,date_start
 	,date_end
-	,Dimension
+	,Assignment_Indicator /*A dummy dimension*/
 	)
 
-proc sort data=assignment_file_windows_massage(drop=Dimension) out=assignment_file_windows_sort;
+proc sort data=assignment_broken_years_massage out=assignment_file_windows_sort;
 	by date_start;
 run;
 
@@ -545,6 +553,48 @@ proc sql;
 	;
 quit;
 
+
+/*Stack all our file-level bits and do the file-level massaging.*/
+data assignment_all_priorities;
+	set
+		assignment_broken_years
+		assignment_extended_edges
+		assignment_gap_fillers
+		;
+run;
+
+%massage_windows(
+	assignment_all_priorities
+	,assignment_files_massaged
+	,date_start
+	,date_end
+	,assignment_indicator /*Dummy dimension*/
+	,-priority
+	)
+
+proc sql;
+	create table assignment_file_selection as
+	select
+		assign.*
+		,files.date_start
+		,files.date_end
+		,files.priority
+		,files.assignment_indicator
+	from assign_extract(rename=(
+		date_start = file_start
+		date_end = file_end
+		)) as assign
+	/*This inner join will:
+		1. Remove files/file segments that were over-ridden by higher priorities.
+		2. Cartesian files as needed to fill gaps and edges.
+	*/
+	inner join assignment_files_massaged as files on
+		assign.file_start eq files.file_start
+		and assign.file_end eq files.file_end
+	;
+quit;
+
+/*Still need to add in the latent negation now that we've moved to the member level.*/
 proc sql;
 	create table assignment_latent_negation as
 	select
@@ -566,18 +616,18 @@ proc sql;
 	;
 quit;
 
-data assignment_all_priorities;
+
+data assignment_final_stack;
 	set
-		assignment_broken_years
-		assignment_extended_edges
-		assignment_gap_fillers
+		assignment_file_selection
 		assignment_latent_negation
 		;
 run;
 
+/*This massaging compresses in the latent negation as well as choosing an actual NPI*/
 %massage_windows(
-	assignment_all_priorities
-	,assignment_massaged
+	assignment_final_stack
+	,assignment_final_massage
 	,date_start
 	,date_end
 	,hicno
@@ -591,7 +641,7 @@ run;
 data M018_Out.Client_Member_Time;
 	format &Client_Member_Time_CodeGenFormat.;
 
-	set assignment_massaged(rename=(
+	set assignment_final_massage(rename=(
 		date_start = Sloppy_Start
 		date_end = Sloppy_End
 		hicno = member_id
