@@ -138,6 +138,7 @@ proc sql;
 			member_id
 			,date_latestpaid
 		) as src
+	/*Intentionally cause some filtering and cartesianing with this join to get to time_period basis.*/
 	inner join cclf_period_nearest as periods on
 		src.date_latestpaid eq periods.date_latestpaid
 	/*Reach out to processed data for timeline eligibility status*/
@@ -150,6 +151,9 @@ proc sql;
 		,periods.time_period
 	;
 quit;
+
+%AssertNoNulls(periods_cclf,elig_status_1,ReturnMessage=Raw CCLF sources did not all map to processed eligibility statuses.)
+%AssertNoDuplicates(periods_cclf,time_period member_id elig_status_1,ReturnMessage=Staged CCLF data does not have anticipated structure.)
 
 
 
