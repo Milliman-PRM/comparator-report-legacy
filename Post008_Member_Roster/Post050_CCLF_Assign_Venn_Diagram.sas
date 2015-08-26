@@ -22,8 +22,6 @@ libname M020_Out "&M020_Out." access=readonly;
 libname M035_Out "&M035_Out." access=readonly;
 libname post008 "&post008.";
 
-%let elig_lookback_days = 30; /*Eligibility can be a bit jagged, so look back this many days.*/
-
 %AssertThat(&Claims_Elig_Format.,eq,CCLF,ReturnMessage=The claims and eligibility format selected in the driver is not compatible with this program,FailAction=EndActiveSASSession);
 %AssertDataSetPopulated(M018_Out.Client_Member_Time,ReturnMessage=This program requires timeline assignment information.,FailAction=EndActiveSASSession);
 
@@ -86,29 +84,69 @@ run;
 
 
 /**** FIND TIMELINE OF CCLF INCLUSION ****/
-/* Time window ends are not clean, so need to check for any coverage in the last month. */
+/* Look to the raw-stacked CCLF8 (Bene Rosters)
+	and find the nearest date_latestpaid for each time_period*/
+
+proc sql;
+	create table cclf_periods_all as
+	select
+		cclf.date_latestpaid /*Vectorized*/
+		,periods.time_period
+		,periods.inc_end
+		,abs(cclf.date_latestpaid - periods.inc_end) as difference
+	from (
+		select distinct date_latestpaid
+		from M035_Out.Member_Raw_Stack
+		) as cclf
+	cross join post008.time_windows as periods
+	order by
+		time_period
+		,difference
+		,date_latestpaid desc
+	;
+quit;
+
+data cclf_period_nearest;
+	set cclf_periods_all;
+	by time_period;
+	if first.time_period;
+run;
 
 proc sql;
 	create table periods_cclf as
 	select
 		src.member_id
-		,src.elig_status_1
+		,memtime.elig_status_1
 		,periods.time_period
-		,max(case when upcase(src.cover_medical) eq 'Y' then 1 else 0 end) as had_recent_coverage
-		,max(case when death.death_date ne . then 1 else 0 end) as died_in_period
-	from M035_Out.Member_Time as src
-	inner join post008.time_windows as periods on
-		src.date_start le periods.inc_end
-		and src.date_end ge (periods.inc_end - &elig_lookback_days.)
-	left join M035_Out.member(where = (death_date ne .)) as death on
-		src.member_id eq death.member_id
-		and death.death_date between periods.inc_start and periods.inc_end
-	where
-		upcase(src.cover_medical) eq 'Y'
-		or death.death_date is not null
+		,max(case when src.death_date is not null then 1 else 0 end) as died_in_period
+	from (
+		/*
+			Do the xrefing in a subquery to keep the outer query more sane.
+			Squash the multiple hospice lines at the same time (redundantly squashed in parent query).
+		*/
+		select
+			coalesce(xref.crnt_hic_num, raw.bene_hic_num) as member_id format=$40. length=40
+			,raw.date_latestpaid
+			,max(raw.bene_death_dt) as death_date
+		from M035_Out.Member_Raw_Stack as raw
+		left join (
+			select distinct crnt_hic_num, prvs_hic_num
+			from M020_Out.CCLF9_bene_xref 
+			)as xref on
+			raw.bene_hic_num eq xref.prvs_hic_num
+		group by
+			member_id
+			,date_latestpaid
+		) as src
+	inner join cclf_period_nearest as periods on
+		src.date_latestpaid eq periods.date_latestpaid
+	/*Reach out to processed data for timeline eligibility status*/
+	left join M035_Out.member_time as memtime on
+		src.member_id eq memtime.member_id
+		and periods.inc_end between memtime.date_start and memtime.date_end
 	group by
 		src.member_id
-		,src.elig_status_1
+		,memtime.elig_status_1
 		,periods.time_period
 	;
 quit;
