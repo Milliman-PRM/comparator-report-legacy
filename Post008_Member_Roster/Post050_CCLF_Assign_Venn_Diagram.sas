@@ -212,6 +212,7 @@ proc sql noprint;
 		:max_pct_cclf_mems_in_assignment trimmed
 		,:min_pct_cclf_mems_in_assignment trimmed
 	from metrics_no_assign
+	where upcase(elig_status_1) eq 'AGED NON-DUAL' /* Ignore metric for all but Aged Non-Dual for some reason because Shea said to */
 	;
 quit;
 %put &=max_pct_cclf_mems_in_assignment.;
