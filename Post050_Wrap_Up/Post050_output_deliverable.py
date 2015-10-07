@@ -16,7 +16,7 @@ from email.message import EmailMessage
 
 LOCAL_SMTP = 'smtp.milliman.com'
 
-PATH_NETWORK_SHARE_ROOT = Path(r"P:\PHI\0273NYP\NewYorkMillimanShare")
+PATH_NETWORK_SHARE_ROOT = Path(r"K:\PHI\0273NYP\NewYorkMillimanShare")
 assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
 WHITELIST_CLIENT_IDS = ["0273NYP"]
