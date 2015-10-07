@@ -16,8 +16,7 @@ from email.message import EmailMessage
 
 LOCAL_SMTP = 'smtp.milliman.com'
 
-PATH_NETWORK_SHARE_ROOT = Path(r"K:\PHI\0273NYP\NewYorkMillimanShare")
-assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
+SUBPATH_NETWORK_SHARE_ROOT = r":\PHI\0273NYP\NewYorkMillimanShare"
 
 WHITELIST_CLIENT_IDS = ["0273NYP"]
 FILE_EXTENSIONS_SCRAPE = [
@@ -65,6 +64,8 @@ if __name__ == '__main__':
     import healthbi_env
 
     CLIENT_ID = healthbi_env.META["client_id"]
+    PATH_NETWORK_SHARE_ROOT = Path(healthbi_env.META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT)
+    assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
     if CLIENT_ID.lower() not in \
         [whitelist.lower() for whitelist in WHITELIST_CLIENT_IDS]:
