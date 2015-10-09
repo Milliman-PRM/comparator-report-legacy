@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, Shea Parkes
+### CODE OWNERS: Kyle Baird, Shea Parkes, Michael Menser
 
 ### OBJECTIVE:
 	Calibrate risk scores to service category to enhance the risk adjusted metrics
@@ -54,11 +54,12 @@ proc sql;
 	left join M015_out.mcrm_hcc_calibrations as hcc_factors on
 		ref_mcrm_line.mcrm_line eq hcc_factors.mcrm_line
 			and round(members.riskscr_1,0.01) between hcc_factors.hcc_range_bottom and hcc_factors.hcc_range_top
-	order by
+	where members.memmos ne 0	/*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
+	order by					/*divide by zero errors for categories with few members (ie Unknown).  So exclude this data from the calculation.*/
 		members.time_period
 		,members.member_id
 		,ref_mcrm_line.mcrm_line
-	;
+	;                            
 quit;
 
 proc means noprint nway missing data = risk_scores_service_member;
