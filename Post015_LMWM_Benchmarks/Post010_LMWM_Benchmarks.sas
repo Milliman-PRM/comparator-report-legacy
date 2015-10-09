@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Aaron Hoch, Kyle Baird, Jason Altieri
+### CODE OWNERS: Aaron Hoch, Kyle Baird, Jason Altieri, Michael Menser
 
 ### OBJECTIVE:
 	Internalize the logic for generating Loosely and Well-Managed Benchmarks.
@@ -52,8 +52,8 @@ proc sql noprint;
 		select distinct
 			time_period
 			,elig_status_1
-		from post008.members
-		) as member_dims
+		from post008.members (where = (memmos ne 0)) /*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
+		) as member_dims                             /*divide by zero errors for categories with few members (ie Unknown).  So exclude this data from the calculation.*/
 	cross join M015_out.ref_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as ref_mcrm_line
 	inner join M015_out.benchmarks_hcg as bench on
 		ref_mcrm_line.lob eq bench.lob
