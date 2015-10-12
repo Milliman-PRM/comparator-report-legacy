@@ -54,8 +54,8 @@ proc sql;
 	left join M015_out.mcrm_hcc_calibrations as hcc_factors on
 		ref_mcrm_line.mcrm_line eq hcc_factors.mcrm_line
 			and round(members.riskscr_1,0.01) between hcc_factors.hcc_range_bottom and hcc_factors.hcc_range_top
-	where members.memmos ne 0	/*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
-	order by					/*divide by zero errors for categories with few members (ie Unknown).  So exclude this data from the calculation.*/
+	where members.memmos ne 0 or members.elig_status_1 ne 'Unknown' 	/*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
+	order by															/*divide by zero errors for the Unknown categories, which usually have few members.  So exclude this data.*/
 		members.time_period
 		,members.member_id
 		,ref_mcrm_line.mcrm_line
