@@ -180,11 +180,21 @@ quit;
 
 proc sql noprint;
 	select sum(memcnt)
-	into :chksum_memcnt trimmed
+	into :chksum_memcnt_memmos trimmed
 	from memcnt_to_export
 	;
 quit;
-%AssertRecordCount(post008.Members,eq,&chksum_memcnt.,ReturnMessage=Not all members were counted in the MemCnt table.)
+
+/*Find how many records have 0 member months.*/
+
+proc sql noprint;
+	select count(*)
+	into :chksum_memcnt_no_memmos trimmed
+	from post008.Members
+	where memmos = 0;
+quit;
+
+%AssertRecordCount(post008.Members,eq,%eval(&chksum_memcnt_memmos. + &chksum_memcnt_no_memmos.),ReturnMessage=Not all members were counted in the MemCnt table.)
 
 
 data post008.memcnt;
