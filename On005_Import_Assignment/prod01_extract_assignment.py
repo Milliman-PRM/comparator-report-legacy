@@ -184,11 +184,14 @@ class AssignmentWorkbook(object):
         return self.key_worksheet.key_cells.keys()
 
 def copy_to_ny_share(file):
-    """Copy assignment files to the NewYorkMillimanShare under their client"""
+    """Copy reference files (all xlsx files) to the NewYorkMillimanShare under their client"""
     parts = file.parts
     newpath = Path(*parts[0:3]) / "NewYorkMillimanShare" / Path(*parts[3:4]) / "_References"
-    if not os.path.exists(str(newpath)):
-        os.makedirs(str(newpath), exist_ok=True)
+    if not newpath.is_dir():
+        try:
+            newpath.mkdir()
+        except FileExistsError:
+            pass
     shutil.copy(str(file), str(newpath))
 
 def uncover_xlsx_files(path_sniffing):
