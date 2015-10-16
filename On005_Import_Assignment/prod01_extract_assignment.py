@@ -203,7 +203,7 @@ def uncover_xlsx_files(path_sniffing):
         if file_.suffix.lower() == '.xlsx':
             copy_to_ny_share(file_)
             continue
-        if re.search(r'ACO\.[HQ]ASSGN\.D', file_.name, re.IGNORECASE):
+        if re.search(r'ACO\.([HQ]ASSGN|[AQ]ASR|[AQ]EXPU|STLMT)\.D', file_.name, re.IGNORECASE):
             file_with_ext = file_.parent / (file_.name + '.xlsx')
             if file_with_ext.is_file():
                 continue
