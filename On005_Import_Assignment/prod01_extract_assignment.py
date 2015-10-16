@@ -187,11 +187,10 @@ def copy_to_ny_share(file):
     """Copy reference files (all xlsx files) to the NewYorkMillimanShare under their client"""
     parts = file.parts
     newpath = Path(*parts[0:3]) / "NewYorkMillimanShare" / Path(*parts[3:4]) / "_References"
-    if not newpath.is_dir():
-        try:
-            newpath.mkdir()
-        except FileExistsError:
-            pass
+    try:
+        newpath.mkdir()
+    except FileExistsError:
+        pass
     shutil.copy(str(file), str(newpath))
 
 def uncover_xlsx_files(path_sniffing):
