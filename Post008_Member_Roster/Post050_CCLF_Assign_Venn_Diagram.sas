@@ -200,6 +200,20 @@ proc sql;
 	;
 quit;
 
+proc sql;
+	create table metrics_raw_assign_cnt as
+	select
+		time_period
+		,'All' as elig_status_1
+		,'Count of Assigned Members' as metric_name
+		,'cnt_assigned_mems' as metric_id
+		,count(*) as metric_value
+	from periods_assign
+	group by time_period
+	order by time_period
+	;
+quit;
+
 
 
 /**** LIGHT VALIDATION AND OUTPUT ****/
@@ -242,6 +256,7 @@ data post008.metrics_cclf_assign;
 	set 
 		metrics_no_assign
 		metrics_no_cclf
+		metrics_raw_assign_cnt
 		;
 	by time_period elig_status_1;
 	&assign_name_client.;
