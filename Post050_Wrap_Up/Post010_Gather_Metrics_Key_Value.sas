@@ -48,6 +48,7 @@ data Post050.metrics_key_value;
 	label metric_name= "Metric Description";
 	label elig_status_1 = "&lbl_elig_status_1.";
 	set &files_stack.;
+	where upcase(elig_status_1) = 'UNKNOWN';
 	keep &metrics_key_value_cgflds.;
 run;
 %LabelDataSet(Post050.metrics_key_value)

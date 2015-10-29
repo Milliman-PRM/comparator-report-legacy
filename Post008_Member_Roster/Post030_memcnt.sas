@@ -190,6 +190,7 @@ quit;
 data post008.memcnt;
 	format &memcnt_cgfrmt.;
 	set memcnt_to_export;
+	where upcase(elig_status_1) ne 'UNKNOWN';
 	keep &memcnt_cgflds.;
 run;
 
