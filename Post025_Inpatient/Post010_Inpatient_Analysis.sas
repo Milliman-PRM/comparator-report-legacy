@@ -354,6 +354,7 @@ run;
 data post025.details_inpatient;
 	format &details_inpatient_cgfrmt.;
 	set details_inpatient;
+	where upcase(elig_status_1) ne 'UNKNOWN';
 	&assign_name_client.;
 	keep &details_inpatient_cgflds.;
 run;
