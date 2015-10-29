@@ -162,8 +162,8 @@ proc sql;
 		,count(*) as memcnt
 		,sum(case when mems.riskscr_memmos ge 3 then mems.memmos else 0 end) / calculated riskscr_wgt as riskscr_cred
 		,sum(mems.age * mems.memmos) / calculated riskscr_wgt as age_avg
-	from post008.Members as mems
-	left join decedents_agg_recent as decedents
+	from post008.Members (where = (memmos ne 0 or elig_status_1 ne 'Unknown')) as mems /*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
+	left join decedents_agg_recent as decedents			 							   /*divide by zero errors for the Unknown categories, which usually have few members.  So exclude this data.*/
 		on mems.member_id = decedents.member_id 
 		and mems.time_period = decedents.time_period
 	group by
@@ -184,7 +184,17 @@ proc sql noprint;
 	from memcnt_to_export
 	;
 quit;
-%AssertRecordCount(post008.Members,eq,&chksum_memcnt.,ReturnMessage=Not all members were counted in the MemCnt table.)
+
+/*Find how many records are excluded from the calculation (0 memmos and 'Unknown' beneficiary status).*/
+
+proc sql noprint;
+	select count(*)
+	into :chksum_memcnt_excluded trimmed
+	from post008.Members
+	where memmos = 0 and elig_status_1 = 'Unknown';
+quit;
+
+%AssertRecordCount(post008.Members,eq,%eval(&chksum_memcnt. + &chksum_memcnt_excluded.),ReturnMessage=Not all members were counted in the MemCnt table.)
 
 
 data post008.memcnt;

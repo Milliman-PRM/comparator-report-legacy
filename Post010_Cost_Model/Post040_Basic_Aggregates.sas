@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Aaron Hoch, Shea Parkes
+### CODE OWNERS: Aaron Hoch, Shea Parkes, Michael Menser
 
 ### OBJECTIVE:
 	Centralize common aggregated items such as average risk scores, total costs, member counts, etc.
@@ -57,8 +57,8 @@ proc sql;
 		,sum(memmos) as memmos_sum label= "Total Member Months"
 		,sum(memmos * riskscr_1) as memmos_sum_riskadj label= "Total Member Months (Risk Adjusted)"
 		,sum(memmos * riskscr_1) / sum(memmos) as riskscr_1_avg label= "Average Risk Score"
-	from post008.members
-	group by
+	from post008.members (where = (memmos ne 0 or elig_status_1 ne 'Unknown')) /*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
+	group by																   /*divide by zero errors for the Unknown categories, which usually have few members.  So exclude this data.*/
 		time_period
 		,elig_status_1
 	;
