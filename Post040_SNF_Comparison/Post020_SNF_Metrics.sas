@@ -154,7 +154,7 @@ run;
 data post040.details_SNF;
 	format &details_SNF_cgfrmt.;
 	set details_SNF;
-	where upcase(elig_status_1) = 'UNKNOWN';
+	where upcase(elig_status_1) ne 'UNKNOWN';
 	keep &details_SNF_cgflds.;
 run;
 
