@@ -184,7 +184,7 @@ class AssignmentWorkbook(object):
         return self.key_worksheet.key_cells.keys()
 
 def copy_to_ny_share(file):
-    """Copy reference files (all xlsx files) to the NewYorkMillimanShare under their client"""
+    """Copy reference files to the NewYorkMillimanShare under their client"""
     parts = file.parts
     newpath = Path(*parts[0:3]) / "NewYorkMillimanShare" / Path(*parts[3:4]) / "_References"
     try:
@@ -203,13 +203,15 @@ def uncover_xlsx_files(path_sniffing):
         if file_.suffix.lower() == '.xlsx':
             copy_to_ny_share(file_)
             continue
-        if re.search(r'ACO\.([HQ]ASSGN|[AQ]ASR|[AQ]EXPU|STLMT)\.D', file_.name, re.IGNORECASE):
+        if re.search(r'ACO\.([HQ]ASSGN)\.D', file_.name, re.IGNORECASE):
             file_with_ext = file_.parent / (file_.name + '.xlsx')
             if file_with_ext.is_file():
                 continue
             print('Duplicating {} with an "xlsx" extension\n\n'.format(file_))
             shutil.copy(str(file_), str(file_with_ext))
             copy_to_ny_share(file_with_ext)
+        if re.search(r'ACO\.([AQ]ASR|[AQ]EXPU|STLMT)\.D', file_.name, re.IGNORECASE):
+            copy_to_ny_share(file_) #just copy non-ASSGN files don't rename
 
 
 def main(path_root, filepath_out):
