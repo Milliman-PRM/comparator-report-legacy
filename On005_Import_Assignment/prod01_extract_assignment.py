@@ -210,7 +210,7 @@ def uncover_xlsx_files(path_sniffing):
             print('Duplicating {} with an "xlsx" extension\n\n'.format(file_))
             shutil.copy(str(file_), str(file_with_ext))
             copy_to_ny_share(file_with_ext)
-        if re.search(r'ACO\.([AQ]ASR|[AQ]EXPU|STLMT)\.D', file_.name, re.IGNORECASE):
+        if re.search(r'ACO\.([AQ]ASR|[AQ]EXPU|STLMT|BNMRK)\.D', file_.name, re.IGNORECASE):
             copy_to_ny_share(file_) #just copy non-ASSGN files don't rename
 
 
