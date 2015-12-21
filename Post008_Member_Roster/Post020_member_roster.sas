@@ -288,4 +288,8 @@ quit;
 
 %assertthat(%eval(%getrecordcount(member_roster) - &zero_memmos_lines.),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
 
+%let zero_memmos_perc = %sysevalf(&zero_memmos_lines. / %getrecordcount(members_tmp));
+%put Percentage of member records indicating zero member months: &zero_memmos_perc.;
+%assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
+
 %put System Return Code = &syscc.;
