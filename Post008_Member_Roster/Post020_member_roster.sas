@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, Shea Parkes
+### CODE OWNERS: Kyle Baird, Shea Parkes, Michael Menser
 
 ### OBJECTIVE:
 	Create a centralized list of members who were assigned
@@ -220,7 +220,7 @@ run;
 /*Decorate roster with information from member that may be needed
   for subsequent analyses (e.g. risk scoring)*/
 proc sql;
-	create table post008.members as
+	create table members_tmp as
 	select
 		roster.*
 		,member.dob
@@ -267,8 +267,26 @@ proc sql;
 		,roster.time_period
 	;
 quit;
+
+data Post008.Members;
+	set members_tmp;
+	where memmos ne 0;
+run;
+
 %LabelDataSet(post008.members)
 
-%assertthat(%getrecordcount(member_roster),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
+proc sql noprint;
+	select count(*)
+	into :zero_memmos_lines /*Make adjustment so we pass assertion below.*/
+	from members_tmp
+	where memmos = 0
+	;
+quit;
+
+%assertthat(%eval(%getrecordcount(member_roster) - &zero_memmos_lines.),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
+
+%let zero_memmos_perc = %sysfunc(round(%sysevalf(&zero_memmos_lines. / %getrecordcount(members_tmp)),0.0001));
+%put Percentage of member records indicating zero member months: &zero_memmos_perc.;
+%assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
 
 %put System Return Code = &syscc.;
