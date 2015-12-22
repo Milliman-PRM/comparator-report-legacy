@@ -268,9 +268,6 @@ proc sql;
 	;
 quit;
 
-/*If a person was a member for 0 months for one or more time periods, remove those lines from the data.  Having lines where memmos = 0 has been
-causing issues in comparator metrics calculations.*/
-
 data Post008.Members;
 	set members_tmp;
 	where memmos ne 0;
@@ -288,7 +285,7 @@ quit;
 
 %assertthat(%eval(%getrecordcount(member_roster) - &zero_memmos_lines.),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
 
-%let zero_memmos_perc = %sysevalf(&zero_memmos_lines. / %getrecordcount(members_tmp));
+%let zero_memmos_perc = %sysfunc(round(%sysevalf(&zero_memmos_lines. / %getrecordcount(members_tmp)),0.0001));
 %put Percentage of member records indicating zero member months: &zero_memmos_perc.;
 %assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
 
