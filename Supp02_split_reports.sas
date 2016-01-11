@@ -13,6 +13,15 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
+/*Libnames*/
+libname M035_Out "&M035_Out.";
+libname M073_Out "&M073_Out.";
+
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+
+
 proc import datafile = "\\indy-syn01.milliman.com\prm_phi\PHI\0273NYP\NewYorkMillimanShare\Market Level Reporting\INOVA\A2530_MSSP_Att&Markets_2Q2015.xlsx"
 	out = splits
 	dbms = xlsx
@@ -53,6 +62,50 @@ data Market_A (keep = Market_A_InovaRegion rename = (Market_A_InovaRegion = Memb
 
 run;
 
+/*Create complete copies of all of the needed tables and outputs*/
+%macro copy_originals(table);
+data &table._all;
+	set &table.;
+run;
 
+%mend copy_originals;
 
+%copy_originals(M073_Out.outclaims_prm);
+%copy_originals(M073_Out.outpharmacy_prm);
+%copy_originals(M035_Out.member_time_all);
+%copy_originals(M035_Out.member_all);
 
+/*Create a new table with just the needed population*/
+%macro create_limited(table,group);
+proc sql;
+	create table &table. as
+	select
+		base.*
+	from &table._all as base
+	where base.member_id in(
+			 select member_id
+			 from &group.)
+	;
+quit;
+
+%mend create_limited;
+
+%create_limited(M073_Out.outclaims_prm,Market_A);
+%create_limited(M073_Out.outpharmacy_prm,Market_A);
+%create_limited(M035_Out.member_time_all,Market_A);
+%create_limited(M035_Out.member_all,Market_A);
+
+%RunProductionPrograms(
+		/* Where the code is      */ dir_program_src          = &M030_Cde.zzz_Wrapup\
+		/* Where the logs go      */ ,dir_log_lst_output      = &path_onboarding_logs.\030_HCG_Grouper_Prep
+		/* Name of python env     */ ,name_python_environment = &python_environment.
+		/* Where this log goes    */ ,library_process_log     = log
+		/* Suppress Success Email */ ,bool_notify_success     = False
+		/* Program prefix to run  */ ,prefix_program_name     = Prod
+		/* Module Whitelist       */ ,keyword_whitelist       = 
+		/* Module Blacklist       */ ,keyword_blacklist       = 
+		/* CC'd Email Recepients  */ ,list_cc_email           = %sysfunc(ifc("%upcase(&Launcher_Email_CClist.)" ne "ERROR"
+																	,&Launcher_Email_CClist.
+																	,%str()
+																	))
+		)
