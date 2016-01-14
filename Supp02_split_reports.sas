@@ -96,16 +96,23 @@ quit;
 %create_limited(M035_Out.member_all,Market_A);
 
 %RunProductionPrograms(
-		/* Where the code is      */ dir_program_src          = &M030_Cde.zzz_Wrapup\
-		/* Where the logs go      */ ,dir_log_lst_output      = &path_onboarding_logs.\030_HCG_Grouper_Prep
-		/* Name of python env     */ ,name_python_environment = &python_environment.
-		/* Where this log goes    */ ,library_process_log     = log
-		/* Suppress Success Email */ ,bool_notify_success     = False
-		/* Program prefix to run  */ ,prefix_program_name     = Prod
-		/* Module Whitelist       */ ,keyword_whitelist       = 
-		/* Module Blacklist       */ ,keyword_blacklist       = 
-		/* CC'd Email Recepients  */ ,list_cc_email           = %sysfunc(ifc("%upcase(&Launcher_Email_CClist.)" ne "ERROR"
-																	,&Launcher_Email_CClist.
-																	,%str()
-																	))
-		)
+/* Where the code is      */ dir_program_src          = &path_onboarding_code.
+/* Where the logs go      */ ,dir_log_lst_output      = &path_onboarding_logs.
+/* Name of python env     */ ,name_python_environment = &python_environment.
+/* Where this log goes    */ ,library_process_log     = M010_Log
+/* Scrape subfolders      */ ,bool_traverse_subdirs   = True
+/* Suppress Success Email */ ,bool_notify_success     = False
+/* Program prefix to run  */ ,prefix_program_name     = Post
+/* Onboarding Whitelist   */ ,keyword_whitelist       = %sysfunc(ifc("%upcase(&launcher_onboarding_whitelist.)" ne "ERROR"
+															,&launcher_onboarding_whitelist.
+															,%str()
+															))
+/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
+															,&launcher_onboarding_blacklist.
+															,%str()
+															))
+/* CC'd Email Recepients  */ ,list_cc_email           = %
+/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
+)
+
+%put System Return Code = &syscc.;
