@@ -14,8 +14,10 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
 /*Libnames*/
+libname M020_Out "&M020_Out.";
 libname M035_Out "&M035_Out.";
 libname M073_Out "&M073_Out.";
+libname M180_Out "&M180_Out.";
 
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -72,17 +74,20 @@ run;
 
 %copy_originals(M073_Out.outclaims_prm);
 %copy_originals(M073_Out.outpharmacy_prm);
-%copy_originals(M035_Out.member_time_all);
-%copy_originals(M035_Out.member_all);
+%copy_originals(M073_Out.decor_case);
+%copy_originals(M035_Out.member_time);
+%copy_originals(M035_Out.member);
+%copy_originals(M035_Out.member_raw_stack);
+%copy_originals(M020_Out.CCLF9_bene_xref);
 
 /*Create a new table with just the needed population*/
-%macro create_limited(table,group);
+%macro create_limited(table,group,field = member_id);
 proc sql;
 	create table &table. as
 	select
 		base.*
 	from &table._all as base
-	where base.member_id in(
+	where base.&field. in(
 			 select member_id
 			 from &group.)
 	;
@@ -92,14 +97,17 @@ quit;
 
 %create_limited(M073_Out.outclaims_prm,Market_A);
 %create_limited(M073_Out.outpharmacy_prm,Market_A);
-%create_limited(M035_Out.member_time_all,Market_A);
-%create_limited(M035_Out.member_all,Market_A);
+%create_limited(M073_Out.decor_case,Market_A);
+%create_limited(M035_Out.member_time,Market_A);
+%create_limited(M035_Out.member,Market_A);
+%create_limited(M035_Out.member_raw_stack,Market_A,field = bene_hic_num);
+%create_limited(M020_Out.CCLF9_bene_xref,Market_A,field = crnt_hic_num);
 
 %RunProductionPrograms(
 /* Where the code is      */ dir_program_src          = &path_onboarding_code.
 /* Where the logs go      */ ,dir_log_lst_output      = &path_onboarding_logs.
 /* Name of python env     */ ,name_python_environment = &python_environment.
-/* Where this log goes    */ ,library_process_log     = M010_Log
+/* Where this log goes    */ ,library_process_log     = 
 /* Scrape subfolders      */ ,bool_traverse_subdirs   = True
 /* Suppress Success Email */ ,bool_notify_success     = False
 /* Program prefix to run  */ ,prefix_program_name     = Post
@@ -108,10 +116,10 @@ quit;
 															,%str()
 															))
 /* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-															,&launcher_onboarding_blacklist.
-															,%str()
+															,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable))
+															,Post050_output_deliverable
 															))
-/* CC'd Email Recepients  */ ,list_cc_email           = %
+/* CC'd Email Recepients  */ ,list_cc_email           = %str()
 /* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
 )
 
