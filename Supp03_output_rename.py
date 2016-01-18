@@ -1,0 +1,22 @@
+import os
+import sys
+
+sys.path.append(r"S:\Misc\_IndyMacros\Code\python\indypy")
+
+from file_utils import IndyPyPath
+
+_ANTI_PATTERN = r'.*(_all|_\d+)\.(sasb7dat|sqlite)'
+
+
+def rename_files(directory, name_extension):
+    """Target sas and sqlite files that do not feature
+    an explicit name format"""
+    path = IndyPyPath(directory)
+    unwanted_files = path.collect_files_regex(_ANTI_PATTERN)
+    all_ext_files = path.collect_files_extensions(['sasb7dat', 'sqlite'])
+    final_files = list(set(all_ext_files) - set(unwanted_files))
+    for file in final_files:
+        new_name = file.parent / file.stem
+        new_file = '{file}_{name}{ext}'.format(file=str(new_name),
+                                               name=name_extension, ext=file.suffix)
+        os.rename(str(file), new_file)
