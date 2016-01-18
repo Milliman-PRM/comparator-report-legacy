@@ -20,7 +20,7 @@ sys.path.append(r"S:\Misc\_IndyMacros\Code\python\indypy")
 
 from file_utils import IndyPyPath
 
-_ANTI_PATTERN = r'.*(_all|_\d+)\.(sas7bdat|sqlite)'
+_ANTI_PATTERN = r'.*(_all|_\d+)\.(sas7bdat|sqlite|sas7bndx)'
 _EXT_PATTERN = r'^(all|\d+)$'
 
 
@@ -31,7 +31,7 @@ def rename_files(directory, name_extension):
         raise ValueError("Name extensions must be 'all' or positive integer")
     path = IndyPyPath(directory)
     unwanted_files = path.collect_files_regex(_ANTI_PATTERN)
-    all_ext_files = path.collect_files_extensions(['sas7bdat', 'sqlite'])
+    all_ext_files = path.collect_files_extensions(['sas7bdat', 'sqlite', 'sas7bndx'])
     final_files = list(set(all_ext_files) - set(unwanted_files))
     for file in final_files:
         new_name = file.parent / file.stem
