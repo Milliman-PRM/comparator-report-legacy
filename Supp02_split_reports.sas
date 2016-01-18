@@ -98,8 +98,8 @@ run;
 %copy_originals(M035_Out.member_raw_stack);
 %copy_originals(M018_Out.client_member_time);
 
-%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,"K:\PHI\0273FAL\3.NYP-0273FAL(SEP_Split_Reports)\5-Support_Files\Data_Thru_201511_M5\postboarding\Post050_Wrap_Up" all,,Prod3);
-%AssertThat(%Py_code.,equal to,0);
+%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,"K:\PHI\0273FAL\3.NYP-0273FAL(SEP_Split_Reports)\5-Support_Files\Data_Thru_201511_M5\postboarding\Post050_Wrap_Up" all,%GetParentFolder(0)test.log,prod3);
+%AssertThat(&Py_code.,=,0);
 
 /*Create a new table with just the needed population*/
 %macro create_limited(table,group,field = member_id);
