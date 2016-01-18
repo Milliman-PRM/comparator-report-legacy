@@ -20,7 +20,7 @@ sys.path.append(r"S:\Misc\_IndyMacros\Code\python\indypy")
 
 from file_utils import IndyPyPath
 
-_ANTI_PATTERN = r'.*(_all|_\d+)\.(sasb7dat|sqlite)'
+_ANTI_PATTERN = r'.*(_all|_\d+)\.(sas7bdat|sqlite)'
 _EXT_PATTERN = r'^(all|\d+)$'
 
 
@@ -41,6 +41,6 @@ def rename_files(directory, name_extension):
 
 
 if __name__ == '__main__':
-    LOGGER.info("Starting file rename using extension {ext}".format(ext=sys.argv[2]))
+    print("Starting file rename using extension {ext}".format(ext=sys.argv[2]))
     rename_files(sys.argv[1], sys.argv[2])
-    LOGGER.info("Done converting files.")
+    print("Done converting files.")
