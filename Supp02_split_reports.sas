@@ -14,6 +14,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
 /*Libnames*/
+libname M018_Out "&M018_Out.";
 libname M020_Out "&M020_Out.";
 libname M035_Out "&M035_Out.";
 libname M073_Out "&M073_Out.";
@@ -30,39 +31,69 @@ proc import datafile = "\\indy-syn01.milliman.com\prm_phi\PHI\0273NYP\NewYorkMil
 	replace;
 run;
 
-data Market_A (keep = Market_A_InovaRegion rename = (Market_A_InovaRegion = Member_id))
-	 Market_B (keep = Market_B_InovaTINs rename = (Market_B_InovaTINs = Member_id))
-	 Market_C (keep = Market_C_HCIPA rename = (Market_C_HCIPA = Member_id))
-	 Market_D (keep = Market_D_ValleyRegion rename = (Market_D_ValleyRegion = Member_id))
-	 Market_E (keep = Market_E_VPE rename = (Market_E_VPE = Member_id));
+data Group_1 (keep = Market_A_InovaRegion rename = (Market_A_InovaRegion = Member_id))
+	 Group_2 (keep = Market_B_InovaTINs rename = (Market_B_InovaTINs = Member_id))
+	 Group_3 (keep = Market_C_HCIPA rename = (Market_C_HCIPA = Member_id))
+	 Group_4 (keep = Market_D_ValleyRegion rename = (Market_D_ValleyRegion = Member_id))
+	 Group_5 (keep = Market_E_VPE rename = (Market_E_VPE = Member_id));
 	set splits;
 
 	if Market_A_InovaRegion ne "" then do;
 		label Market_A_InovaRegion = Member_id;
-		output Market_A;
+		output Group_1;
 	end;
 
 	if Market_B_InovaTINs ne "" then do;
 		label Market_B_InovaTINs = Member_id;
-		output Market_B;
+		output Group_2;
 	end;
 
 	if Market_C_HCIPA ne "" then do;
 		label Market_C_HCIPA = Member_id;
-		output Market_C;
+		output Group_3;
 	end;
 
 	if Market_D_ValleyRegion ne "" then do;
 		label Market_D_ValleyRegion = Member_id;
-		output Market_D;
+		output Group_4;
 	end;
 
 	if Market_E_VPE ne "" then do;
 		label Market_E_VPE = Member_id;
-		output Market_E;
+		output Group_5;
 	end;
 
 run;
+
+%macro combo_members(number);
+proc sql;
+	create table Combo_&number. as
+	select
+		xref.crnt_hic_num as Member_id
+	from Group_&number. as base
+	inner join M020_Out.CCLF9_bene_xref as xref
+	on base.Member_id = xref.prvs_hic_num
+	union
+	select
+		xref.prvs_hic_num as Member_id
+	from Group_&number. as base
+	inner join M020_Out.CCLF9_bene_xref as xref
+	on base.Member_id = xref.crnt_hic_num
+	union
+	select
+		base.Member_id
+	from Group_&number. as base
+	;
+quit;
+
+%mend combo_members;
+
+%combo_members(1);
+%combo_members(2);
+%combo_members(3);
+%combo_members(4);
+%combo_members(5);
+
 
 /*Create complete copies of all of the needed tables and outputs*/
 %macro copy_originals(table);
@@ -78,7 +109,7 @@ run;
 %copy_originals(M035_Out.member_time);
 %copy_originals(M035_Out.member);
 %copy_originals(M035_Out.member_raw_stack);
-%copy_originals(M020_Out.CCLF9_bene_xref);
+%copy_originals(M018_Out.client_member_time);
 
 /*Create a new table with just the needed population*/
 %macro create_limited(table,group,field = member_id);
@@ -95,13 +126,13 @@ quit;
 
 %mend create_limited;
 
-%create_limited(M073_Out.outclaims_prm,Market_A);
-%create_limited(M073_Out.outpharmacy_prm,Market_A);
-%create_limited(M073_Out.decor_case,Market_A);
-%create_limited(M035_Out.member_time,Market_A);
-%create_limited(M035_Out.member,Market_A);
-%create_limited(M035_Out.member_raw_stack,Market_A,field = bene_hic_num);
-%create_limited(M020_Out.CCLF9_bene_xref,Market_A,field = crnt_hic_num);
+%create_limited(M073_Out.outclaims_prm,Combo_1);
+%create_limited(M073_Out.outpharmacy_prm,Combo_1);
+%create_limited(M073_Out.decor_case,Combo_1);
+%create_limited(M035_Out.member_time,Combo_1);
+%create_limited(M035_Out.member,Combo_1);
+%create_limited(M035_Out.member_raw_stack,Combo_1,field = bene_hic_num);
+%create_limited(M018_Out.client_member_time,Combo_1);
 
 %RunProductionPrograms(
 /* Where the code is      */ dir_program_src          = &path_onboarding_code.
