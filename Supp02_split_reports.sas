@@ -121,80 +121,42 @@ quit;
 
 %do number = 1 %to /*&group_count.*/1;
 
-%if %GetRecordCount(Combo_&number) ne 0 %then %do;
+	%if %GetRecordCount(Combo_&number) ne 0 %then %do;
 
-data _null_;
-call execute("%nrstr(%create_limited(M073_Out.outclaims_prm,&number))");
-call execute("%nrstr(%create_limited(M073_Out.outpharmacy_prm,&number))");
-call execute("%nrstr(%create_limited(M073_Out.decor_case,&number))");
-call execute("%nrstr(%create_limited(M035_Out.member_time,&number))");
-call execute("%nrstr(%create_limited(M035_Out.member,&number))");
-call execute("%nrstr(%create_limited(M035_Out.member_raw_stack,&number,field = bene_hic_num))");
-call execute("%nrstr(%create_limited(M018_Out.client_member_time,&number))");
+		%create_limited(M073_Out.outclaims_prm,&number);
+		%create_limited(M073_Out.outpharmacy_prm,&number);
+		%create_limited(M073_Out.decor_case,&number);
+		%create_limited(M035_Out.member_time,&number);
+		%create_limited(M035_Out.member,&number);
+		%create_limited(M035_Out.member_raw_stack,&number,field = bene_hic_num);
+		%create_limited(M018_Out.client_member_time,&number);
 
-call execute("%nrstr(
-%RunProductionPrograms(
- dir_program_src          = &path_onboarding_code.
- ,dir_log_lst_output      = &path_onboarding_logs.
- ,name_python_environment = &python_environment.
- ,library_process_log     = 
- ,bool_traverse_subdirs   = True
- ,bool_notify_success     = False
- ,prefix_program_name     = Post
- ,keyword_whitelist       = %sysfunc(ifc("%upcase(&launcher_onboarding_whitelist.)" ne "ERROR"
-															,&launcher_onboarding_whitelist.
-															,%str()
-															))
-/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-															,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable))
-															,Post050_output_deliverable
-															))
-/* CC'd Email Recepients  */ ,list_cc_email           = %str()
-/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
-))");
+		%RunProductionPrograms(
+		/* Where the code is      */ dir_program_src          = &path_onboarding_code.
+		/* Where the logs go      */ ,dir_log_lst_output      = &path_onboarding_logs.
+		/* Name of python env     */ ,name_python_environment = &python_environment.
+		/* Where this log goes    */ ,library_process_log     = 
+		/* Scrape subfolders      */ ,bool_traverse_subdirs   = True
+		/* Suppress Success Email */ ,bool_notify_success     = False
+		/* Program prefix to run  */ ,prefix_program_name     = Post
+		/* Onboarding Whitelist   */ ,keyword_whitelist       = %sysfunc(ifc("%upcase(&launcher_onboarding_whitelist.)" ne "ERROR"
+																	,&launcher_onboarding_whitelist.
+																	,%str()
+																	))
+		/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
+																	,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable))
+																	,Post050_output_deliverable
+																	))
+		/* CC'd Email Recepients  */ ,list_cc_email           = %str()
+		/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
+		)
 
-run;
-
-%end;
+	%end;
 
 %end;
 
 %mend Run_Process;
 
 %Run_Process;
-
-
-
-
-
-
-
-%create_limited(M073_Out.outclaims_prm,1);
-%create_limited(M073_Out.outpharmacy_prm,1);
-%create_limited(M073_Out.decor_case,1);
-%create_limited(M035_Out.member_time,1);
-%create_limited(M035_Out.member,1);
-%create_limited(M035_Out.member_raw_stack,1,field = bene_hic_num);
-%create_limited(M018_Out.client_member_time,1);
-
-%RunProductionPrograms(
-/* Where the code is      */ dir_program_src          = &path_onboarding_code.
-/* Where the logs go      */ ,dir_log_lst_output      = &path_onboarding_logs.
-/* Name of python env     */ ,name_python_environment = &python_environment.
-/* Where this log goes    */ ,library_process_log     = 
-/* Scrape subfolders      */ ,bool_traverse_subdirs   = True
-/* Suppress Success Email */ ,bool_notify_success     = False
-/* Program prefix to run  */ ,prefix_program_name     = Post
-/* Onboarding Whitelist   */ ,keyword_whitelist       = %sysfunc(ifc("%upcase(&launcher_onboarding_whitelist.)" ne "ERROR"
-															,&launcher_onboarding_whitelist.
-															,%str()
-															))
-/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-															,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable))
-															,Post050_output_deliverable
-															))
-/* CC'd Email Recepients  */ ,list_cc_email           = %str()
-/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
-)
 
 %put System Return Code = &syscc.;

@@ -247,7 +247,28 @@ proc sql noprint;
 quit;
 %put &=max_pct_assigned_mems_in_cclf.;
 %put &=min_pct_assigned_mems_in_cclf.;
-%AssertThat(&max_pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
+
+%macro run_type;
+
+	proc sql;
+		create table test_type as
+		select
+			name
+		from dictionary.columns
+		where upcase(libname) eq 'M035_OUT' and
+			  upcase(memname) eq 'MEMBER_ALL'
+		;
+	quit;
+
+
+	%if %GetRecordCount(test_type) eq 0 %then %do;
+		%AssertThat(&max_pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
+	%end;
+
+%mend run_type;
+
+%run_type
+
 %AssertThat(&min_pct_assigned_mems_in_cclf.,gt,0.2,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
 
 
