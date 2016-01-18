@@ -45,7 +45,7 @@ proc sql;
 		,active.elig_status_1
 		,coalesce(prof_snf.ProviderID,'Unknown') as prv_id_snf
 		,sum(prof_snf.PRM_Costs) as sum_costs_prof_snf
-		,sum(prof_snf.prm_costs / risk.riskscr_1_cost_avg) as sum_costs_prof_snf_riskadj
+		,sum(prof_snf.PRM_Costs / risk.riskscr_1_cost_avg) as sum_costs_prof_snf_riskadj
 	from agg_claims_med_snf_professional as prof_snf
 	/*Limit to members active in the analysis*/
 	inner join post008.members as active
@@ -74,7 +74,7 @@ proc sql;
 
 		,count(distinct detail.prv_id_snf) as distinct_prof_SNFs label="Number of Distinct SNFs Utilized (Professional Services only)"
 
-		,sum(detail.sum_costs_snf)
+		,sum(detail.sum_costs_prof_snf)
 			/aggs.prm_costs_sum_all_services
 			as pct_prof_SNF_costs label="Professional SNF Costs as a Percentage of Total Costs"
 
