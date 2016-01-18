@@ -25,75 +25,62 @@ libname M180_Out "&M180_Out.";
 
 
 
-proc import datafile = "\\indy-syn01.milliman.com\prm_phi\PHI\0273NYP\NewYorkMillimanShare\Market Level Reporting\INOVA\A2530_MSSP_Att&Markets_2Q2015.xlsx"
+proc import datafile = "&path_project_received_ref\Market_Splits.csv"
 	out = splits
-	dbms = xlsx
 	replace;
+	delimiter = ',';
+	getnames = yes;
+	guessingrows = 1000;
 run;
 
-data Group_1 (keep = Market_A_InovaRegion rename = (Market_A_InovaRegion = Member_id))
-	 Group_2 (keep = Market_B_InovaTINs rename = (Market_B_InovaTINs = Member_id))
-	 Group_3 (keep = Market_C_HCIPA rename = (Market_C_HCIPA = Member_id))
-	 Group_4 (keep = Market_D_ValleyRegion rename = (Market_D_ValleyRegion = Member_id))
-	 Group_5 (keep = Market_E_VPE rename = (Market_E_VPE = Member_id));
-	set splits;
-
-	if Market_A_InovaRegion ne "" then do;
-		label Market_A_InovaRegion = Member_id;
-		output Group_1;
-	end;
-
-	if Market_B_InovaTINs ne "" then do;
-		label Market_B_InovaTINs = Member_id;
-		output Group_2;
-	end;
-
-	if Market_C_HCIPA ne "" then do;
-		label Market_C_HCIPA = Member_id;
-		output Group_3;
-	end;
-
-	if Market_D_ValleyRegion ne "" then do;
-		label Market_D_ValleyRegion = Member_id;
-		output Group_4;
-	end;
-
-	if Market_E_VPE ne "" then do;
-		label Market_E_VPE = Member_id;
-		output Group_5;
-	end;
-
-run;
-
-%macro combo_members(number);
-proc sql;
-	create table Combo_&number. as
+proc sql noprint;
 	select
-		xref.crnt_hic_num as Member_id
-	from Group_&number. as base
-	inner join M020_Out.CCLF9_bene_xref as xref
-	on base.Member_id = xref.prvs_hic_num
-	union
-	select
-		xref.prvs_hic_num as Member_id
-	from Group_&number. as base
-	inner join M020_Out.CCLF9_bene_xref as xref
-	on base.Member_id = xref.crnt_hic_num
-	union
-	select
-		base.Member_id
-	from Group_&number. as base
+		count(name)
+	into :group_count
+
+	from dictionary.columns
+	where upcase(libname) eq 'WORK' and
+		  upcase(memname) eq 'SPLITS'
 	;
 quit;
 
-%mend combo_members;
+%put &=group_count.;
 
-%combo_members(1);
-%combo_members(2);
-%combo_members(3);
-%combo_members(4);
-%combo_members(5);
+%macro split_groups;
 
+%do number = 1 %to &group_count.;
+
+	data Group_&number (keep = Group_&number rename = (Group_&number = Member_id));
+		set splits;
+
+		if Group_&number ne "" then output;
+	run;
+
+	proc sql;
+		create table Combo_&number as
+		select
+			xref.crnt_hic_num as Member_id
+		from Group_&number as base
+		inner join M020_Out.CCLF9_bene_xref as xref
+		on base.Member_id = xref.prvs_hic_num
+		union
+		select
+			xref.prvs_hic_num as Member_id
+		from Group_&number as base
+		inner join M020_Out.CCLF9_bene_xref as xref
+		on base.Member_id = xref.crnt_hic_num
+		union
+		select
+			base.Member_id
+		from Group_&number as base
+		;
+	quit;
+
+%end;
+
+%mend split_groups;
+
+%split_groups;
 
 /*Create complete copies of all of the needed tables and outputs*/
 %macro copy_originals(table);
@@ -111,6 +98,9 @@ run;
 %copy_originals(M035_Out.member_raw_stack);
 %copy_originals(M018_Out.client_member_time);
 
+%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,"K:\PHI\0273FAL\3.NYP-0273FAL(SEP_Split_Reports)\5-Support_Files\Data_Thru_201511_M5\postboarding\Post050_Wrap_Up" all,,Prod3);
+%AssertThat(%Py_code.,equal to,0);
+
 /*Create a new table with just the needed population*/
 %macro create_limited(table,group,field = member_id);
 proc sql;
@@ -120,19 +110,72 @@ proc sql;
 	from &table._all as base
 	where base.&field. in(
 			 select member_id
-			 from &group.)
+			 from Combo_&group.)
 	;
 quit;
 
 %mend create_limited;
 
-%create_limited(M073_Out.outclaims_prm,Combo_1);
-%create_limited(M073_Out.outpharmacy_prm,Combo_1);
-%create_limited(M073_Out.decor_case,Combo_1);
-%create_limited(M035_Out.member_time,Combo_1);
-%create_limited(M035_Out.member,Combo_1);
-%create_limited(M035_Out.member_raw_stack,Combo_1,field = bene_hic_num);
-%create_limited(M018_Out.client_member_time,Combo_1);
+/*Create a macro to loop over most of the rest of the process*/
+%macro Run_Process;
+
+%do number = 1 %to /*&group_count.*/1;
+
+%if %GetRecordCount(Combo_&number) ne 0 %then %do;
+
+data _null_;
+call execute("%nrstr(%create_limited(M073_Out.outclaims_prm,&number))");
+call execute("%nrstr(%create_limited(M073_Out.outpharmacy_prm,&number))");
+call execute("%nrstr(%create_limited(M073_Out.decor_case,&number))");
+call execute("%nrstr(%create_limited(M035_Out.member_time,&number))");
+call execute("%nrstr(%create_limited(M035_Out.member,&number))");
+call execute("%nrstr(%create_limited(M035_Out.member_raw_stack,&number,field = bene_hic_num))");
+call execute("%nrstr(%create_limited(M018_Out.client_member_time,&number))");
+
+call execute("%nrstr(
+%RunProductionPrograms(
+ dir_program_src          = &path_onboarding_code.
+ ,dir_log_lst_output      = &path_onboarding_logs.
+ ,name_python_environment = &python_environment.
+ ,library_process_log     = 
+ ,bool_traverse_subdirs   = True
+ ,bool_notify_success     = False
+ ,prefix_program_name     = Post
+ ,keyword_whitelist       = %sysfunc(ifc("%upcase(&launcher_onboarding_whitelist.)" ne "ERROR"
+															,&launcher_onboarding_whitelist.
+															,%str()
+															))
+/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
+															,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable))
+															,Post050_output_deliverable
+															))
+/* CC'd Email Recepients  */ ,list_cc_email           = %str()
+/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
+))");
+
+run;
+
+%end;
+
+%end;
+
+%mend Run_Process;
+
+%Run_Process;
+
+
+
+
+
+
+
+%create_limited(M073_Out.outclaims_prm,1);
+%create_limited(M073_Out.outpharmacy_prm,1);
+%create_limited(M073_Out.decor_case,1);
+%create_limited(M035_Out.member_time,1);
+%create_limited(M035_Out.member,1);
+%create_limited(M035_Out.member_raw_stack,1,field = bene_hic_num);
+%create_limited(M018_Out.client_member_time,1);
 
 %RunProductionPrograms(
 /* Where the code is      */ dir_program_src          = &path_onboarding_code.
