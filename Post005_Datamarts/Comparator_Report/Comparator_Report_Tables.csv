@@ -88,6 +88,11 @@ los_snf,details_snf,Y,N
 cnt_discharges_snf,details_snf,N,N
 sum_days_snf,details_snf,N,N
 sum_costs_snf,details_snf,N,N
+name_client,details_snf_professional,Y,N
+time_period,details_snf_professional,Y,N
+elig_status_1,details_snf_professional,Y,N
+prv_id_snf,details_snf_professional,Y,N
+sum_costs_prof_snf,details_snf_professional,N,N
 name_client,metrics_key_value,Y,N
 time_period,metrics_key_value,Y,N
 elig_status_1,metrics_key_value,Y,N
