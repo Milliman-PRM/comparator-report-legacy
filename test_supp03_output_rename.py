@@ -1,3 +1,13 @@
+"""
+### CODE OWNERS: Aaron Burgess
+
+### OBJECTIVE:
+  Test rename files function
+
+### DEVELOPER NOTES:
+  <none>
+"""
+
 from collections import namedtuple
 
 import pytest

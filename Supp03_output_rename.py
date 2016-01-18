@@ -1,5 +1,19 @@
+"""
+### CODE OWNERS: Aaron Burgess
+
+### OBJECTIVE:
+  Rename files on the fly given they have not
+  been renamed using _all or _<digit>
+
+### DEVELOPER NOTES:
+  <none>
+"""
+
 import os
 import sys
+import logging
+
+LOGGER = logging.getLogger(__file__)
 
 sys.path.append(r"S:\Misc\_IndyMacros\Code\python\indypy")
 
@@ -20,3 +34,9 @@ def rename_files(directory, name_extension):
         new_file = '{file}_{name}{ext}'.format(file=str(new_name),
                                                name=name_extension, ext=file.suffix)
         os.rename(str(file), new_file)
+
+
+if __name__ == '__main__':
+    LOGGER.info("Starting file rename using extension {ext}".format(ext=sys.argv[2]))
+    rename_files(sys.argv[1], sys.argv[2])
+    LOGGER.info("Done converting files.")
