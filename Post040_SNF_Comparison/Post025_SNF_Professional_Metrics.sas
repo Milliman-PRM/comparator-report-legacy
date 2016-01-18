@@ -103,18 +103,18 @@ proc transpose data=measures
 run;
 
 /*Write the tables out to the post040 library*/
-data post040.details_SNF_Professional;
-	format &details_SNF_Professional_cgfrmt.;
-	set details_SNF_Professional;
-	keep &details_SNF_Professional_cgflds.;
+data post040.details_SNF_professional;
+	format &details_SNF_professional_cgfrmt.;
+	set details_SNF_professional;
+	keep &details_SNF_professional_cgflds.;
 run;
 
-data post040.metrics_SNF_Professional;
+data post040.metrics_SNF_professional;
 	format &metrics_key_value_cgfrmt.;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
-%LabelDataSet(post040.metrics_SNF_Professional)
+%LabelDataSet(post040.metrics_SNF_professional)
 
 %put return_code = &syscc.;
