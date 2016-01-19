@@ -83,22 +83,22 @@ quit;
 %split_groups;
 
 /*Create complete copies of all of the needed tables and outputs*/
-%macro copy_originals(table);
-data &table._all;
+%macro copy_originals(table,suffix);
+data &table._&suffix.;
 	set &table.;
 run;
 
 %mend copy_originals;
 
-%copy_originals(M073_Out.outclaims_prm);
-%copy_originals(M073_Out.outpharmacy_prm);
-%copy_originals(M073_Out.decor_case);
-%copy_originals(M035_Out.member_time);
-%copy_originals(M035_Out.member);
-%copy_originals(M035_Out.member_raw_stack);
-%copy_originals(M018_Out.client_member_time);
+%copy_originals(M073_Out.outclaims_prm,all);
+%copy_originals(M073_Out.outpharmacy_prm,all);
+%copy_originals(M073_Out.decor_case,all);
+%copy_originals(M035_Out.member_time,all);
+%copy_originals(M035_Out.member,all);
+%copy_originals(M035_Out.member_raw_stack,all);
+%copy_originals(M018_Out.client_member_time,all);
 
-%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,"K:\PHI\0273FAL\3.NYP-0273FAL(SEP_Split_Reports)\5-Support_Files\Data_Thru_201511_M5\postboarding\Post050_Wrap_Up" all,%GetParentFolder(0)test.log,prod3);
+%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. all,&path_project_logs./_onboarding/Supp02_all.log,prod3);
 %AssertThat(&Py_code.,=,0);
 
 /*Create a new table with just the needed population*/
@@ -119,7 +119,7 @@ quit;
 /*Create a macro to loop over most of the rest of the process*/
 %macro Run_Process;
 
-%do number = 1 %to /*&group_count.*/1;
+%do number = 1 %to &group_count.;
 
 	%if %GetRecordCount(Combo_&number) ne 0 %then %do;
 
@@ -151,6 +151,17 @@ quit;
 		/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
 		)
 
+		%copy_originals(M073_Out.outclaims_prm,&number);
+		%copy_originals(M073_Out.outpharmacy_prm,&number);
+		%copy_originals(M073_Out.decor_case,&number);
+		%copy_originals(M035_Out.member_time,&number);
+		%copy_originals(M035_Out.member,&number);
+		%copy_originals(M035_Out.member_raw_stack,&number);
+		%copy_originals(M018_Out.client_member_time,&number);
+
+		%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. &number,&path_project_logs.\_onboarding\Supp02_&number.log,prod3);
+		%AssertThat(&Py_code.,=,0);
+
 	%end;
 
 %end;
@@ -160,3 +171,4 @@ quit;
 %Run_Process;
 
 %put System Return Code = &syscc.;
+
