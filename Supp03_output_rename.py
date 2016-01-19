@@ -41,6 +41,7 @@ def rename_files(directory, name_extension):
 
 
 if __name__ == '__main__':
+    print(sys.argv)
     print("Starting file rename using extension {ext}".format(ext=sys.argv[2]))
     rename_files(sys.argv[1], sys.argv[2])
     print("Done converting files.")
