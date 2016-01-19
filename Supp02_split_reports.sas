@@ -47,36 +47,36 @@ quit;
 %put &=group_count.;
 
 %macro split_groups;
-
-%do number = 1 %to &group_count.;
-
-	data Group_&number (keep = Group_&number rename = (Group_&number = Member_id));
-		set splits;
-
-		if Group_&number ne "" then output;
-	run;
-
-	proc sql;
-		create table Combo_&number as
-		select
-			xref.crnt_hic_num as Member_id
-		from Group_&number as base
-		inner join M020_Out.CCLF9_bene_xref as xref
-		on base.Member_id = xref.prvs_hic_num
-		union
-		select
-			xref.prvs_hic_num as Member_id
-		from Group_&number as base
-		inner join M020_Out.CCLF9_bene_xref as xref
-		on base.Member_id = xref.crnt_hic_num
-		union
-		select
-			base.Member_id
-		from Group_&number as base
-		;
-	quit;
-
-%end;
+	
+	%do number = 1 %to &group_count.;
+	
+		data Group_&number (keep = Group_&number rename = (Group_&number = Member_id));
+			set splits;
+	
+			if Group_&number ne "" then output;
+		run;
+	
+		proc sql;
+			create table Combo_&number as
+			select
+				xref.crnt_hic_num as Member_id
+			from Group_&number as base
+			inner join M020_Out.CCLF9_bene_xref as xref
+			on base.Member_id = xref.prvs_hic_num
+			union
+			select
+				xref.prvs_hic_num as Member_id
+			from Group_&number as base
+			inner join M020_Out.CCLF9_bene_xref as xref
+			on base.Member_id = xref.crnt_hic_num
+			union
+			select
+				base.Member_id
+			from Group_&number as base
+			;
+		quit;
+	
+	%end;
 
 %mend split_groups;
 
