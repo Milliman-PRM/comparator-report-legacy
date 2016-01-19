@@ -26,17 +26,17 @@ def file_group(tmpdir):
                                                       'unwanted_changed_file1',
                                                       'unwanted_changed_file2'])
     tmpdir_string = str(tmpdir)
-    unwanted_file1 = tmpdir.join('test_all.sasb7dat')
+    unwanted_file1 = tmpdir.join('test_all.sas7bdat')
     unwanted_file1.write('tacos')
     unwanted_file2 = tmpdir.join('test_1.sqlite')
     unwanted_file2.write('nothing')
-    wanted_file1 = tmpdir.join('test_example.sasb7dat')
+    wanted_file1 = tmpdir.join('test_example.sas7bdat')
     wanted_file1.write('hulkamania')
     wanted_file2 = tmpdir.join('test_example.sqlite')
     wanted_file2.write('42')
-    wanted_changed_file1 = str(IndyPyPath(tmpdir_string) / 'test_example_2.sasb7dat')
+    wanted_changed_file1 = str(IndyPyPath(tmpdir_string) / 'test_example_2.sas7bdat')
     wanted_changed_file2 = str(IndyPyPath(tmpdir_string) / 'test_example_2.sqlite')
-    unwanted_changed_file1 = str(IndyPyPath(tmpdir_string) / 'test_all_2.sasb7dat')
+    unwanted_changed_file1 = str(IndyPyPath(tmpdir_string) / 'test_all_2.sas7bdat')
     unwanted_changed_file2 = str(IndyPyPath(tmpdir_string) / 'test_1_2.sqlite')
     real_files = real_files_nt(*list(map(str, [unwanted_file1, unwanted_file2,
                                                wanted_file1, wanted_file2])))
@@ -57,3 +57,5 @@ def test_rename_files(file_group, tmpdir):
     assert path_two_check
     assert not unwanted_path_one
     assert not unwanted_path_two
+    with pytest.raises(ValueError):
+        rename_files(str(tmpdir), 'taco')

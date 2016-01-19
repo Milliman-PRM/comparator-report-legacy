@@ -12,9 +12,6 @@
 import os
 import sys
 import re
-import logging
-
-LOGGER = logging.getLogger(__file__)
 
 sys.path.append(r"S:\Misc\_IndyMacros\Code\python\indypy")
 
@@ -41,7 +38,6 @@ def rename_files(directory, name_extension):
 
 
 if __name__ == '__main__':
-    print(sys.argv)
     print("Starting file rename using extension {ext}".format(ext=sys.argv[2]))
     rename_files(sys.argv[1], sys.argv[2])
     print("Done converting files.")
