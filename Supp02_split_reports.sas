@@ -98,7 +98,7 @@ run;
 %copy_originals(M035_Out.member_raw_stack,all);
 %copy_originals(M018_Out.client_member_time,all);
 
-%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,"&post050." all,%GetParentFolder(0)test.log,prod3);
+%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. all,%GetParentFolder(0)test.log,prod3);
 %AssertThat(&Py_code.,=,0);
 
 /*Create a new table with just the needed population*/
@@ -159,7 +159,7 @@ quit;
 		%copy_originals(M035_Out.member_raw_stack,&number);
 		%copy_originals(M018_Out.client_member_time,&number);
 
-		%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,"&post050." &number,%GetParentFolder(0)test.log,prod3);
+		%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. &number,%GetParentFolder(0)test.log,prod3);
 		%AssertThat(&Py_code.,=,0);
 
 	%end;
