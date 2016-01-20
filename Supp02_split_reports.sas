@@ -172,5 +172,22 @@ quit;
 
 %Run_Process;
 
+/*Return the combined version of the various tables to the non-underscored form*/
+%macro return_originals(table);
+
+	data &table.;
+		set &table._all;
+	run;
+
+%mend return_originals;
+
+%return_originals(M073_Out.outclaims_prm);
+%return_originals(M073_Out.outpharmacy_prm);
+%return_originals(M073_Out.decor_case);
+%return_originals(M035_Out.member_time);
+%return_originals(M035_Out.member);
+%return_originals(M035_Out.member_raw_stack);
+%return_originals(M018_Out.client_member_time);
+
 %put System Return Code = &syscc.;
 
