@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Aaron Burgess
+### CODE OWNERS: Aaron Burgess, Jason Altieri
 
 ### OBJECTIVE:
   Test rename files function
