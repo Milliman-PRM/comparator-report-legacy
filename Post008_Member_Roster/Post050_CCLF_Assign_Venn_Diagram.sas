@@ -247,7 +247,20 @@ proc sql noprint;
 quit;
 %put &=max_pct_assigned_mems_in_cclf.;
 %put &=min_pct_assigned_mems_in_cclf.;
-%AssertThat(&max_pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
+
+/*When this assertion is ran on a subset of a population, it is not unreasonable for there to be a group that has 100% assigned members in CCLF.
+  Therefore, only run this assertion if the code is not being ran on a subset of the population.  The table M035_Out.Member_all will only be present
+  when a subset is being ran (the table is a copy of the original combined Member table).*/
+%macro run_type;
+
+	%if %sysfunc(exist(M035_Out.Member_all)) eq 0 %then %do;
+		%AssertThat(&max_pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
+	%end;
+
+%mend run_type;
+
+%run_type
+
 %AssertThat(&min_pct_assigned_mems_in_cclf.,gt,0.2,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
 
 
