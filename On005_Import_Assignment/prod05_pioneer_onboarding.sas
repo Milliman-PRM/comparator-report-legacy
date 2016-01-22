@@ -256,7 +256,7 @@ proc sql;
 	from cummulative_percents as source_list
 	left join ref_prod.&filename_sas_npi. as npi
 		on source_list.rndrg_prvdr_npi_num eq npi.npi
-	left join M015_out.prv_taxonomy_ref as taxonomy_desc
+	left join M015_out.Ref_Tax_Spec_Xwalk as taxonomy_desc
 		on npi.health_prvdr_taxonomy_cd_1 eq taxonomy_desc.taxonomy_code
 	where source_list.count ge &visit_cutoff.
 	order by source_list.rndrg_prvdr_npi_num
