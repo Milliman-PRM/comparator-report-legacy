@@ -83,6 +83,11 @@ data member_roster;
 	else riskscr_1_type = "MARA Risk Score";
 	*/
 
+	/* DEVELOPMENT CODE:
+		Force risk scores to be MARA for the sake of working on NYP issue #241.
+		riskscr_1_type = "MARA Risk Score";
+	*/
+
 	/*Only output the windows that include then ending boundary of our time period.*/
 	&codegen_member_selection.
 	; *Just to get syntax highlighting in IDE;
