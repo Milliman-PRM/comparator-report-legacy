@@ -23,7 +23,8 @@ libname M180_Out "&M180_Out.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
+%RunPythonScript(,%GetParentFolder(0)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
+%AssertThat(&Path_code.,=,0);
 
 proc import datafile = "&path_project_received_ref\Market_Splits.csv"
 	out = splits
