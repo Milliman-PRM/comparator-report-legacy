@@ -21,9 +21,6 @@ libname post009 "&post009.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
-
-
 proc sql;
 	create table risk_scores_service_member as
 	select
@@ -61,6 +58,50 @@ proc sql;
 		,ref_mcrm_line.mcrm_line
 	;                            
 quit;
+
+/*Experimental step to merge MARA risk scores onto MCRM lines*/
+proc sql;
+	create table MARA_riskscr_by_MRLine as
+	select
+		members.time_slice as time_period
+		,members.member_id
+		,members.model_name
+		,ref_mr_line.mr_line
+		,ref_mr_line.MARA_riskscr_component
+		,case upcase(MARA_riskscr_component)
+			when "RISKSCR_IP" then members.riskscr_ip
+			when "RISKSCR_ER" then members.riskscr_er
+			when "RISKSCR_OP" then members.riskscr_op
+			when "RISKSCR_PHY" then members.riskscr_phy
+			when "RISKSCR_RX" then members.riskscr_rx
+			else members.riskscr_other
+			end as riskscr_1_util
+		,case upcase(MARA_riskscr_component)
+			when "RISKSCR_IP" then members.riskscr_ip
+			when "RISKSCR_ER" then members.riskscr_er
+			when "RISKSCR_OP" then members.riskscr_op
+			when "RISKSCR_PHY" then members.riskscr_phy
+			when "RISKSCR_RX" then members.riskscr_rx
+			else members.riskscr_other
+			end as riskscr_1_cost
+		,mcrm_mapping.mcrm_line
+	from riskscr.mara_scores as members
+	cross join M015_out.mr_line_info as ref_mr_line
+	inner join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mcrm_mapping on 
+		ref_mr_line.mr_line = mcrm_mapping.mr_line
+	order by
+		members.time_slice
+		,members.member_id
+		,members.model_name
+		,mcrm_mapping.mcrm_line
+	;
+quit;
+
+data MARA_riskscr_by_MCRMLine (drop = mr_line);
+	set MARA_riskscr_by_MRLine;
+	by time_period member_id model_name mcrm_line;
+	if first.mcrm_line;
+run;
 
 proc means noprint nway missing data = risk_scores_service_member;
 	class time_period elig_status_1 mcrm_line;
