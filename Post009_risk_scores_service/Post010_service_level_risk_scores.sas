@@ -87,6 +87,8 @@ proc sql;
 		,mcrm_mapping.mcrm_line
 	from riskscr.mara_scores as members
 	cross join M015_out.mr_line_info as ref_mr_line
+	inner join Post008.Time_windows as time_periods on 
+		time_periods.time_period = members.time_slice and upcase(substr(members.model_name,3,3)) = upcase(substr(time_periods.riskscr_period_type,1,3))
 	inner join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mcrm_mapping on 
 		ref_mr_line.mr_line = mcrm_mapping.mr_line
 	order by
