@@ -67,6 +67,7 @@ proc sql;
 		,members.member_id
 		,members.elig_status_1
 		,members.memmos
+		,members.riskscr_1
 		,members.riskscr_1_type
 		,ref_mr_line.mr_line
 		,ref_mr_line.MARA_riskscr_component
@@ -77,7 +78,7 @@ proc sql;
 			when "RISKSCR_PHY" then scores.riskscr_phy
 			when "RISKSCR_RX" then scores.riskscr_rx
 			else scores.riskscr_other
-			end as riskscr_1_util
+			end as factor_util_mara
 		,case upcase(MARA_riskscr_component)
 			when "RISKSCR_IP" then scores.riskscr_ip
 			when "RISKSCR_ER" then scores.riskscr_er
@@ -85,11 +86,11 @@ proc sql;
 			when "RISKSCR_PHY" then scores.riskscr_phy
 			when "RISKSCR_RX" then scores.riskscr_rx
 			else scores.riskscr_other
-			end as riskscr_1_cost
+			end as factor_cost_mara
 		,mcrm_mapping.mcrm_line
 	from post008.members as members
 	left join riskscr.mara_scores as scores on
-		members.member_id = scores.member_id and members.time_period = scores.time_period
+		members.member_id = scores.member_id and members.time_period = scores.time_slice
 	cross join M015_out.mr_line_info as ref_mr_line
 	inner join Post008.Time_windows as time_periods on 
 		time_periods.time_period = members.time_period and upcase(substr(scores.model_name,3,3)) = upcase(substr(time_periods.riskscr_period_type,1,3))
@@ -102,11 +103,38 @@ proc sql;
 	;
 quit;
 
-data MARA_riskscr_by_MCRMLine (drop = mr_line);
+data MARA_riskscr_by_MCRMLine (drop = mr_line MARA_riskscr_component);
 	set MARA_riskscr_by_MRLine;
 	by time_period member_id mcrm_line;
 	if first.mcrm_line;
 run;
+
+proc sql;
+	create table risk_scores_services_member as
+	select MARA.*
+	       ,hcc_factors.factor_util as factor_util_hcc
+		   ,hcc_factors.factor_cost as factor_cost_hcc
+		   ,case upcase(MARA.riskscr_1_type)
+		   		when "CMS HCC RISK SCORE" then calculated factor_util_hcc
+				when "MARA RISK SCORE" then MARA.factor_util_mara
+				else MARA.riskscr_1
+				end as riskscr_1_util
+			,case upcase(MARA.riskscr_1_type)
+		   		when "CMS HCC RISK SCORE" then calculated factor_cost_hcc
+				when "MARA RISK SCORE" then MARA.factor_cost_mara
+				else MARA.riskscr_1
+				end as riskscr_1_cost
+	from MARA_riskscr_by_MCRMLine as MARA
+	left join M015_out.mcrm_hcc_calibrations as hcc_factors on
+		MARA.mcrm_line eq hcc_factors.mcrm_line
+			and round(MARA.riskscr_1,0.01) between hcc_factors.hcc_range_bottom and hcc_factors.hcc_range_top
+	order by
+		MARA.time_period
+		,MARA.member_id
+		,MARA.mcrm_line
+	;
+quit;
+		
 
 proc means noprint nway missing data = risk_scores_service_member;
 	class time_period elig_status_1 mcrm_line;
