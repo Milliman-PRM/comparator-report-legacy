@@ -63,45 +63,48 @@ quit;
 proc sql;
 	create table MARA_riskscr_by_MRLine as
 	select
-		members.time_slice as time_period
+		members.time_period
 		,members.member_id
-		,members.model_name
+		,members.elig_status_1
+		,members.memmos
+		,members.riskscr_1_type
 		,ref_mr_line.mr_line
 		,ref_mr_line.MARA_riskscr_component
 		,case upcase(MARA_riskscr_component)
-			when "RISKSCR_IP" then members.riskscr_ip
-			when "RISKSCR_ER" then members.riskscr_er
-			when "RISKSCR_OP" then members.riskscr_op
-			when "RISKSCR_PHY" then members.riskscr_phy
-			when "RISKSCR_RX" then members.riskscr_rx
-			else members.riskscr_other
+			when "RISKSCR_IP" then scores.riskscr_ip
+			when "RISKSCR_ER" then scores.riskscr_er
+			when "RISKSCR_OP" then scores.riskscr_op
+			when "RISKSCR_PHY" then scores.riskscr_phy
+			when "RISKSCR_RX" then scores.riskscr_rx
+			else scores.riskscr_other
 			end as riskscr_1_util
 		,case upcase(MARA_riskscr_component)
-			when "RISKSCR_IP" then members.riskscr_ip
-			when "RISKSCR_ER" then members.riskscr_er
-			when "RISKSCR_OP" then members.riskscr_op
-			when "RISKSCR_PHY" then members.riskscr_phy
-			when "RISKSCR_RX" then members.riskscr_rx
-			else members.riskscr_other
+			when "RISKSCR_IP" then scores.riskscr_ip
+			when "RISKSCR_ER" then scores.riskscr_er
+			when "RISKSCR_OP" then scores.riskscr_op
+			when "RISKSCR_PHY" then scores.riskscr_phy
+			when "RISKSCR_RX" then scores.riskscr_rx
+			else scores.riskscr_other
 			end as riskscr_1_cost
 		,mcrm_mapping.mcrm_line
-	from riskscr.mara_scores as members
+	from post008.members as members
+	left join riskscr.mara_scores as scores on
+		members.member_id = scores.member_id and members.time_period = scores.time_period
 	cross join M015_out.mr_line_info as ref_mr_line
 	inner join Post008.Time_windows as time_periods on 
-		time_periods.time_period = members.time_slice and upcase(substr(members.model_name,3,3)) = upcase(substr(time_periods.riskscr_period_type,1,3))
+		time_periods.time_period = members.time_period and upcase(substr(scores.model_name,3,3)) = upcase(substr(time_periods.riskscr_period_type,1,3))
 	inner join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mcrm_mapping on 
 		ref_mr_line.mr_line = mcrm_mapping.mr_line
 	order by
-		members.time_slice
+		members.time_period
 		,members.member_id
-		,members.model_name
 		,mcrm_mapping.mcrm_line
 	;
 quit;
 
 data MARA_riskscr_by_MCRMLine (drop = mr_line);
 	set MARA_riskscr_by_MRLine;
-	by time_period member_id model_name mcrm_line;
+	by time_period member_id mcrm_line;
 	if first.mcrm_line;
 run;
 
