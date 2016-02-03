@@ -21,44 +21,6 @@ libname post009 "&post009.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-proc sql;
-	create table risk_scores_service_member as
-	select
-		members.time_period
-		,members.member_id
-		,members.elig_status_1
-		,members.memmos
-		,members.riskscr_1_type
-		,members.riskscr_1
-		,ref_mcrm_line.mcrm_line
-		/*Intentionally verbose to show selection logic*/
-		,coalesce(hcc_factors.factor_util,members.riskscr_1) as factor_util_hcc
-		,coalesce(hcc_factors.factor_cost,members.riskscr_1) as factor_cost_hcc
-		,members.riskscr_1 as factor_util_mara
-		,members.riskscr_1 as factor_cost_mara
-		,case upcase(members.riskscr_1_type)
-			when "CMS HCC RISK SCORE" then calculated factor_util_hcc
-			when "MARA RISK SCORE" then members.riskscr_1 /*TODO: Populate with MARA service level risk scores when available*/
-			else members.riskscr_1
-			end as riskscr_1_util
-		,case upcase(members.riskscr_1_type)
-			when "CMS HCC RISK SCORE" then calculated factor_cost_hcc
-			when "MARA RISK SCORE" then members.riskscr_1 /*TODO: Populate with MARA service level risk scores when available*/
-			else members.riskscr_1
-			end as riskscr_1_cost
-	from post008.members as members
-	cross join M015_out.ref_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as ref_mcrm_line
-	left join M015_out.mcrm_hcc_calibrations as hcc_factors on
-		ref_mcrm_line.mcrm_line eq hcc_factors.mcrm_line
-			and round(members.riskscr_1,0.01) between hcc_factors.hcc_range_bottom and hcc_factors.hcc_range_top
-	where members.memmos ne 0	/*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
-	order by					/*divide by zero errors for categories with few members (ie Unknown).  So exclude this data from the calculation.*/
-		members.time_period
-		,members.member_id
-		,ref_mcrm_line.mcrm_line
-	;                            
-quit;
-
 /*Experimental step to merge MARA risk scores onto MCRM lines*/
 proc sql;
 	create table MARA_riskscr_by_MRLine as
@@ -115,12 +77,12 @@ proc sql;
 	       ,hcc_factors.factor_util as factor_util_hcc
 		   ,hcc_factors.factor_cost as factor_cost_hcc
 		   ,case upcase(MARA.riskscr_1_type)
-		   		when "CMS HCC RISK SCORE" then calculated factor_util_hcc
+		   		when "CMS HCC RISK SCORE" then hcc_factors.factor_util
 				when "MARA RISK SCORE" then MARA.factor_util_mara
 				else MARA.riskscr_1
 				end as riskscr_1_util
 			,case upcase(MARA.riskscr_1_type)
-		   		when "CMS HCC RISK SCORE" then calculated factor_cost_hcc
+		   		when "CMS HCC RISK SCORE" then hcc_factors.factor_cost
 				when "MARA RISK SCORE" then MARA.factor_cost_mara
 				else MARA.riskscr_1
 				end as riskscr_1_cost
