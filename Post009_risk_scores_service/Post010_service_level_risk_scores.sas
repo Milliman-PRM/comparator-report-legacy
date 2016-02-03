@@ -75,7 +75,7 @@ data MARA_riskscr_by_MCRMLine (drop = mr_line MARA_riskscr_component);
 run;
 
 proc sql;
-	create table risk_scores_services_member as
+	create table risk_scores_service_member as
 	select MARA.*
 	       ,hcc_factors.factor_util as factor_util_hcc
 		   ,hcc_factors.factor_cost as factor_cost_hcc
@@ -99,7 +99,14 @@ proc sql;
 		,MARA.mcrm_line
 	;
 quit;
-		
+
+/*Assert that no lines with 0 memmos have survived up to this point.*/
+data service_member_0_memmos;
+	set risk_scores_service_member;
+	where memmos = 0;
+run;
+
+%AssertDataSetNotPopulated(service_member_0_memmos,"There are members with 0 member months in the data, and they should not be in the data.");
 
 proc means noprint nway missing data = risk_scores_service_member;
 	class time_period elig_status_1 mcrm_line;
