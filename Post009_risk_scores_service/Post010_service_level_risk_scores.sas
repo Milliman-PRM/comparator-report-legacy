@@ -75,14 +75,14 @@ run;
 proc sql;
 	create table risk_scores_service_member as
 	select MARA.*
-	       ,hcc_factors.factor_util as factor_util_hcc
-		   ,hcc_factors.factor_cost as factor_cost_hcc
+	       ,coalesce(hcc_factors.factor_util,MARA.riskscr_1) as factor_util_hcc
+		   ,coalesce(hcc_factors.factor_cost,MARA.riskscr_1) as factor_cost_hcc
 		   ,case upcase(MARA.riskscr_1_type)
 		   		when "CMS HCC RISK SCORE" then hcc_factors.factor_util
 				when "MARA RISK SCORE" then MARA.factor_util_mara
 				else MARA.riskscr_1
 				end as riskscr_1_util
-			,case upcase(MARA.riskscr_1_type)
+		   ,case upcase(MARA.riskscr_1_type)
 		   		when "CMS HCC RISK SCORE" then hcc_factors.factor_cost
 				when "MARA RISK SCORE" then MARA.factor_cost_mara
 				else MARA.riskscr_1
