@@ -21,7 +21,10 @@ libname post009 "&post009.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Experimental step to merge MARA risk scores onto MCRM lines*/
+/*We have the data for the MARA risk scores by mr_line but the data for the CMS risk scores by mcrm_line.  Thus, we build a table by mr_line, add the MARA 
+scores, merge on the MR to MCRM mapping, then add the CMS scores.*/
+
+
 proc sql;
 	create table MARA_riskscr_by_MRLine as
 	select
