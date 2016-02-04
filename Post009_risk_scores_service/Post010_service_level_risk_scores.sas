@@ -104,7 +104,7 @@ data service_member_0_memmos;
 	where memmos = 0;
 run;
 
-%AssertDataSetNotPopulated(service_member_0_memmos,"There are members with 0 member months in the data, and they should not be in the data.");
+%AssertDataSetNotPopulated(service_member_0_memmos,ReturnMessage=There are members with no member months in the data and they should not be there.);
 
 proc means noprint nway missing data = risk_scores_service_member;
 	class time_period elig_status_1 mcrm_line;
