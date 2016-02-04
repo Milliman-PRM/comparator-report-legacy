@@ -205,6 +205,13 @@ run;
 				,model_name char format = $10.
 				,member_id 			char	format= $40.
 				,riskscr_tot	 	num		format= best12.
+				,riskscr_rx			num		format= best12.
+				,riskscr_med		num		format= best12.
+				,riskscr_ip			num		format= best12.
+				,riskscr_op			num		format= best12.
+				,riskscr_phy		num		format= best12.
+				,riskscr_er			num		format= best12.
+				,riskscr_other		num		format= best12.
 				);
 		quit;	
 	%end;
