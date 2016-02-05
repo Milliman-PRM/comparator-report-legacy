@@ -24,7 +24,6 @@ libname post009 "&post009.";
 /*We have the data for the MARA risk scores by mr_line but the data for the CMS risk scores by mcrm_line.  Thus, we build a table by mr_line, add the MARA 
 scores, merge on the MR to MCRM mapping, then add the CMS scores.*/
 
-
 proc sql;
 	create table MARA_riskscr_by_MRLine as
 	select
@@ -36,20 +35,22 @@ proc sql;
 		,members.riskscr_1_type
 		,ref_mr_line.mr_line
 		,ref_mr_line.MARA_riskscr_component
-		,case upcase(MARA_riskscr_component)
-			when "RISKSCR_IP" then scores.riskscr_ip
-			when "RISKSCR_ER" then scores.riskscr_er
-			when "RISKSCR_OP" then scores.riskscr_op
-			when "RISKSCR_PHY" then scores.riskscr_phy
-			when "RISKSCR_RX" then scores.riskscr_rx
+		,case
+			when upcase(mcrm_line) = "X99" then scores.riskscr_other /*If MCRM_line is x99, then use the "other" MARA component risk score.*/
+			when upcase(MARA_riskscr_component) = "RISKSCR_IP" and upcase(mcrm_line) ne "X99" then scores.riskscr_ip
+			when upcase(MARA_riskscr_component) = "RISKSCR_ER" and upcase(mcrm_line) ne "X99" then scores.riskscr_er
+			when upcase(MARA_riskscr_component) = "RISKSCR_OP" and upcase(mcrm_line) ne "X99" then scores.riskscr_op
+			when upcase(MARA_riskscr_component) = "RISKSCR_PHY" and upcase(mcrm_line) ne "X99" then scores.riskscr_phy
+			when upcase(MARA_riskscr_component) = "RISKSCR_RX" and upcase(mcrm_line) ne "X99" then scores.riskscr_rx
 			else scores.riskscr_other
 			end as factor_util_mara
-		,case upcase(MARA_riskscr_component)
-			when "RISKSCR_IP" then scores.riskscr_ip
-			when "RISKSCR_ER" then scores.riskscr_er
-			when "RISKSCR_OP" then scores.riskscr_op
-			when "RISKSCR_PHY" then scores.riskscr_phy
-			when "RISKSCR_RX" then scores.riskscr_rx
+		,case
+			when upcase(mcrm_line) = "X99" then scores.riskscr_other
+			when upcase(MARA_riskscr_component) = "RISKSCR_IP" and upcase(mcrm_line) ne "X99" then scores.riskscr_ip
+			when upcase(MARA_riskscr_component) = "RISKSCR_ER" and upcase(mcrm_line) ne "X99" then scores.riskscr_er
+			when upcase(MARA_riskscr_component) = "RISKSCR_OP" and upcase(mcrm_line) ne "X99" then scores.riskscr_op
+			when upcase(MARA_riskscr_component) = "RISKSCR_PHY" and upcase(mcrm_line) ne "X99" then scores.riskscr_phy
+			when upcase(MARA_riskscr_component) = "RISKSCR_RX" and upcase(mcrm_line) ne "X99" then scores.riskscr_rx
 			else scores.riskscr_other
 			end as factor_cost_mara
 		,mcrm_mapping.mcrm_line
