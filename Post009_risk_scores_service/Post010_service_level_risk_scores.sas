@@ -78,12 +78,12 @@ proc sql;
 	       ,coalesce(hcc_factors.factor_util,MARA.riskscr_1) as factor_util_hcc
 		   ,coalesce(hcc_factors.factor_cost,MARA.riskscr_1) as factor_cost_hcc
 		   ,case upcase(MARA.riskscr_1_type)
-		   		when "CMS HCC RISK SCORE" then hcc_factors.factor_util
+		   		when "CMS HCC RISK SCORE" then calculated factor_util_hcc
 				when "MARA RISK SCORE" then MARA.factor_util_mara
 				else MARA.riskscr_1
 				end as riskscr_1_util
 		   ,case upcase(MARA.riskscr_1_type)
-		   		when "CMS HCC RISK SCORE" then hcc_factors.factor_cost
+		   		when "CMS HCC RISK SCORE" then calculated factor_cost_hcc
 				when "MARA RISK SCORE" then MARA.factor_cost_mara
 				else MARA.riskscr_1
 				end as riskscr_1_cost
