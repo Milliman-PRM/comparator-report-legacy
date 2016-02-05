@@ -54,7 +54,7 @@ proc sql;
 			end as factor_cost_mara
 		,mcrm_mapping.mcrm_line
 	from post008.members as members
-	left join riskscr.mara_scores_limited as scores on
+	left join post008.mara_scores_limited as scores on
 		members.member_id = scores.member_id and members.time_period = scores.time_slice
 	cross join M015_out.mr_line_info as ref_mr_line
 	inner join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mcrm_mapping on 

@@ -220,6 +220,10 @@ run;
 
 %Calc_Risk_Scores()
 
+data post008.MARA_scores_limited;
+	set riskscr.MARA_scores_limited;
+run;
+
 /*Pull in member months to append to the member roster
 	This utilizes potentially different time periods from risk scores above.*/
 %agg_memmos(&list_inc_start.
