@@ -15,9 +15,9 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&M008_cde.func06_build_metadata_table.sas";
 
 %AssertThat(
-	%upcase(&cclf_exclusion_criteria.)
+	%upcase(&cclf_ccr_absent_any_prior_cclf8.)
 	,eq
-	,PIONEER
+	,EXCLUDE
 	,ReturnMessage=Only applicable for Pioneer ACOs.
 	,FailAction=endactivesassession
 	)

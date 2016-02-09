@@ -13,9 +13,9 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 libname M017_Out "&M017_Out.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-%AssertThat(%upcase(&CCLF_exclusion_criteria.)
+%AssertThat(%upcase(&cclf_ccr_absent_any_prior_cclf8.)
 	,eq
-	,MSSP
+	,INCLUDE
 	,ReturnMessage=Pioneer client does not have assignment files.
 	,FailAction=EndActiveSASSession
 	)
