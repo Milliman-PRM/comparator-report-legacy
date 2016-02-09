@@ -159,9 +159,9 @@ proc sql;
 quit;
 
 
-%AssertThat(%upcase(&CCLF_exclusion_criteria.)
+%AssertThat(%upcase(&cclf_ccr_absent_any_prior_cclf8.)
 	,eq
-	,MSSP
+	,INCLUDE
 	,ReturnMessage=Pioneer client does not have assignment files.
 	,FailAction=EndActiveSASSession
 	)
