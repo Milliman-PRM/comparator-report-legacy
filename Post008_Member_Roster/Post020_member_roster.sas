@@ -176,6 +176,7 @@ run;
 				,&list_time_period_riskscr.
 				,riskscr
 				,list_models=DXPROLAG0~DXCONLAG0
+				,normalize_component_scores=True
 				)
 
 		proc sql;
