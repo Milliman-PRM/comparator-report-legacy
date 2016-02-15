@@ -86,7 +86,7 @@ data ref_service_agg;
 		metric_id = "high_tech_imaging_per1k";
 		metric_name = "High Tech Imaging Utilization per 1000";
 	end;
-	else if lowcase(mr_line) eq "o41h" then do;
+	else if lowcase(mr_line) eq "o10" then do;
 		metric_id = "observation_stays_per1k";
 		metric_name = "Observation Stays Utilization per 1000";
 	end;
