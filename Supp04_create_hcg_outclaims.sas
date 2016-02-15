@@ -51,6 +51,26 @@ libname M073_Out clear;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %outclaims(bsg);
 
+/*FHS 201509*/
+/*S:\PHI\0273NYP\3.009-0273NYP(11-FHS)\5-Support_Files\Data_Thru_201509_M5\driver.bat*/
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%outclaims(fhs);
+
+/*HPH 201509*/
+/*S:\PHI\0273NYP\3.011-0273NYP(13-HPH)\5-Support_Files\Data_Thru_201509_M5\driver.bat*/
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%outclaims(hph);
+
+/*PVA 201509*/
+/*S:\PHI\0273NYP\3.003-0273NYP(05-PVA)\5-Support_Files\Data_Thru_201509_M5_Warm\driver.bat*/
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%outclaims(pva);
+
+/*WMH 201509*/
+/*S:\PHI\0273NYP\3.027-0273NYP(29-WMH)\5-Support_Files\Data_Thru_201509_M5\driver.bat*/
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%outclaims(wmh);
+
 
 %put System Return Code = &syscc.;
 
