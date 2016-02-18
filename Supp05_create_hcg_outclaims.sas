@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jack Leemhuis
+### CODE OWNERS: Jack Leemhuis, Jason Altieri
 
 ### OBJECTIVE:
 	Re-create the HCG grouper output outclaims data set from prm custom claims data set (outclaims_prm)
