@@ -26,6 +26,15 @@ libname M180_Out "&M180_Out.";
 %RunPythonScript(,%GetParentFolder(0)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
 %AssertThat(&Path_code.,=,0);
 
+%macro run_MHS_Only();
+
+	%if %sysfunc(upcase(&name_client.)) eq (MERCY HEALTH SELECT) %then %do; 
+ 		%include "&path_project.\01_Programs\Supp04_MHS_Transpose.sas" / source2;
+	%end;
+
+%mend;
+%run_MHS_Only;
+
 proc import datafile = "&path_project_received_ref\Market_Splits.csv"
 	out = splits
 	replace;
@@ -34,54 +43,49 @@ proc import datafile = "&path_project_received_ref\Market_Splits.csv"
 	guessingrows = 1000;
 run;
 
-proc sql noprint;
-	select
-		count(name)
-	into :group_count
-
+proc sql;
+	create table name_of_groups as
+	select name
 	from dictionary.columns
 	where upcase(libname) eq 'WORK' and
-		  upcase(memname) eq 'SPLITS'
-	;
+		  upcase(memname) eq 'SPLITS';
 quit;
 
-%put &=group_count.;
+%macro group_splits(group_name);
 
-%macro split_groups;
-	
-	%do number = 1 %to &group_count.;
-	
-		data Group_&number (keep = Group_&number rename = (Group_&number = Member_id));
-			set splits;
-	
-			if Group_&number ne "" then output;
-		run;
-	
-		proc sql;
-			create table Combo_&number as
-			select
-				xref.crnt_hic_num as Member_id
-			from Group_&number as base
-			inner join M020_Out.CCLF9_bene_xref as xref
-			on base.Member_id = xref.prvs_hic_num
-			union
-			select
-				xref.prvs_hic_num as Member_id
-			from Group_&number as base
-			inner join M020_Out.CCLF9_bene_xref as xref
-			on base.Member_id = xref.crnt_hic_num
-			union
-			select
-				base.Member_id
-			from Group_&number as base
-			;
-		quit;
-	
-	%end;
+	data Group_&group_name. (keep = &group_name. rename = (&group_name. = Member_id));
+		set splits;
 
-%mend split_groups;
+		if &group_name. ne "" then output;
+	run;
 
-%split_groups;
+	proc sql;
+		create table Combo_&group_name. as
+		select
+			xref.crnt_hic_num as Member_id
+		from Group_&group_name. as base
+		inner join M020_Out.CCLF9_bene_xref as xref
+		on base.Member_id = xref.prvs_hic_num
+		union
+		select
+			xref.prvs_hic_num as Member_id
+		from Group_&group_name. as base
+		inner join M020_Out.CCLF9_bene_xref as xref
+		on base.Member_id = xref.crnt_hic_num
+		union
+		select
+			base.Member_id
+		from Group_&group_name. as base
+		;
+	quit;
+
+%mend;
+
+data _null_;
+	set name_of_groups;
+	call execute('%nrstr(%group_splits('||strip(name)||'))');
+run;
+
 
 /*Create complete copies of all of the needed tables and outputs*/
 %macro copy_originals(table,suffix);
@@ -104,7 +108,7 @@ quit;
 %AssertThat(&Py_code.,=,0);
 
 /*Create a new table with just the needed population*/
-%macro create_limited(table,group,field = member_id);
+%macro create_limited(table,group_name,field = member_id);
 
 	proc sql;
 		create table &table. as
@@ -113,26 +117,24 @@ quit;
 		from &table._all as base
 		where base.&field. in(
 				 select member_id
-				 from Combo_&group.)
+				 from Combo_&group_name.)
 		;
 	quit;
 
 %mend create_limited;
 
 /*Create a macro to loop over most of the rest of the process*/
-%macro Run_Process;
+%macro Run_Process (group_name);
+		
+		%if %GetRecordCount(Combo_&group_name.) ne 0 %then %do;
 	
-	%do number = 1 %to &group_count.;
-	
-		%if %GetRecordCount(Combo_&number) ne 0 %then %do;
-	
-			%create_limited(M073_Out.outclaims_prm,&number);
-			%create_limited(M073_Out.outpharmacy_prm,&number);
-			%create_limited(M073_Out.decor_case,&number);
-			%create_limited(M035_Out.member_time,&number);
-			%create_limited(M035_Out.member,&number);
-			%create_limited(M035_Out.member_raw_stack,&number,field = bene_hic_num);
-			%create_limited(M018_Out.client_member_time,&number);
+			%create_limited(M073_Out.outclaims_prm,&group_name.);
+			%create_limited(M073_Out.outpharmacy_prm,&group_name.);
+			%create_limited(M073_Out.decor_case,&group_name.);
+			%create_limited(M035_Out.member_time,&group_name.);
+			%create_limited(M035_Out.member,&group_name.);
+			%create_limited(M035_Out.member_raw_stack,&group_name.,field = bene_hic_num);
+			%create_limited(M018_Out.client_member_time,&group_name.);
 	
 			%RunProductionPrograms(
 			/* Where the code is      */ dir_program_src          = &path_onboarding_code.
@@ -154,24 +156,25 @@ quit;
 			/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
 			)
 	
-			%copy_originals(M073_Out.outclaims_prm,&number);
-			%copy_originals(M073_Out.outpharmacy_prm,&number);
-			%copy_originals(M073_Out.decor_case,&number);
-			%copy_originals(M035_Out.member_time,&number);
-			%copy_originals(M035_Out.member,&number);
-			%copy_originals(M035_Out.member_raw_stack,&number);
-			%copy_originals(M018_Out.client_member_time,&number);
+			%copy_originals(M073_Out.outclaims_prm,&group_name.);
+			%copy_originals(M073_Out.outpharmacy_prm,&group_name.);
+			%copy_originals(M073_Out.decor_case,&group_name.);
+			%copy_originals(M035_Out.member_time,&group_name.);
+			%copy_originals(M035_Out.member,&group_name.);
+			%copy_originals(M035_Out.member_raw_stack,&group_name.);
+			%copy_originals(M018_Out.client_member_time,&group_name.);
 	
 			%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. &number,&path_project_logs.\_onboarding\Supp02_&number.log,prod3);
 			%AssertThat(&Py_code.,=,0);
 	
 		%end;
 	
-	%end;
-
 %mend Run_Process;
 
-%Run_Process;
+data _null_;
+	set name_of_groups;
+	call execute('%nrstr(%Run_Process('||strip(name)||'))');
+run;
 
 /*Return the combined version of the various tables to the non-underscored form*/
 %macro return_originals(table);
