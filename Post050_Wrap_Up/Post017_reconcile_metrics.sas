@@ -213,7 +213,7 @@ run;
 %Per1000MetricsTest(label=observation_stays_per1k
 					,metric_id=observation_stays_per1k
 					,cost_util_field=prm_util
-					,cost_util_include=O41h);
+					,cost_util_include=O10);
 
 %Per1000MetricsTest(label=SNF_per1k
 					,metric_id=SNF_per1k
