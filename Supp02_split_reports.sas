@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Sarah Prusinski, Jason Altieri
+### CODE OWNERS: Sarah Prusinski, Jason Altieri, Anna Chen, Jack Leemhuis
 
 ### OBJECTIVE:
 	Create a Supp program that can be ran after the general process to create all of the files but split into client provided groups.
