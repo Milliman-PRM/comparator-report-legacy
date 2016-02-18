@@ -26,6 +26,7 @@ libname M180_Out "&M180_Out.";
 %RunPythonScript(,%GetParentFolder(0)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
 %AssertThat(&Path_code.,=,0);
 
+/*Run the Supp04_MHS_Transpose.sas only if the client is MES.*/
 %macro run_MHS_Only();
 
 	%if %sysfunc(upcase(&name_client.)) eq (MERCY HEALTH SELECT) %then %do; 
@@ -35,6 +36,7 @@ libname M180_Out "&M180_Out.";
 %mend;
 %run_MHS_Only;
 
+/*Import the csv market splits file.*/
 proc import datafile = "&path_project_received_ref\Market_Splits.csv"
 	out = splits
 	replace;
@@ -43,6 +45,7 @@ proc import datafile = "&path_project_received_ref\Market_Splits.csv"
 	guessingrows = 1000;
 run;
 
+/*Put all the group names on a single table for future steps.*/
 proc sql;
 	create table name_of_groups as
 	select name
@@ -51,6 +54,7 @@ proc sql;
 		  upcase(memname) eq 'SPLITS';
 quit;
 
+/*Split out memberids for each group by market names.*/
 %macro group_splits(group_name);
 
 	data Group_&group_name. (keep = &group_name. rename = (&group_name. = Member_id));

@@ -15,6 +15,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
+/*Import the client market split reference file.*/
 data Market_Splits_import (drop = MARKET_NAME_Orig where = (upcase(market_name) ne "MA"));
   	infile "&Path_Project_Received_Ref.\HICNO_MARKET_MSSP_2015Q3.txt" 
 	lrecl = 1000 truncover dsd firstobs = 2;
@@ -26,6 +27,7 @@ data Market_Splits_import (drop = MARKET_NAME_Orig where = (upcase(market_name) 
 	market_name = propcase(MARKET_NAME_Orig);
 run;
 
+/*Transpose the data to the desired format.*/
 proc sort data = Market_Splits_import out = Market_Splits_import_sorted;
 	by market_name;
 run;
@@ -48,6 +50,7 @@ proc transpose data = Market_Splits_group_sorted
 		var HICNO;
 run;
 
+/*Rename the columns so that they won't start with an underscore.*/
 proc sql noprint;
 	select catx('=',name,scan(name,-1,'_'))
 	into : base separated by ' '
@@ -62,6 +65,7 @@ proc datasets library=work nolist;
 	rename &base;
 quit;
 
+/*Output the new table into csv format.*/
 proc export data = Market_Splits_trans
 	outfile= "&Path_Project_Received_Ref.\Market_Splits.csv"
 	dbms=csv replace;
