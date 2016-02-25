@@ -92,12 +92,10 @@ proc sql;
 		,count(distinct detail.prv_id_snf) as distinct_SNFs label="Number of Distinct SNFs Utilized"
 
 		,sum(detail.cnt_discharges_snf)
-			/aggs.memmos_sum * 12000
-			as SNF_per1k label="SNF Discharges per 1000"
+			as SNF label="SNF Discharges"
 
 		,sum(detail._cnt_discharges_snf_riskadj)
-			/aggs.memmos_sum * 12000
-			as SNF_per1k_rskadj label="SNF Admissions per 1000 Risk Adjusted"
+			as SNF_rskadj label="SNF Admissions Risk Adjusted"
 
 		,sum(detail.sum_costs_snf)
 			/aggs.prm_costs_sum_all_services
