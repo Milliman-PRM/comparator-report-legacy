@@ -83,28 +83,28 @@ data ref_service_agg;
 		metric_name $256.
 		;
 	if lowcase(mr_line) in ("o14a","o14b","o14c") then do;
-		metric_id = "high_tech_imaging_per1k";
-		metric_name = "High Tech Imaging Utilization per 1000";
+		metric_id = "high_tech_imaging";
+		metric_name = "High Tech Imaging Utilization";
 	end;
 	else if lowcase(mr_line) eq "o10" then do;
-		metric_id = "observation_stays_per1k";
-		metric_name = "Observation Stays Utilization per 1000";
+		metric_id = "observation_stays";
+		metric_name = "Observation Stays Utilization";
 	end;
 	else if lowcase(mr_line) eq: "p57" then do;
-		metric_id = "hi_tec_img_fop_per1k";
-		metric_name = "FOP High Tech Imaging Procedure Utilization per 1000";
+		metric_id = "hi_tec_img_fop";
+		metric_name = "FOP High Tech Imaging Procedure Utilization";
 	end;
 	else if lowcase(mr_line) eq: "p59" then do;
-		metric_id = "hi_tec_img_office_per1k";
-		metric_name = "Office High Tech Imaging Procedure Utilization per 1000";
+		metric_id = "hi_tec_img_office";
+		metric_name = "Office High Tech Imaging Procedure Utilization";
 	end;
 	else if lowcase(mr_line) eq: "p33" then do;
-		metric_id = "urgent_care_prof_per1k";
-		metric_name = "Office Urgent Care Visits per 1000";
+		metric_id = "urgent_care_prof";
+		metric_name = "Office Urgent Care Visits";
 	end;
 	else if lowcase(mr_line) eq: "p32" then do;
-		metric_id = "office_visits_per1k";
-		metric_name = "Office Visits per 1000";
+		metric_id = "office_visits";
+		metric_name = "Office Visits";
 	end;
 	else delete;
 run;
@@ -191,8 +191,8 @@ proc sql;
 	select
 		agg_util.*
 		,memmos.memmos_sum as _sum_memmos
-		,_sum_prm_util * (1 / memmos.memmos_sum) * 12 * 1000 as util_rate_raw
-		,_sum_prm_util_riskadj * (1 / memmos.memmos_sum) * 12 * 1000 as util_rate_riskadj
+		,_sum_prm_util as util_raw
+		,_sum_prm_util_riskadj as util_riskadj
 	from agg_util as agg_util
 	left join memmos as memmos
 		on agg_util.time_period eq memmos.time_period
@@ -205,12 +205,12 @@ quit;
 
 data util_rates;
 	set util_rates_wide;
-	metric_value = util_rate_raw;
+	metric_value = util_raw;
 	output;
 	call missing(metric_value);
 	metric_id = catx("_",metric_id,"riskadj");
 	metric_name = catx(", ",metric_name,"Risk Adjusted");
-	metric_value = util_rate_riskadj;
+	metric_value = util_riskadj;
 	output;
 	drop _:;
 run;
