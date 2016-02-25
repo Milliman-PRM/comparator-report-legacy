@@ -71,12 +71,10 @@ proc sql;
 		,"ER" as metric_category
 
 		,sum(PRM_Util)
-			/aggs.memmos_sum * 12000
-			as ED_per1k label="ED visits per 1000"
+			as ED label="ED visits"
 
 		,sum(prm_util_riskadj)
-			/aggs.memmos_sum * 12000
-			as ED_per1k_rskadj label="ED visits per 1000 Risk Adjusted"
+			as ED_rskadj label="ED visits Risk Adjusted"
 
 		,sum(cases.prm_nyu_emergent_non_avoidable * PRM_Util)
 			/sum(PRM_Util)
