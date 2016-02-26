@@ -150,7 +150,7 @@ run;
 				cost.name_client
 				,cost.time_period
 				,cost.elig_status_1
-				,check/memmos.memmos * 12000 as check_per_1k
+				,check
 				,metrics.metric_value
 			from cost_util_rollup as cost
 			left join post050.metrics_key_value as metrics on
@@ -167,7 +167,7 @@ run;
 
 		data &label._diff;
 			set &label._check;
-			where round(check_per_1k) ne round(metric_value);
+			where round(check) ne round(metric_value);
 		run;
 
 		%AssertDatasetNotPopulated(&label._diff,ReturnMessage=The &metric_id. calculated from the cost_util table does not match the metrics_key_value table.)
