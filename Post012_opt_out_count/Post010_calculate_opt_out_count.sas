@@ -83,14 +83,14 @@ proc sql;
 	create table pre_opt_out_metric as
 	select
 		"&name_client." as name_client
-		"Basic" as metric_category
+		,"Basic" as metric_category
 		,memcnt.time_period as time_period
 		,"All" as elig_status_1
-		,%GetRecordCount(bene_exclusion) as opt_out_count
+		,%GetRecordCount(bene_exclusion) as opt_out_count label = "Number of Beneficiaries Opting Out of Data Sharing"
 
 	from post008.memcnt as memcnt
 
-	group by
+	order by
 		memcnt.time_period
 		,memcnt.elig_status_1
 	;
