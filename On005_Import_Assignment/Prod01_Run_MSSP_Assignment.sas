@@ -14,6 +14,14 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func13_import_mssp_assignment_wrap.sas" / source2;
 %include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
 
+%AssertThat(
+	%upcase(&cclf_ccr_absent_any_prior_cclf8.)
+	,eq
+	,INCLUDE
+	,ReturnMessage=Pioneer client does not have assignment files.
+	,FailAction=EndActiveSASSession
+	)
+
 %let name_datamart_src = references_client;
 
 /* Libnames */
