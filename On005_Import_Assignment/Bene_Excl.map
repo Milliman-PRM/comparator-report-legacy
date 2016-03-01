@@ -1,0 +1,61 @@
+<SXLEMap version="2.1" name="Beneficiary_Exclusion" description="Beneficiary exclusion file for MSSP.">
+	<TABLE name="Bene_exclusion"> 
+        <TABLE-PATH syntax="XPath">	/PFDCACOBeneData/Beneficiarys/Beneficiary </TABLE-PATH>  
+		<COLUMN name="HICN">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/HICN </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>40</LENGTH>
+        </COLUMN>	
+		<COLUMN name="FirstName">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/FirstName </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>40</LENGTH>
+        </COLUMN>	
+		<COLUMN name="MiddleName">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/MiddleName </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>1</LENGTH>
+        </COLUMN>	
+		<COLUMN name="LastName">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/LastName </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>40</LENGTH>
+        </COLUMN>	
+		<COLUMN name="DOB">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/DOB </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>8</LENGTH>
+        </COLUMN>	
+		<COLUMN name="Gender">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/Gender </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>1</LENGTH>
+        </COLUMN>	
+		<COLUMN name="BeneExcReason">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Beneficiarys/Beneficiary/BeneExcReasons/BeneExcReason </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>2</LENGTH>
+        </COLUMN>	
+	</TABLE>
+	<TABLE name="Bene_Control"> 
+        <TABLE-PATH syntax="XPath">	/PFDCACOBeneData/Trailer </TABLE-PATH>  
+		<COLUMN name="FileCreationDate">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Trailer/FileCreationDate </PATH>
+            <TYPE>character</TYPE>
+            <DATATYPE>string</DATATYPE>
+            <LENGTH>10</LENGTH>
+		 </COLUMN>
+		<COLUMN name="RecordCount">
+			<PATH syntax="XPath"> /PFDCACOBeneData/Trailer/RecordCount </PATH>
+            <TYPE>numeric</TYPE>
+            <DATATYPE>integer</DATATYPE>
+        </COLUMN>	
+	</TABLE>
+</SXLEMap>
