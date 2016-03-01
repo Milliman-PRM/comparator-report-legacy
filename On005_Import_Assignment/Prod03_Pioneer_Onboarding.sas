@@ -25,6 +25,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname ref_prod "&path_product_ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
+libname M017_Out "&M017_Out." access=readonly;
 libname M020_Out "&M020_Out." access=readonly;
 libname
 	%sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
@@ -133,7 +134,11 @@ data members_basic;
 		;
 	if first.member_id;
 
+	format mem_dependent_status $1. Mem_Excluded_Reason $64.;
+
 	mem_dependent_status = "P";
+
+	Mem_Excluded_Reason = "";
 
 	label mem_report_hier_1 = "All Members (Hier)";
 	mem_report_hier_1 = "All";
@@ -299,7 +304,7 @@ data member_providers_assigned;
 run;
 
 proc sql;
-	create table client_member as
+	create table client_member_pre_exc as
 	select
 		members.*
 		,case
@@ -318,6 +323,44 @@ proc sql;
 	order by members.member_id
 	;
 quit;
+
+/*Add beneficiary exclusion reason if data exists*/
+
+%macro bene_exclusion();
+
+%GetFileNamesFromDir(
+	Directory = &M017_Out.
+	,Output = ref_files
+	,KeepStrings = bene_exclusion
+	)
+
+%if %GetRecordCount(ref_files) ne 0 %then %do;
+
+*Add on member excluded reason;
+proc sql;
+	create table client_member as
+	select
+		src.*
+		,coalescec(excl.BeneExcReason,"") as Mem_Excluded_Reason length = 64 format = $64.
+	from client_member_pre_exc (drop = Mem_Excluded_Reason) as src
+	left join M017_Out.bene_exclusion as excl
+		on src.member_id = excl.HICN
+	;
+quit;
+
+%end;
+
+%else %do;
+
+data client_member;
+	set client_member_pre_exc;
+run;
+
+%end;
+
+%mend;
+%bene_exclusion;
+
 
 /*** MUNGE TO TARGET FORMATS ***/
 %macro output(name_dset_source,name_dset_target);
