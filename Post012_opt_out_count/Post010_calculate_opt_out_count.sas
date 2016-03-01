@@ -55,6 +55,9 @@ data bene_exclusion (keep = HICN BeneExcReason);
 			else if BeneExcReason_pre eq "PL" then BeneExcReason = "Participant List Change";
 			else BeneExcReason = BeneExcReason_pre;
 
+	if upcase(BeneExcReason) eq "BD" then output;
+	else delete;
+
 run;
 
 data Bene_Control;
