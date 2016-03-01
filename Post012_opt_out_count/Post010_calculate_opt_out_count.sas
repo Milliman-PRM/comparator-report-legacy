@@ -55,9 +55,6 @@ data bene_exclusion (keep = HICN BeneExcReason);
 			else if BeneExcReason_pre eq "PL" then BeneExcReason = "Participant List Change";
 			else BeneExcReason = BeneExcReason_pre;
 
-	if upcase(BeneExcReason) eq "BD" then output;
-	else delete;
-
 run;
 
 data Bene_Control;
@@ -80,6 +77,12 @@ proc sql noprint;
 
 %assertthat(%GetRecordCount(bene_exclusion), eq, &Control_RecordCount.,ReturnMessage=Provider row counts do not match.);
 
+/*Limit to just beneficiaries who declined data sharing, due to NYP request*/
+data bene_exclusion_limit;
+	set bene_exclusion;
+	where upcase(BeneExcReason) eq "BENEFICIARY DECLINED";
+run;
+
 /*Now calculate the metric.*/
 
 proc sql;
@@ -89,7 +92,7 @@ proc sql;
 		,"Basic" as metric_category
 		,memcnt.time_period as time_period
 		,"All" as elig_status_1
-		,%GetRecordCount(bene_exclusion) as opt_out_count label = "Number of Beneficiaries Opting Out of Data Sharing"
+		,%GetRecordCount(bene_exclusion_limit) as opt_out_count label = "Number of Beneficiaries Opting Out of Data Sharing"
 
 	from post008.memcnt as memcnt
 
