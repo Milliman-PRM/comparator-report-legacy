@@ -197,9 +197,9 @@ proc sql;
     select
         partial.time_period
         ,partial.elig_status_1
-        ,cats(partial.PRM_ahrq_pqi, '_admit_per_1k') as metric_id as metric_id format=$32. length=32
-        ,catx(' ','Admits per 1000 for', partial.PRM_ahrq_pqi) as metric_name
-        ,sum(partial.cnt_discharges_inpatient) / basic.memmos_sum * 12000 as metric_value
+        ,cats(partial.PRM_ahrq_pqi, '_admits') as metric_id as metric_id format=$32. length=32
+        ,catx(' ','Admits for', partial.PRM_ahrq_pqi) as metric_name
+        ,sum(partial.cnt_discharges_inpatient) as metric_value
 		/*,basic.memmos_sum*/
     from partial_aggregation as partial
 	left join post010.basic_aggs_elig_status as basic
@@ -224,8 +224,8 @@ proc sql;
         partial.time_period
         ,partial.elig_status_1
         ,lowcase(cats('psa_admits_', compress(partial.PRM_pref_sensitive_category,,'ak'))) as metric_id format=$32. length=32
-        ,catx(' ', 'Admits per 1000 for PSA -', partial.prm_pref_sensitive_category) as metric_name
-        ,sum(partial.cnt_discharges_inpatient) / basic.memmos_sum * 12000 as metric_value
+        ,catx(' ', 'Admits for PSA -', partial.prm_pref_sensitive_category) as metric_name
+        ,sum(partial.cnt_discharges_inpatient) as metric_value
     from partial_aggregation as partial
 	left join post010.basic_aggs_elig_status as basic
 			on partial.time_period = basic.time_period
@@ -249,12 +249,10 @@ proc sql;
 		detail.time_period
 		,detail.elig_status_1
 		,sum(case when detail.inpatient_pqi_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as pqi_per1k label="PQI Combined (Chronic and Acute) Admits per 1000"
+			as pqi label="PQI Combined (Chronic and Acute) Admits"
 
 		,sum(case when detail.preference_sensitive_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as pref_sens_per1k label="Preference Sensitive Admits per 1000"
+			as pref_sens label="Preference Sensitive Admits"
 		
 		,sum(case when detail.los_inpatient = 1 then detail.cnt_discharges_inpatient else 0 end)
 			as Num_1_Day_LOS label="Number of One Day LOSs"
@@ -281,36 +279,28 @@ proc sql;
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as acute_per1k label="Acute Discharges per 1000"
+			as acute label="Acute Discharges"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12000
-			as acute_per1k_riskadj label="Acute Discharges per 1000 Risk Adjusted"
+			as acute_riskadj label="Acute Discharges Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as surgical_per1k label="Surgical Discharges per 1000"
+			as surgical label="Surgical Discharges"
 
 		,sum(case when upcase(detail.medical_surgical) = 'SURGICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12000
-			as surgical_per1k_riskadj label="Surgical Discharges per 1000 Risk Adjusted"
+			as surgical_riskadj label="Surgical Discharges Risk Adjusted"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as medical_per1k label="Medical Discharges per 1000"
+			as medical label="Medical Discharges"
 
 		,sum(case when upcase(detail.medical_surgical) = 'MEDICAL' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12000
-			as medical_per1k_riskadj label="Medical Discharges per 1000 Risk Adjusted"
+			as medical_riskadj label="Medical Discharges Risk Adjusted"
 
 		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient else 0 end)
-			/ aggs.memmos_sum * 12000
-			as medical_general_per1k label="General Medical Discharges per 1000"
+			as medical_general label="General Medical Discharges"
 
 		,sum(case when lowcase(detail.prm_line) eq 'i11a' then detail.cnt_discharges_inpatient / risk.riskscr_1_util_avg else 0 end)
-			/ aggs.memmos_sum * 12000
-			as medical_general_per1k_riskadj label="General Medical Discharges per 1000 Risk Adjusted"
+			as medical_general_riskadj label="General Medical Discharges Risk Adjusted"
 
 	from partial_aggregation as detail
 	left join
