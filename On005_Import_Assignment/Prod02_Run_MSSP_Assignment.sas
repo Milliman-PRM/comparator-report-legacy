@@ -26,6 +26,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /* Libnames */
 
+libname M017_Out "&M017_Out.";
 libname M018_Tmp "&M018_Tmp.";
 libname M018_Out "&M018_Out.";
 
@@ -43,11 +44,50 @@ libname M018_Out "&M018_Out.";
 
 /*Update client_member/client_member_time with member address and write to out directory*/
 
+/*Member exclusion information for client member table. Conditional*/
+
+%macro bene_exclusion();
+
+%GetFileNamesFromDir(
+	Directory = &M017_Out.
+	,Output = ref_files
+	,KeepStrings = bene_exclusion
+	)
+
+%if %GetRecordCount(ref_files) ne 0 %then %do;
+
+*Add on member excluded reason;
+proc sql;
+	create table client_member_exc as
+	select
+		src.*
+		,coalescec(excl.BeneExcReason,"") as Mem_Excluded_Reason length = 64 format = $64.
+	from M018_Tmp.client_member (drop = Mem_Excluded_Reason) as src
+	left join M017_Out.bene_exclusion as excl
+		on src.member_id = excl.HICN
+	;
+quit;
+
+data M018_Out.client_member (keep = &client_member_keep.);
+	format &client_member_format.;
+	set client_member_exc;
+run;
+
+%end;
+
+%else %do;
+
 data M018_Out.client_member (keep = &client_member_keep.);
 	format &client_member_format.;
 	set M018_Tmp.client_member;
 run;
 
+%end;
+
+%mend;
+%bene_exclusion;
+
+/*Other client reference tables*/
 data M018_Out.client_member_time;
 	format &client_member_time_format.;
 	set M018_tmp.client_member_time;
