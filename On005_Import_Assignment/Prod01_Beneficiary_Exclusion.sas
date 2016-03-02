@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jack Leemhuis
+### CODE OWNERS: Jack Leemhuis, Anna Chen
 
 ### OBJECTIVE:
 	Conditionally bring in member exclusion information.
