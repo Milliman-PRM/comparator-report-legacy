@@ -9,6 +9,9 @@
   1) Business logic:
 		- A claim is eliminated if the member showed up in both the old and restated CCLF files
 		  AND had its paid date during a year that is in the restated CCLF data
+  2) BEFORE running this program, a new folder name "production" needs to be created in the location of the old 020 directory.
+     Then, move/cut the CCLF files in the old 020 directory into this "production" folder. Finally, copy the CCLF8 and CCLF9
+	 files back into the old 020 directory, so that they can be stacked during normal PRM run
 */
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
@@ -25,6 +28,8 @@ libname new_cclf "&new_cclf." access=readonly;
 %let old_cclf = &M020_Old.;
 %put old_cclf = &old_cclf.;
 libname old_cclf "&old_cclf.";
+
+%let paid_dt_cutoff = 1,1,2015;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -99,7 +104,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_claims = ht_claims.find();
 
-if rc_claims ne 0 or clm_idr_ld_dt lt mdy(1,1,2015) then do;
+if rc_claims ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then do;
 	put line;
 	end;
 
@@ -193,7 +198,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(1,1,2015) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then put line;
 
 run;
 
@@ -215,7 +220,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(1,1,2015) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then put line;
 
 run;
 
@@ -237,7 +242,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(1,1,2015) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then put line;
 
 run;
 
