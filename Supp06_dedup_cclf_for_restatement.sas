@@ -86,7 +86,7 @@ run;
   (i.e. part A procs, diags, and rev codes)*/
 
 *CCLF1 part A header file, and sas dataset with claims that we want to get rid of;
-data discarded_claims (drop = line rc_claims);
+data discarded_claims (drop = line rc_claims) cclf1_data;
 infile "&old_cclf.production\CCLF1.txt" lrecl = 177; 
 file "&old_cclf.CCLF1.txt" lrecl = 177;
 
@@ -108,6 +108,7 @@ if _n_ eq 1 then do;
 
 if rc_claims ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then do;
 	put line;
+	output cclf1_data;
 	end;
 
 else do;
@@ -117,7 +118,7 @@ else do;
 run;
 
 *CCLF2 part A revenue codes file;
-data _null_;
+data cclf2_data;
 infile "&old_cclf.production\CCLF2.txt" lrecl = 163; 
 file "&old_cclf.CCLF2.txt" lrecl = 163;
 
@@ -134,12 +135,15 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 then put line;
+if rc_cclf ne 0 then do;
+	put line;
+	output cclf2_data;
+	end;
 
 run;
 
 *CCLF3 part A procedure codes file;
-data _null_;
+data cclf3_data;
 infile "&old_cclf.production\CCLF3.txt" lrecl = 83; 
 file "&old_cclf.CCLF3.txt" lrecl = 83;
 
@@ -156,12 +160,15 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 then put line;
+if rc_cclf ne 0 then do;
+	put line;
+	output cclf3_data;
+	end;
 
 run;
 
 *CCLF4 part A diagnosis codes file;
-data _null_;
+data cclf4_data;
 infile "&old_cclf.production\CCLF4.txt" lrecl = 81; 
 file "&old_cclf.CCLF4.txt" lrecl = 81;
 
@@ -178,12 +185,15 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 then put line;
+if rc_cclf ne 0 then do;
+	put line;
+	output cclf4_data;
+	end;
 
 run;
 
 *CCLF5 part B physicians file;
-data _null_;
+data cclf5_data;
 infile "&old_cclf.production\CCLF5.txt" lrecl = 321; 
 file "&old_cclf.CCLF5.txt" lrecl = 321;
 
@@ -201,12 +211,15 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then do;
+	put line;
+	output cclf5_data;
+	end;
 
 run;
 
 *CCLF6 part B DME file;
-data _null_;
+data cclf6_data;
 infile "&old_cclf.production\CCLF6.txt" lrecl = 216; 
 file "&old_cclf.CCLF6.txt" lrecl = 216;
 
@@ -224,12 +237,15 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then do;
+	put line;
+	output cclf6_data;
+	end;
 
 run;
 
 *CCLF7 part D file;
-data _null_;
+data cclf7_data;
 infile "&old_cclf.production\CCLF7.txt" lrecl = 182; 
 file "&old_cclf.CCLF7.txt" lrecl = 182;
 
@@ -247,8 +263,38 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_line_from_dt lt mdy(&from_dt_cutoff.) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_line_from_dt lt mdy(&from_dt_cutoff.) then do;
+	put line;
+	output cclf7_data;
+	end;
 
+run;
+
+/*Get record counts to manually update the CCLF0 file*/
+%let cclf1_cnt = %GetRecordCount(cclf1_data);
+%let cclf2_cnt = %GetRecordCount(cclf2_data);
+%let cclf3_cnt = %GetRecordCount(cclf3_data);
+%let cclf4_cnt = %GetRecordCount(cclf4_data);
+%let cclf5_cnt = %GetRecordCount(cclf5_data);
+%let cclf6_cnt = %GetRecordCount(cclf6_data);
+%let cclf7_cnt = %GetRecordCount(cclf7_data);
+
+data record_counts;
+	format cclf1_cnt cclf2_cnt cclf3_cnt cclf4_cnt cclf5_cnt
+			cclf6_cnt cclf7_cnt best12.;
+	cclf1_cnt = &cclf1_cnt.;
+	cclf2_cnt = &cclf2_cnt.;
+	cclf3_cnt = &cclf3_cnt.;
+	cclf4_cnt = &cclf4_cnt.;
+	cclf5_cnt = &cclf5_cnt.;
+	cclf6_cnt = &cclf6_cnt.;
+	cclf7_cnt = &cclf7_cnt.;
+run;
+
+*Export;
+proc export data=record_counts
+	outfile="&old_cclf.\record_counts.xlsx"
+	DBMS=Excel replace;
 run;
 
 
