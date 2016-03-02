@@ -30,6 +30,7 @@ libname new_cclf "&new_cclf." access=readonly;
 libname old_cclf "&old_cclf.";
 
 %let paid_dt_cutoff = 1,1,2015;
+%let from_dt_cutoff = 1,1,2015;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -90,10 +91,11 @@ infile "&old_cclf.production\CCLF1.txt" lrecl = 177;
 file "&old_cclf.CCLF1.txt" lrecl = 177;
 
 input line $177.;
-format bene_hic_num $11. clm_idr_ld_dt yymmddd10. cur_clm_uniq_id 13.;
+format bene_hic_num $11. clm_idr_ld_dt yymmddd10. cur_clm_uniq_id 13. clm_from_dt yymmddd10.;
 
 bene_hic_num = substr(line,20,11);
 clm_idr_ld_dt = input(substr(line,150,10),yymmdd10.);
+clm_from_dt = input(substr(line,33,10),yymmdd10.);
 cur_clm_uniq_id = substr(line,1,13);
 
 
@@ -104,7 +106,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_claims = ht_claims.find();
 
-if rc_claims ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then do;
+if rc_claims ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then do;
 	put line;
 	end;
 
@@ -186,10 +188,11 @@ infile "&old_cclf.production\CCLF5.txt" lrecl = 321;
 file "&old_cclf.CCLF5.txt" lrecl = 321;
 
 input line $321.;
-format bene_hic_num $11. clm_idr_ld_dt yymmddd10.;
+format bene_hic_num $11. clm_idr_ld_dt yymmddd10. clm_from_dt yymmddd10.;
 
 bene_hic_num = substr(line,24,11);
 clm_idr_ld_dt = input(substr(line,151,10),yymmdd10.);
+clm_from_dt = input(substr(line,37,10),yymmdd10.);
 
 if _n_ eq 1 then do;
 	declare hash ht_cclf(dataset:"restatement_members",duplicate:"error");
@@ -198,7 +201,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then put line;
 
 run;
 
@@ -208,10 +211,11 @@ infile "&old_cclf.production\CCLF6.txt" lrecl = 216;
 file "&old_cclf.CCLF6.txt" lrecl = 216;
 
 input line $216.;
-format bene_hic_num $11. clm_idr_ld_dt yymmddd10.;
+format bene_hic_num $11. clm_idr_ld_dt yymmddd10. clm_from_dt yymmddd10.;
 
 bene_hic_num = substr(line,24,11);
 clm_idr_ld_dt = input(substr(line,137,10),yymmdd10.);
+clm_from_dt = input(substr(line,37,10),yymmdd10.);
 
 if _n_ eq 1 then do;
 	declare hash ht_cclf(dataset:"restatement_members",duplicate:"error");
@@ -220,7 +224,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_from_dt lt mdy(&from_dt_cutoff.) then put line;
 
 run;
 
@@ -230,10 +234,11 @@ infile "&old_cclf.production\CCLF7.txt" lrecl = 182;
 file "&old_cclf.CCLF7.txt" lrecl = 182;
 
 input line $182.;
-format bene_hic_num $11. clm_idr_ld_dt yymmddd10.;
+format bene_hic_num $11. clm_idr_ld_dt yymmddd10. clm_line_from_dt yymmddd10.;
 
 bene_hic_num = substr(line,14,11);
 clm_idr_ld_dt = input(substr(line,152,10),yymmdd10.);
+clm_line_from_dt = input(substr(line,38,10),yymmdd10.);
 
 if _n_ eq 1 then do;
 	declare hash ht_cclf(dataset:"restatement_members",duplicate:"error");
@@ -242,7 +247,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) then put line;
+if rc_cclf ne 0 or clm_idr_ld_dt lt mdy(&paid_dt_cutoff.) or clm_line_from_dt lt mdy(&from_dt_cutoff.) then put line;
 
 run;
 
