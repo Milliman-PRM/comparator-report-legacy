@@ -36,12 +36,49 @@ libname old_cclf "&old_cclf.";
 
 /*Get a list of members in the restatment files*/
 
-%GetFileNamesfromDir(&Path_Project_Received.,cclf9_file,CCLF9)
+%GetFileNamesfromDir(&Path_Project_Received.,elig_file,CCLF8 CCLF9)
+
+proc sql noprint;
+	select filename
+	into :name_file_CCLF8 trimmed
+	from elig_file
+	where kindex(upcase(Filename),"CCLF8") gt 0
+;
+quit;
+
+%put name_file_CCLF8 = &name_file_CCLF8.;
+
+data cclf8;
+  infile "&new_cclf.&name_file_CCLF8." lrecl = 157;
+  input @; _infile_ = tranwrd(_infile_,"~"," ");
+  input @1 bene_hic_num $11.
+    @12 bene_fips_state_cd 2.
+    @14 bene_fips_cnty_cd 3.
+    @17 bene_zip_cd $5.
+    @22 bene_dob yymmdd10.
+    @32 bene_sex_cd $1.
+    @33 bene_race_cd $1.
+    @34 bene_age 3.
+    @37 bene_mdcr_stus_cd $2.
+    @39 bene_dual_stus_cd $2.
+    @41 bene_death_dt yymmdd10.
+    @51 bene_rng_bgn_dt yymmdd10.
+    @61 bene_rng_end_dt yymmdd10.
+    @71 bene_1st_name $30.
+    @101 bene_midl_name $15.
+    @116 bene_last_name $40.
+    @156 bene_orgnl_entlmt_rsn_cd $1.
+    @157 bene_entlmt_buyin_ind $1.
+	;
+
+  format bene_dob bene_death_dt bene_rng_bgn_dt bene_rng_end_dt YYMMDDd10.;
+run;
 
 proc sql noprint;
 	select filename
 	into :name_file_CCLF9 trimmed
-	from cclf9_file
+	from elig_file
+	where kindex(upcase(Filename),"CCLF9") gt 0
 ;
 quit;
 
@@ -58,6 +95,11 @@ data cclf9;
 
   format prvs_hicn_efctv_dt prvs_hicn_obslt_dt YYMMDD10.;
 run;  
+ 
+data current_id_cclf8;
+	set cclf8;
+	keep bene_hic_num;
+run;
 
 data current_id_cclf9 (rename = (crnt_hic_num=bene_hic_num));
 	set cclf9;
@@ -70,7 +112,8 @@ data previous_id_cclf9 (rename = (prvs_hic_num=bene_hic_num));
 run;
 
 data restatement_members_pre;
-	set current_id_cclf9
+	set current_id_cclf8
+		current_id_cclf9
 		previous_id_cclf9
 		;
 run;
