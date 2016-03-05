@@ -38,7 +38,7 @@ proc sql;
 			sum(memcnt.memcnt)
 			as mortality_rate label = "Mortality Rate"
 			
-		,sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end) /
+		,sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
 			as decedent_count label = "Number of Deaths"
 
 		,calculated mortality_rate / aggs.riskscr_1_avg
