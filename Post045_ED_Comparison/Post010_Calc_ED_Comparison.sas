@@ -77,28 +77,22 @@ proc sql;
 			as ED_rskadj label="ED visits Risk Adjusted"
 
 		,sum(cases.prm_nyu_emergent_non_avoidable * PRM_Util)
-			/sum(PRM_Util)
-			as ED_emer_nec label="% of ED visits Emergent Necessary (NYU logic)"
+			as ED_emer_nec label="# of ED visits Emergent Necessary (NYU logic)"
 
 		,sum(cases.prm_nyu_emergent_avoidable * PRM_Util)
-			/sum(PRM_Util)
-			as ED_emer_prev label="% of ED visits Emergent Preventable (NYU logic)"
+			as ED_emer_prev label="# of ED visits Emergent Preventable (NYU logic)"
 
 		,sum(cases.prm_nyu_emergent_primary_care * PRM_Util)
-			/sum(PRM_Util)
-			as ED_emer_pricare	label="% of ED visits Emergent Primary Care Treatable (NYU logic)"
+			as ED_emer_pricare	label="# of ED visits Emergent Primary Care Treatable (NYU logic)"
 
 		,sum(cases.prm_nyu_injury * PRM_Util)
-			/sum(PRM_Util)
-			as ED_injury label="% of ED visits Injury (NYU logic)"
+			as ED_injury label="# of ED visits Injury (NYU logic)"
 
 		,sum(cases.prm_nyu_nonemergent * PRM_Util)
-			/sum(PRM_Util)
-			as ED_nonemer label="% of ED visits Non Emergent (NYU logic)"
+			as ED_nonemer label="# of ED visits Non Emergent (NYU logic)"
 
 		,sum(cases.prm_nyu_unclassified * PRM_Util)
-			/sum(PRM_Util)
-			as ED_other label="% of ED visits other (NYU logic)"
+			as ED_other label="# of ED visits other (NYU logic)"
 
 	from Ed_cases_table as cases
 	left join 
