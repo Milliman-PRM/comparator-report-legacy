@@ -37,44 +37,77 @@ proc sql;
 		,sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end) /
 			sum(memcnt.memcnt)
 			as mortality_rate label = "Mortality Rate"
+			
+		,sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
+			as decedent_count label = "Number of Deaths"
 
 		,calculated mortality_rate / aggs.riskscr_1_avg
 			as rsk_adj_mortality_rate label = "Risk Adjusted Mortality Rate"
+			
+		,calculated decedent_count / aggs.riskscr_1_avg
+			as rsk_adj_decedent_count label = "Risk Adjusted Number of Deaths"
 
 		,sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days_sum else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
 			as avg_cost_final_30days label = "Average Cost in 30 Days Prior to Death"
+			
+		,sum(case when memcnt.deceased_yn = "Y" then memcnt.costs_final_30_days_sum else 0 end)
+			as tot_cost_final_30days label = "Total Cost in 30 Days Prior to Death"
 
 		,calculated avg_cost_final_30days / aggs.riskscr_1_avg
 			as avg_cost_final_30days_riskadj label = "Average Cost in 30 Days Prior to Death, Risk Adjusted"
+			
+		,calculated tot_cost_final_30days / aggs.riskscr_1_avg
+			as tot_cost_final_30days_riskadj label = "Total Cost in 30 Days Prior to Death, Risk Adjusted"
 
 		,sum(case when memcnt.deceased_hospital_yn = "Y" and memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
 			as pct_death_in_hosp label = "Percentage of Deaths in Hospital"
+			
+		,sum(case when memcnt.deceased_hospital_yn = "Y" and memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
+			as cnt_death_in_hosp label = "Count of Deaths in Hospital"
 
 		,sum(case when memcnt.endoflife_numer_yn_chemolt14days eq "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.endoflife_denom_yn_chemolt14days = "Y" then memcnt.memcnt else 0 end)
 			as pct_chemo label = "Percentage of Cancer Decedents Recieving Chemotherapy Within 14 Days of Death"
+			
+		,sum(case when memcnt.endoflife_numer_yn_chemolt14days eq "Y" then memcnt.memcnt else 0 end)
+			as cnt_chemo label = "Count of Cancer Decedents Recieving Chemotherapy Within 14 Days of Death"
 
 		,sum(case when memcnt.endoflife_numer_yn_hospicelt3day eq "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.endoflife_denom_yn_hospicelt3day = "Y" then memcnt.memcnt else 0 end)
 			as pct_cancer_hospice_lt3days label = "Percentage of Cancer Decedents Admitted to Hospice for Less Than 3 Days"
 
+		,sum(case when memcnt.endoflife_numer_yn_hospicelt3day eq "Y" then memcnt.memcnt else 0 end)
+			as cnt_cancer_hospice_lt3days label = "Count of Cancer Decedents Admitted to Hospice for Less Than 3 Days"
+			
 		,sum(case when memcnt.endoflife_numer_yn_hospicenever eq "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.endoflife_denom_yn_hospicenever = "Y" then memcnt.memcnt else 0 end)
 			as pct_cancer_hospice_never label = "Percentage of Cancer Decedents Never Admitted to Hospice"
+			
+		,sum(case when memcnt.endoflife_numer_yn_hospicenever eq "Y" then memcnt.memcnt else 0 end)
+			as cnt_cancer_hospice_never label = "Count of Cancer Decedents Never Admitted to Hospice"
 
 		,sum(case when memcnt.final_hospice_days lt 3 and memcnt.final_hospice_days gt 0 then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.final_hospice_days gt 0 then memcnt.memcnt else 0 end)
 			as pct_hospice_lt3days label = "Percentage of Hospice Decedents Admitted to Hospice for Less Than 3 Days"
+			
+		,sum(case when memcnt.final_hospice_days lt 3 and memcnt.final_hospice_days gt 0 then memcnt.memcnt else 0 end)
+			as cnt_hospice_lt3days label = "Count of Hospice Decedents Admitted to Hospice for Less Than 3 Days"
 
 		,sum(case when memcnt.final_hospice_days eq 0 and memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
 			as pct_hospice_never label = "Percentage of Decedents Never Admitted to Hospice"
+			
+		,sum(case when memcnt.final_hospice_days eq 0 and memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
+			as cnt_hospice_never label = "Count of Decedents Never Admitted to Hospice"
 
 		,sum(case when final_hospice_days gt 365.25/2 then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.deceased_yn = "Y" then memcnt.memcnt else 0 end)
 			as pct_hospice_gt_6months label = "Percentage of Decedents in Hospice Over 6 Months"
+			
+		,sum(case when final_hospice_days gt 365.25/2 then memcnt.memcnt else 0 end)
+			as cnt_hospice_gt_6months label = "Count of Decedents in Hospice Over 6 Months"
 
 	from post008.memcnt as memcnt
 	left join post010.basic_aggs_elig_status as aggs
