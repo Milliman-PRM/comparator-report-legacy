@@ -114,12 +114,10 @@ proc sql;
 			as avg_cost_per_discharge label="Average Cost Per SNF Discharge"
 
 		,sum(case when detail.los_snf > 21 then detail.cnt_discharges_snf else 0 end)
-			/sum(detail.cnt_discharges_snf)
-			as percent_SNF_over_21_days label="Percentage of SNF stays over 21 days"
+			as number_SNF_over_21_days label="Count of SNF stays over 21 days"
 
 		,sum(case when detail.snf_readmit_yn = 'Y' then detail.cnt_discharges_snf else 0 end)
-			/sum(detail.cnt_discharges_snf)
-			as percent_SNF_readmit label="Percentage of SNF Discharges during an All-Cause IP Readmission Window"
+			as number_SNF_readmit label="Count of SNF Discharges during an All-Cause IP Readmission Window"
 
 	from details_snf as detail
 	left join
