@@ -165,9 +165,9 @@ proc sql;
 	select
 		cclf.time_period
 		,cclf.elig_status_1
-		,'Percent of CCLF Members with Assignment Information' as metric_name
-		,'pct_cclf_mems_in_assignment' as metric_id
-		,avg(case when assign.member_id is null then 0 else 1 end) as metric_value
+		,'Count of CCLF Members with Assignment Information' as metric_name
+		,'cnt_cclf_mems_in_assignment' as metric_id
+		,sum(case when assign.member_id is null then 0 else 1 end) as metric_value
 	from periods_cclf(where = (died_in_period eq 0)) as cclf
 	left join periods_assign as assign on
 		cclf.time_period eq assign.time_period
