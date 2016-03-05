@@ -272,6 +272,7 @@ libname M020_Out "&M020_Out." access=readonly; *This is accessed out of "order";
 					,npi_recurse.npi
 					,npi_claims.npi
 					,src.tin
+					,"Unknown"
 					) as npi format=$10. length=10
 				,case
 					when calculated npi eq src.tin then "TIN"
