@@ -128,7 +128,7 @@ run;
   (i.e. part A procs, diags, and rev codes)*/
 
 *CCLF1 part A header file, and sas dataset with claims that we want to get rid of;
-data discarded_claims (drop = line rc_claims) cclf1_data;
+data discarded_claims_pre (drop = line rc_claims) cclf1_data;
 infile "&old_cclf.production\CCLF1.txt" lrecl = 177; 
 file "&old_cclf.CCLF1.txt" lrecl = 177;
 
@@ -154,9 +154,14 @@ if rc_claims ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. then do;
 	end;
 
 else do;
-	output discarded_claims;
+	output discarded_claims_pre;
 	end;
 
+run;
+
+proc summary nway missing data=discarded_claims_pre;
+	class bene_hic_num cur_clm_uniq_id;
+	output out=discarded_claims (drop = _:);
 run;
 
 *CCLF2 part A revenue codes file;
