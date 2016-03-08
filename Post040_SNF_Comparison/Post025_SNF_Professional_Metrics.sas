@@ -75,7 +75,7 @@ proc sql;
 		,count(distinct detail.prv_id_snf) as distinct_prof_SNFs label="Number of Distinct SNFs Utilized (Professional Services only)"
 
 		,sum(detail.sum_costs_prof_snf)
-			as pct_prof_SNF_costs label="Professional SNF Costs"
+			as prof_SNF_costs label="Professional SNF Costs"
 
 	from details_snf_professional as detail
 	left join
