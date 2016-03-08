@@ -218,6 +218,26 @@ quit;
 
 /**** LIGHT VALIDATION AND OUTPUT ****/
 
+proc sql;
+	create table metrics_no_assign_validation as
+	select
+		cclf.time_period
+		,cclf.elig_status_1
+		,avg(case when assign.member_id is null then 0 else 1 end) as metric_value
+	from periods_cclf(where = (died_in_period eq 0)) as cclf
+	left join periods_assign as assign on
+		cclf.time_period eq assign.time_period
+		and cclf.member_id eq assign.member_id
+	group by
+		cclf.elig_status_1
+		,cclf.time_period
+	order by
+		time_period
+		,elig_status_1
+	;
+quit;
+
+
 proc sql noprint;
 	select
 		round(max(metric_value),0.0001)
@@ -225,7 +245,7 @@ proc sql noprint;
 	into 
 		:max_pct_cclf_mems_in_assignment trimmed
 		,:min_pct_cclf_mems_in_assignment trimmed
-	from metrics_no_assign
+	from metrics_no_assign_validation
 	where upcase(elig_status_1) eq 'AGED NON-DUAL' /* Ignore metric for all but the majority of FFS Medicare lives, which are Aged Non-Dual */
 	;
 quit;
