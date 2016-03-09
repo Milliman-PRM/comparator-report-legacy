@@ -11,18 +11,20 @@ import shutil
 import re
 import os
 import csv
-from datetime import datetime
 import sys
+from datetime import datetime
 from collections import defaultdict, Counter, OrderedDict, namedtuple
+import string
 import logging
 
 # pylint: disable=import-error
+# from python.file_utils import IndyPyPath
+# import prm.meta.project
+#
+# PRM_META = prm.meta.project.parse_project_metadata()
 sys.path.append(r's:\misc\_indymacros\code\python')
-from indypy.file_utils import IndyPyPath
 
-sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
-import healthbi_env
-# pylint: enable=import-error
+from indypy.file_utils import IndyPyPath
 
 from openpyxl import load_workbook
 
@@ -54,13 +56,15 @@ _QUARTER_DATE_RANGE_MAP = {
 _FIELD_NAMES = ['HICNO', 'First Name', 'Last Name']
 _INCLUDE_TABS = ['TABLE 1-1', 'TABLE 1-2', 'TABLE 1-3', 'TABLE 1-4', 'TABLE 1-5', 'TABLE 1-6']
 _EXCLUDE_TABS = ['COVER', 'TOC', 'GLOSSARY', 'PARAMETERS']
-_TABLE5_KEYWORD = 'PLURALITY'
+_TABLE5_KEYWORD = 'HICNOs of beneficiaries'
+_PROSPECTIVE_KEYWORD = 'Prospective'
 
 _TABLE_FIELD_DICT = OrderedDict([
     ('TABLE 1-4', _FIELD_NAMES + ['ACO Participant TIN', 'Individual NPI']),
-    ('TABLE 1-2', _FIELD_NAMES + ['ACO Participant TIN Number']),
     ('TABLE 1-3', _FIELD_NAMES + ['ACO Participant CCN Number']),
-    ('TABLE 1-5', _FIELD_NAMES + ['Tacos Tacos Tacos Banana']),
+    ('TABLE 1-2', _FIELD_NAMES + ['ACO Participant TIN Number']),
+    ('TABLE 1-5', _FIELD_NAMES + ['Date of Death', 'NotAssigned1', 'NotAssigned2', 'NotAssigned3',
+                                  'NotAssigned4', 'NotAssigned5', 'NotAssigned6']),
     ('TABLE 1-6', _FIELD_NAMES + ['Date of Death']),
     ('TABLE 1-1', _FIELD_NAMES)
 ])
@@ -69,9 +73,6 @@ _FILE_DATE_PATTERN_REGEX = re.compile(r'(QASSGN|HASSGN).+?(D\d{6}\.T\d{6})')
 _QASSGN_DATE_PATTERN = re.compile(r'(Year \d{4}(?:.+?)Quarter \d)', re.I)
 _HASSGN_DATE_PATTERN = re.compile(r'(Year \d{4})(?!, Quarter)', re.I)
 
-_TARGET_PATH = healthbi_env.META[(17, 'out')]
-_PATH_RECEIVED = healthbi_env.META["path_project_received_ref"]
-
 
 def _exclude_files(directory, anti_pattern):
     """Search for files we want, files we don't and files that are ambiguous"""
@@ -79,7 +80,8 @@ def _exclude_files(directory, anti_pattern):
     anti_files = main_directory.collect_files_regex(anti_pattern)
     potential_pro_files = [file for file in main_directory.rglob('*.*')
                            if file not in anti_files]
-    convert_files = [file / '.xlsx' for file in potential_pro_files if re.search(r'T\d{6}', str(file))]
+    convert_files = [file / '.xlsx' for file in
+                     potential_pro_files if re.search(r'T\d{6}', str(file))]
     for file in convert_files:
         if re.search(r'T\d{6}$', str(file)):
             new_file = file / '.xlsx'
@@ -171,22 +173,37 @@ def _extract_date_from_sheet(date_match):
 def _check_for_field_names(worksheet):
     """Iterate over unknown worksheets if missing key tables"""
     rows = worksheet.iter_rows('A1:N20')
+
+    def _keyword_check(values, keyword):   # pragma: no cover
+        """Check if dealing with table 5"""
+        row_string = ' '.join(values)
+        if row_string.find(keyword.upper()) > -1:
+            return True
+
+    prospective_check = False
     for row_number, row in enumerate(rows):
         row_values = [str(cell.value).upper().strip() for cell in row if cell.value]
         if not row_values:
             continue
         if worksheet.title.upper().strip() in _TABLE_FIELD_DICT:
+            if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
+                prospective_check = True
+            if worksheet.title.upper().strip() == 'TABLE 1-5':
+                if _keyword_check(row_values, _TABLE5_KEYWORD):
+                    return worksheet.title, row_number, prospective_check
             upper_case_fields = [field.upper().strip()
                                  for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]]
             field_check = set(upper_case_fields) <= set(row_values)
             if field_check:
-                return worksheet.title, row_number
+                return worksheet.title, row_number, prospective_check
         else:
             for table, fields in _TABLE_FIELD_DICT.items():
+                if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
+                    prospective_check = True
                 upper_case_fields = [field.upper().strip() for field in fields]
                 field_check = set(upper_case_fields) <= set(row_values)
                 if field_check:
-                    return table, row_number
+                    return table, row_number, prospective_check
 
 
 def _build_final_dict(annotated_tab_dict):
@@ -194,7 +211,8 @@ def _build_final_dict(annotated_tab_dict):
     and row position of beginning field names"""
     final_dict = defaultdict(list)
     valuable_tab_nt = namedtuple('valuable_tab_nt', ['actual_tab_name',
-                                                     'inferred_table_name', 'header_row'])
+                                                     'inferred_table_name', 'header_row',
+                                                     'prospective_flag'])
     for table_path, inclusion_dict in annotated_tab_dict.items():
         wb = load_workbook(table_path)
         for worksheet in wb.worksheets:
@@ -250,35 +268,64 @@ def _write_data_to_csvs(final_dictionary):
         else:
             hassgn = "FALSE"
         for values in mapped_tabs_list:
+            table5_indicator = False
+            table5_count = 0
+            if values.prospective_flag:
+                hassgn = "PROSP"
             final_table_name = 'table_{}.csv'.format(values.inferred_table_name[-1])
             write_path = IndyPyPath(_TARGET_PATH) / final_table_name
             with open(str(write_path), 'a', newline='') as outfile:
                 writer = csv.writer(outfile)
                 header_columns = []
-                for row_number, rows in enumerate(wb[values.actual_tab_name].iter_rows()):
+                for row_number, row in enumerate(wb[values.actual_tab_name].iter_rows()):
                     if row_number < values.header_row:
                         continue
                     elif row_number == values.header_row:
                         headers = [name.upper().strip()
                                    for name in _TABLE_FIELD_DICT[values.inferred_table_name.upper()]]
-                        header_columns = [cell.column for cell
-                                          in rows
-                                          if str(cell.value).upper().strip() in headers]
+                        if not values.inferred_table_name[-1] == '5':
+                            header_columns = [cell.column for cell
+                                              in row
+                                              if str(cell.value).upper().strip() in headers]
+                        else:
+                            header_columns = _table_five_column_inference(row)
+                            table5_indicator = True
+                        continue
+                    elif table5_indicator:
+                        table5_count += 1
+                        if table5_count == 2:
+                            table5_indicator = False
                         continue
                     else:
-                        row = [str(cell.value).strip()
-                               if cell.value else ''
-                               for cell in rows
-                               if cell.column in header_columns]
-                        if list(set(row)) == [''] and row_number > values.header_row + 1:
+                        clean_row = [str(cell.value).strip()
+                                     if cell.value else ''
+                                     for cell in row
+                                     if cell.column in header_columns]
+                        if list(set(clean_row)) == [''] and row_number > values.header_row + 1:
                             break
-                        final_row = list(date_range) + row + [hassgn]
+                        final_row = list(date_range) + clean_row + [hassgn]
                         writer.writerow(final_row)
 
 
-def main():
+def _table_five_column_inference(row):
+    """Identify known values for headers and infer additional header positions"""
+    header_columns = []
+    for cell in row:
+        if str(cell.value).upper().strip().find(_TABLE5_KEYWORD.upper()) > -1:
+            header_columns.append(cell.column)
+        elif str(cell.value).upper().strip() in ['FIRST NAME', 'LAST NAME']:
+            header_columns.append(cell.column)
+        elif re.sub(r'[^A-Z ]+', '', str(cell.value).upper().strip()) \
+                in ['DECEASED BENEFICIARY FLAG', 'DATE OF DEATH']:
+            header_columns.append(cell.column)
+            column_index = string.ascii_uppercase.index(cell.column)
+            for x in range(1, 7):
+                header_columns.append(string.ascii_uppercase[column_index + x])
+    return header_columns
+
+
+def main():  # pragma: no cover
     files = _exclude_files(IndyPyPath(_PATH_RECEIVED), 'Address')
-    print(len(files))
     LOGGER.debug("%d files found" % len(files))
     tab_name_dict = _scrape_tab_names(files)
     LOGGER.debug("Processed Tab Names to Workbook mappings...")
@@ -292,4 +339,10 @@ def main():
 
 
 if __name__ == '__main__':
+    sys.path.append(str(IndyPyPath(os.environ['USERPROFILE']) / 'HealthBI_LocalData'))
+    import prm_parser
+    PRM_META = prm_parser.parse_meta()
+    prm_parser.munge_python_path(PRM_META)
+    _TARGET_PATH = PRM_META[(17, 'out')]
+    _PATH_RECEIVED = PRM_META["path_project_received_ref"]
     main()
