@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, Shea Parkes, Michael Menser
+### CODE OWNERS: Kyle Baird, Shea Parkes, Michael Menser, Jack Leemhuis
 
 ### OBJECTIVE:
 	Create a centralized list of members who were assigned
@@ -276,6 +276,9 @@ run;
 
 %LabelDataSet(post008.members)
 
+/*VALIDATIONS*/
+
+*Validate that SQL step did not add any rows to the table;
 proc sql noprint;
 	select count(*)
 	into :zero_memmos_lines /*Make adjustment so we pass assertion below.*/
@@ -286,8 +289,31 @@ quit;
 
 %assertthat(%eval(%getrecordcount(member_roster) - &zero_memmos_lines.),eq,%getrecordcount(post008.members),ReturnMessage=The SQL step added rows to the table)
 
-%let zero_memmos_perc = %sysfunc(round(%sysevalf(&zero_memmos_lines. / %getrecordcount(members_tmp)),0.0001));
-%put Percentage of member records indicating zero member months: &zero_memmos_perc.;
+*Validate that we keep almost all of the eligibility in the current time slice;
+proc sql noprint;
+	select max(time_period)
+	into :max_time_period
+	from members_tmp
+	;
+quit;
+
+%put &=max_time_period.;
+
+data members_tmp_recent;
+	set members_tmp;
+	where time_period eq "&max_time_period.";
+run;
+
+proc sql noprint;
+	select count(*)
+	into :zero_memmos_lines_recent /*Make adjustment so we pass assertion below.*/
+	from members_tmp
+	where memmos = 0 and time_period eq "&max_time_period."
+	;
+quit;
+
+%let zero_memmos_perc = %sysfunc(round(%sysevalf(&zero_memmos_lines_recent. / %getrecordcount(members_tmp_recent)),0.0001));
+%put Percentage of member records from the most recent time slice indicating zero member months: &zero_memmos_perc.;
 %assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
 
 %put System Return Code = &syscc.;
