@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, Shea Parkes, Michael Menser
+### CODE OWNERS: Kyle Baird, Shea Parkes, Michael Menser, Jack Leemhuis
 
 ### OBJECTIVE:
 	Create a centralized list of members who were assigned
