@@ -160,33 +160,61 @@ libname M020_Out "&M020_Out." access=readonly; *This is accessed out of "order";
 		;
 	quit;
 
-	/*Prioritize HASSGN over QASSGN for Q4. If there is a HASSGN we 
-	don't want to keep the Q4 QASSGN (keep the other QASSGNs for timeline
-	assignment.*/
+	/*Prioritize retrospective HASSGN over QASSGN. If there is a HASSGN we 
+	don't want to keep the QASSGN for that year. Prioritize QASSGN over the
+	prospective HASSGN as well*/
+	
+	/*Assign the appropriate priorities to the HASSGN and QASSGN*/
+	data table_1_year;
+		set table_1_full;
+		year = year(date_end);
+		if hassgn = "TRUE" then do;
+			priority = 1;
+		end;
+		else if hassgn = "FALSE" then do;
+			priority = 2;
+		end;
+		else do;
+			priority = 3;
+		end;
+	run;
 
-	proc summary nway missing data=table_1_full;
-	class HICNO date_end hassgn;
+	/*Get down to a unique list by year of HICNO with their highest priority assignment*/
+	proc summary nway missing data=table_1_year;
+	class HICNO year hassgn priority;
 	output out= table_1_summ(drop = _:);
 	run;
 
+	proc sort data=table_1_summ;
+		by HICNO year priority;
+	run;
+
+	data hassgn_check (drop=priority);
+		set table_1_summ;
+		by HICNO year;
+
+		if first.year then output hassgn_check;
+	run;
+
+	/*Merge the highest priority assginment to the main table to determine what to keep*/
 	proc sql;
 		create table remove_qassgn (drop = match) as
 		select 
 			base.*
-			,case when join.hassgn ne "" and base.hassgn eq "FALSE" then 1 else 0 end as match
+			,case when join.hassgn ne "" and (join.hassgn eq "TRUE" or base.hassgn eq "PROSP") then 1 else 0 end as match
 		from table_1_full as base
-		left join table_1_summ as join
+		left join hassgn_check as join
 			on base.hicno eq join.hicno
-			and base.date_end eq join.date_end
+			and year(base.date_end) eq join.year
 			and base.hassgn ne join.hassgn
 		where calculated match ne 1
 		;
 	quit;
 
+	/*Deduplicate the final list of windows*/
 	proc sort nodup data=remove_qassgn out=all_table_nodup;
 		by hicno descending date_start descending date_end;
 	run;
-
 
 	/*** IMPUTE MISSING NPIs ON ASSIGNMENT DATA ***/
 
