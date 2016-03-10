@@ -201,7 +201,7 @@ libname M020_Out "&M020_Out." access=readonly; *This is accessed out of "order";
 		create table remove_qassgn (drop = match) as
 		select 
 			base.*
-			,case when join.hassgn ne "" and (base.hassgn eq "FALSE" or base.hassgn eq "PROSP") then 1 else 0 end as match
+			,case when join.hassgn ne "" and (join.hassgn eq "TRUE" or base.hassgn eq "PROSP") then 1 else 0 end as match
 		from table_1_full as base
 		left join hassgn_check as join
 			on base.hicno eq join.hicno
