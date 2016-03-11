@@ -218,6 +218,17 @@ quit;
 
 /**** LIGHT VALIDATION AND OUTPUT ****/
 
+*Only validate against the most recent time period;
+proc sql noprint;
+	select max(time_period)
+	into :max_time_period trimmed
+	from metrics_no_cclf
+	;
+quit;
+
+%put &=max_time_period.;
+
+
 proc sql;
 	create table metrics_no_assign_validation as
 	select
@@ -240,33 +251,28 @@ quit;
 
 proc sql noprint;
 	select
-		round(max(metric_value),0.0001)
-		,round(min(metric_value),0.0001)
+		round(metric_value,0.0001)
 	into 
-		:max_pct_cclf_mems_in_assignment trimmed
-		,:min_pct_cclf_mems_in_assignment trimmed
+		:pct_cclf_mems_in_assignment trimmed
 	from metrics_no_assign_validation
-	where upcase(elig_status_1) eq 'AGED NON-DUAL' /* Ignore metric for all but the majority of FFS Medicare lives, which are Aged Non-Dual */
+	where upcase(elig_status_1) eq 'AGED NON-DUAL' and time_period eq "&max_time_period." /* Ignore metric for all but the majority of FFS Medicare lives, which are Aged Non-Dual */
 	;
 quit;
-%put &=max_pct_cclf_mems_in_assignment.;
-%put &=min_pct_cclf_mems_in_assignment.;
-%AssertThat(&max_pct_cclf_mems_in_assignment.,le,1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
-%AssertThat(&min_pct_cclf_mems_in_assignment.,gt,0.1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
+%put &=pct_cclf_mems_in_assignment.;
+%AssertThat(&pct_cclf_mems_in_assignment.,le,1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
+%AssertThat(&pct_cclf_mems_in_assignment.,gt,0.1,ReturnMessage=An inprobable percentage of CCLF members were found in the assignment files.)
 
 
 proc sql noprint;
 	select
-		round(max(metric_value),0.0001)
-		,round(min(metric_value),0.0001)
+		round(metric_value,0.0001)
 	into 
-		:max_pct_assigned_mems_in_cclf trimmed
-		,:min_pct_assigned_mems_in_cclf trimmed
+		:pct_assigned_mems_in_cclf trimmed
 	from metrics_no_cclf
+	where time_period eq "&max_time_period."
 	;
 quit;
-%put &=max_pct_assigned_mems_in_cclf.;
-%put &=min_pct_assigned_mems_in_cclf.;
+%put &=pct_assigned_mems_in_cclf.;
 
 /*When this assertion is ran on a subset of a population, it is not unreasonable for there to be a group that has 100% assigned members in CCLF.
   Therefore, only run this assertion if the code is not being ran on a subset of the population.  The table M035_Out.Member_all will only be present
@@ -274,14 +280,14 @@ quit;
 %macro run_type;
 
 	%if %sysfunc(exist(M035_Out.Member_all)) eq 0 %then %do;
-		%AssertThat(&max_pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
+		%AssertThat(&pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
 	%end;
 
 %mend run_type;
 
 %run_type
 
-%AssertThat(&min_pct_assigned_mems_in_cclf.,gt,0.2,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
+%AssertThat(&pct_assigned_mems_in_cclf.,gt,0.2,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
 
 
 data post008.metrics_cclf_assign;
