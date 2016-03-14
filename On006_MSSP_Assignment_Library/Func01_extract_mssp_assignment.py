@@ -88,7 +88,7 @@ def _exclude_files(directory, anti_pattern):
             shutil.move(str(file), str(new_file))
     return [final_file for final_file
             in main_directory.collect_files_extensions(['xls', 'xlsx'])
-            if final_file not in anti_files]
+            if final_file not in anti_files and str(final_file).find('~$') == -1]
 
 
 def _create_date_pattern_dictionary(included_file_list):
