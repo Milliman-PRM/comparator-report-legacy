@@ -69,23 +69,6 @@ proc sql;
 	;
 quit;
 
-proc sql;
-	create table composite_errors as
-	select
-		name_client
-		,time_period
-		,elig_status_1
-		,sum(metric_value) as checksum
-	from measures
-	group by
-		name_client
-		,time_period
-		,elig_status_1
-	having abs(checksum - 1) gt 0.01
-	;
-quit;
-%AssertDataSetNotPopulated(composite_errors, ReturnMessage=Categories do not appear to be re-compositing.)
-
 data post025.metrics_discharge_status;
 	format &metrics_key_value_cgfrmt.;
 	set measures;
