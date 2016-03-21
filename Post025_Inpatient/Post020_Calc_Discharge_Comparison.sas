@@ -14,6 +14,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
+libname post010 "&post010.";
 libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -68,6 +69,30 @@ proc sql;
 		,metric_name
 	;
 quit;
+
+/*Assert that this matches the results from the cost model*/
+proc sql noprint;
+	select
+		sum(prm_discharges)
+	into :cost_model_discharges
+	from post010.cost_util
+	where upcase(prm_line) ne "I31"
+	;
+quit;
+
+proc sql noprint;
+	select
+		sum(metric_value)
+	into :ip_disch
+	from measures
+	;
+quit;
+
+%put &=cost_model_discharges.;
+%put &=ip_disch.;
+
+%AssertThat(&cost_model_discharges.,eq,&ip_disch.,ReturnMessage=Inpatient discharges do not reconcile to the cost model.);
+
 
 data post025.metrics_discharge_status;
 	format &metrics_key_value_cgfrmt.;
