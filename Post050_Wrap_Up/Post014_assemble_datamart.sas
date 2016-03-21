@@ -15,6 +15,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "%GetParentFolder(0)share01_postboarding_wrapup.sas" / source2;
 
+libname M035_Out "&M035_Out.";
 libname post050 "&post050.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -65,5 +66,9 @@ proc datasets NOLIST;
 		;
 	select &remaining_tables.;
 quit;
+
+data Post050.Member;
+	set M035_Out.Member;
+run;
 
 %put System Return Code = &syscc.;
