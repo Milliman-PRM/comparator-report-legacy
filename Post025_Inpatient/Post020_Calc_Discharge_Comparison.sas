@@ -14,6 +14,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
+libname post010 "&post010." access=readonly;
 libname post025 "&post025.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -50,8 +51,8 @@ proc sql;
 					else lowcase(scan(inpatient.discharge_status_desc,-1,' ')) end)
 			end
 			as metric_id format=$32. length=32
-		,catx(" ","% of Inpatient Discharges with",calculated metric_id,"status") as metric_name
-		,sum(inpatient.cnt_discharges_inpatient)/total.total_discharges as metric_value
+		,catx(" ","Count of Inpatient Discharges with",calculated metric_id,"status") as metric_name
+		,sum(inpatient.cnt_discharges_inpatient) as metric_value
 	from Post025.Details_inpatient as inpatient
 	inner join 
 		Discharges_total as total
@@ -69,22 +70,29 @@ proc sql;
 	;
 quit;
 
-proc sql;
-	create table composite_errors as
+/*Assert that this matches the results from the cost model*/
+proc sql noprint;
 	select
-		name_client
-		,time_period
-		,elig_status_1
-		,sum(metric_value) as checksum
-	from measures
-	group by
-		name_client
-		,time_period
-		,elig_status_1
-	having abs(checksum - 1) gt 0.01
+		sum(prm_discharges)
+	into :cost_model_discharges
+	from post010.cost_util
+	where upcase(prm_line) ne "I31"
 	;
 quit;
-%AssertDataSetNotPopulated(composite_errors, ReturnMessage=Categories do not appear to be re-compositing.)
+
+proc sql noprint;
+	select
+		sum(metric_value)
+	into :ip_disch
+	from measures
+	;
+quit;
+
+%put &=cost_model_discharges.;
+%put &=ip_disch.;
+
+%AssertThat(&cost_model_discharges.,eq,&ip_disch.,ReturnMessage=Inpatient discharges do not reconcile to the cost model.);
+
 
 data post025.metrics_discharge_status;
 	format &metrics_key_value_cgfrmt.;
