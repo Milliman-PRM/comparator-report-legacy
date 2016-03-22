@@ -30,6 +30,7 @@ libname new_cclf "&new_cclf." access=readonly;
 libname old_cclf "&old_cclf.";
 
 %let paid_dt_cutoff = &cclf_recent_mem_elig_start_date.;
+%let from_dt_cutoff = &cclf_recent_mem_elig_start_date.;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -148,7 +149,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_claims = ht_claims.find();
 
-if rc_claims ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. then do;
+if rc_claims ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. or clm_from_dt lt &from_dt_cutoff. then do;
 	put line;
 	output cclf1_data;
 	end;
@@ -258,7 +259,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. then do;
+if rc_cclf ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. or clm_from_dt lt &from_dt_cutoff. then do;
 	put line;
 	output cclf5_data;
 	end;
@@ -284,7 +285,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. then do;
+if rc_cclf ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. or clm_from_dt lt &from_dt_cutoff. then do;
 	put line;
 	output cclf6_data;
 	end;
@@ -310,7 +311,7 @@ if _n_ eq 1 then do;
 	end;
 	rc_cclf = ht_cclf.find();
 
-if rc_cclf ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. then do;
+if rc_cclf ne 0 or clm_idr_ld_dt lt &paid_dt_cutoff. or clm_line_from_dt lt &from_dt_cutoff. then do;
 	put line;
 	output cclf7_data;
 	end;
