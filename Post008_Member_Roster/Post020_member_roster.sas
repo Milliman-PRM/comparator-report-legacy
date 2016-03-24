@@ -241,7 +241,10 @@ proc sql;
 			end as age
 		,coalesce(memmos.memmos_medical,0) as memmos
 		,case when upcase(roster.riskscr_1_type) = upcase("CMS HCC Risk Score")
-					then hcc_rs.score_community
+					then case
+							when hcc_rs.riskscr_mm le 11
+							then hcc_rs.score_new_enrollee
+							else hcc_rs.score_community end
 				when upcase(roster.riskscr_1_type) = upcase("MARA Risk Score")
 					then mara_rs.riskscr_tot
 				else .
