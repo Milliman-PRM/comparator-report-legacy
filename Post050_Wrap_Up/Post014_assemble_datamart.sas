@@ -68,7 +68,9 @@ proc datasets NOLIST;
 quit;
 
 data Post050.Member;
+	format name_client $256.;
 	set M035_Out.Member;
+	&assign_name_client.;
 run;
 
 %put System Return Code = &syscc.;
