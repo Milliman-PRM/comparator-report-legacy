@@ -12,6 +12,7 @@
 */
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func12_shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 
 %AssertThat(
@@ -38,7 +39,8 @@ libname M018_Out "&M018_Out.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
+/*Run the 020 import programs*/
+%shortcircuit_cclf_import()
 
 
 /*** MAKE A ROSTER OF MEMBERS WITH ASSIGNMENT INFORMATION ***/
