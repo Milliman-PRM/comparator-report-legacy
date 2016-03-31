@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jack Leemhuis
+### CODE OWNERS: Jack Leemhuis, Jason Altieri
 
 ### OBJECTIVE:
   Hack the 035_staging_membership module to limit pioneer membership to before 2016
@@ -16,8 +16,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname M035_Out "&M035_Out.";
 libname log "&path_onboarding_logs.";
-
-%let dlp_cutoff = %sysfunc(mdy(1,1,2016));
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
