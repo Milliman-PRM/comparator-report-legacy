@@ -64,12 +64,12 @@ data members_all;
 		,M035_out.member_raw_stack_warm_start
 		,M035_old.member_raw_stack
 		))
-		M020_out.cclf8_bene_demog (in = current_month)
+/*		M020_out.cclf8_bene_demog (in = current_month)*/
 		;
 	*Make a ficticious date_latestpaid for the current month.
 	Does not have to be accurate just accurate enough so we can
 	distinguish most recent.;
-	if current_month then date_latestpaid = %sysfunc(intnx(month,&max_date_latestpaid_history.,1,same));
+/*	if current_month then date_latestpaid = %sysfunc(intnx(month,&max_date_latestpaid_history.,1,same));*/
 	%use_xref(bene_hic_num,member_id)
 	drop bene_hic_num;
 run;
