@@ -69,7 +69,7 @@ data members_all;
 	*Make a ficticious date_latestpaid for the current month.
 	Does not have to be accurate just accurate enough so we can
 	distinguish most recent.;
-	if current_month then date_latestpaid = %sysfunc(intnx(month,&max_date_latestpaid_history.,1,same));
+/*	if current_month then date_latestpaid = %sysfunc(intnx(month,&max_date_latestpaid_history.,1,same));*/
 	%use_xref(bene_hic_num,member_id)
 	drop bene_hic_num;
 run;
