@@ -83,6 +83,11 @@ data member_roster;
 	else riskscr_1_type = "MARA Risk Score";
 	*/
 
+	/* DEVELOPMENT CODE:
+		Force risk scores to be MARA for the sake of working on NYP issue #241.
+		riskscr_1_type = "MARA Risk Score";
+	*/
+
 	/*Only output the windows that include then ending boundary of our time period.*/
 	&codegen_member_selection.
 	; *Just to get syntax highlighting in IDE;
@@ -201,6 +206,13 @@ run;
 				,model_name char format = $10.
 				,member_id 			char	format= $40.
 				,riskscr_tot	 	num		format= best12.
+				,riskscr_rx			num		format= best12.
+				,riskscr_med		num		format= best12.
+				,riskscr_ip			num		format= best12.
+				,riskscr_op			num		format= best12.
+				,riskscr_phy		num		format= best12.
+				,riskscr_er			num		format= best12.
+				,riskscr_other		num		format= best12.
 				);
 		quit;	
 	%end;
@@ -208,6 +220,10 @@ run;
 %mend Calc_Risk_Scores;
 
 %Calc_Risk_Scores()
+
+data post008.MARA_scores_limited;
+	set riskscr.MARA_scores_limited;
+run;
 
 /*Pull in member months to append to the member roster
 	This utilizes potentially different time periods from risk scores above.*/
