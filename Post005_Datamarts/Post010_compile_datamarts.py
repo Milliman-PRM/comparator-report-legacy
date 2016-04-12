@@ -14,7 +14,7 @@ sys.path.append(os.path.join(os.environ['USERPROFILE'],
 import healthbi_env
 import shutil
 
-from prod01_datamarts import DataMart
+from prod01_generate_datamarts import DataMart
 from pathlib import Path
 
 # =============================================================================
@@ -30,7 +30,6 @@ def main():
         provided data mart.
     """
     path_template_source = Path(os.path.realpath(__file__)).parent
-    # path_template_source = Path(r"C:\Users\Kyle.Baird\repos\Comparator_Report\Post005_Datamarts")
     path_dir_codegen_output = Path(healthbi_env.META[2, 'out'])
     list_template_names = [
         path_.name.lower() for path_ in path_template_source.iterdir() if path_.is_dir()
@@ -54,6 +53,7 @@ def main():
     datamart_recursive = DataMart(
         path_templates=healthbi_env.META[2, 'code'],
         template_name="_Recursive_Template",
+        filepath_ref_datatypes=path_template_source / "Ref01_data_types.csv"
         )
 
     for name_template in list_template_names:
@@ -70,13 +70,14 @@ def main():
         print("Validating and code generating for template: {}".format(name_template))
 
         i_datamart = DataMart(
-            path_templates=str(path_template_source),
+            path_templates=path_template_source,
             template_name=name_template,
+            filepath_ref_datatypes=path_template_source / "Ref01_data_types.csv"
             )
         i_datamart.generate_sqlite_cli_import(
-            filepath_out=str(
-                path_dir_codegen_output / "{}.sql".format(name_template)
-                )
+            filepath_out=
+                path_dir_codegen_output / "{}.sql".format(name_template),
+                filepath_header=path_template_source / 'Ref02_sqlite_import_header.sql'
             )
 
         datamart_recursive.generate_sas_infiles(

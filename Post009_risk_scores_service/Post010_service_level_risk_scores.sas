@@ -21,46 +21,91 @@ libname post009 "&post009.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-
-
+/*We have the data for the MARA risk scores by mr_line but the data for the CMS risk scores by mcrm_line.  Thus, we build a table by mr_line, add the MARA 
+scores, merge on the MR to MCRM mapping, then add the CMS scores.*/
 
 proc sql;
-	create table risk_scores_service_member as
+	create table MARA_riskscr_by_MRLine as
 	select
 		members.time_period
 		,members.member_id
 		,members.elig_status_1
 		,members.memmos
-		,members.riskscr_1_type
 		,members.riskscr_1
-		,ref_mcrm_line.mcrm_line
-		/*Intentionally verbose to show selection logic*/
-		,coalesce(hcc_factors.factor_util,members.riskscr_1) as factor_util_hcc
-		,coalesce(hcc_factors.factor_cost,members.riskscr_1) as factor_cost_hcc
-		,members.riskscr_1 as factor_util_mara
-		,members.riskscr_1 as factor_cost_mara
-		,case upcase(members.riskscr_1_type)
-			when "CMS HCC RISK SCORE" then calculated factor_util_hcc
-			when "MARA RISK SCORE" then members.riskscr_1 /*TODO: Populate with MARA service level risk scores when available*/
-			else members.riskscr_1
-			end as riskscr_1_util
-		,case upcase(members.riskscr_1_type)
-			when "CMS HCC RISK SCORE" then calculated factor_cost_hcc
-			when "MARA RISK SCORE" then members.riskscr_1 /*TODO: Populate with MARA service level risk scores when available*/
-			else members.riskscr_1
-			end as riskscr_1_cost
+		,members.riskscr_1_type
+		,ref_mr_line.mr_line
+		,ref_mr_line.MARA_riskscr_component
+		,case
+			when upcase(mcrm_line) = "X99" then scores.riskscr_other /*If MCRM_line is x99, then use the "other" MARA component risk score.*/
+			when upcase(MARA_riskscr_component) = "RISKSCR_IP" and upcase(mcrm_line) ne "X99" then scores.riskscr_ip
+			when upcase(MARA_riskscr_component) = "RISKSCR_ER" and upcase(mcrm_line) ne "X99" then scores.riskscr_er
+			when upcase(MARA_riskscr_component) = "RISKSCR_OP" and upcase(mcrm_line) ne "X99" then scores.riskscr_op
+			when upcase(MARA_riskscr_component) = "RISKSCR_PHY" and upcase(mcrm_line) ne "X99" then scores.riskscr_phy
+			when upcase(MARA_riskscr_component) = "RISKSCR_RX" and upcase(mcrm_line) ne "X99" then scores.riskscr_rx
+			else scores.riskscr_other
+			end as factor_util_mara
+		,case
+			when upcase(mcrm_line) = "X99" then scores.riskscr_other
+			when upcase(MARA_riskscr_component) = "RISKSCR_IP" and upcase(mcrm_line) ne "X99" then scores.riskscr_ip
+			when upcase(MARA_riskscr_component) = "RISKSCR_ER" and upcase(mcrm_line) ne "X99" then scores.riskscr_er
+			when upcase(MARA_riskscr_component) = "RISKSCR_OP" and upcase(mcrm_line) ne "X99" then scores.riskscr_op
+			when upcase(MARA_riskscr_component) = "RISKSCR_PHY" and upcase(mcrm_line) ne "X99" then scores.riskscr_phy
+			when upcase(MARA_riskscr_component) = "RISKSCR_RX" and upcase(mcrm_line) ne "X99" then scores.riskscr_rx
+			else scores.riskscr_other
+			end as factor_cost_mara
+		,mcrm_mapping.mcrm_line
 	from post008.members as members
-	cross join M015_out.ref_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as ref_mcrm_line
-	left join M015_out.mcrm_hcc_calibrations as hcc_factors on
-		ref_mcrm_line.mcrm_line eq hcc_factors.mcrm_line
-			and round(members.riskscr_1,0.01) between hcc_factors.hcc_range_bottom and hcc_factors.hcc_range_top
-	where members.memmos ne 0	/*Having a member with no member months for a time period does not contribute to the result, but it can result in*/
-	order by					/*divide by zero errors for categories with few members (ie Unknown).  So exclude this data from the calculation.*/
+	left join post008.mara_scores_limited as scores on
+		members.member_id = scores.member_id and members.time_period = scores.time_slice
+	cross join M015_out.mr_line_info as ref_mr_line
+	inner join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mcrm_mapping on 
+		ref_mr_line.mr_line = mcrm_mapping.mr_line
+	order by
 		members.time_period
 		,members.member_id
-		,ref_mcrm_line.mcrm_line
-	;                            
+		,mcrm_mapping.mcrm_line
+	;
 quit;
+
+data MARA_riskscr_by_MCRMLine (drop = mr_line MARA_riskscr_component);
+	set MARA_riskscr_by_MRLine;
+	by time_period member_id mcrm_line;
+	if first.mcrm_line;
+run;
+
+proc sql;
+	create table risk_scores_service_member as
+	select MARA.*
+	       ,coalesce(hcc_factors.factor_util,MARA.riskscr_1) as factor_util_hcc
+		   ,coalesce(hcc_factors.factor_cost,MARA.riskscr_1) as factor_cost_hcc
+		   ,case upcase(MARA.riskscr_1_type)
+		   		when "CMS HCC RISK SCORE" then calculated factor_util_hcc
+				when "MARA RISK SCORE" then MARA.factor_util_mara
+				else MARA.riskscr_1
+				end as riskscr_1_util
+		   ,case upcase(MARA.riskscr_1_type)
+		   		when "CMS HCC RISK SCORE" then calculated factor_cost_hcc
+				when "MARA RISK SCORE" then MARA.factor_cost_mara
+				else MARA.riskscr_1
+				end as riskscr_1_cost
+	from MARA_riskscr_by_MCRMLine as MARA
+	left join M015_out.mcrm_hcc_calibrations as hcc_factors on
+		MARA.mcrm_line eq hcc_factors.mcrm_line
+			and round(MARA.riskscr_1,0.01) between hcc_factors.hcc_range_bottom and hcc_factors.hcc_range_top
+	order by
+		MARA.time_period
+		,MARA.member_id
+		,MARA.mcrm_line
+	;
+quit;
+
+/*Assert that no lines with 0 memmos have survived up to this point.*/
+data service_member_0_memmos;
+	set risk_scores_service_member;
+	where memmos = 0;
+run;
+
+%AssertDataSetNotPopulated(service_member_0_memmos,ReturnMessage=There are members with no member months in the data and they should not be there.);
 
 proc means noprint nway missing data = risk_scores_service_member;
 	class time_period elig_status_1 mcrm_line;
