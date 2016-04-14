@@ -81,9 +81,9 @@ def main():
             )
 
         datamart_recursive.generate_sas_infiles(
-            filepath_out=str(
+            filepath_out=
                 path_dir_codegen_output / "Template_Import_{}.sas".format(name_template)
-                ),
+                ,
             path_in=sas_infile_path_string,
             format_source_filename="{}.csv",
             table_name_replace=name_template,
