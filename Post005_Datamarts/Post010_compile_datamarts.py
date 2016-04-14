@@ -51,7 +51,7 @@ def main():
             )
 
     datamart_recursive = DataMart(
-        path_templates=healthbi_env.META[2, 'code'],
+        path_templates=Path(healthbi_env.META[2, 'code']),
         template_name="_Recursive_Template",
         filepath_ref_datatypes=path_template_source / "Ref01_data_types.csv"
         )
@@ -81,9 +81,9 @@ def main():
             )
 
         datamart_recursive.generate_sas_infiles(
-            filepath_out=str(
+            filepath_out=
                 path_dir_codegen_output / "Template_Import_{}.sas".format(name_template)
-                ),
+                ,
             path_in=sas_infile_path_string,
             format_source_filename="{}.csv",
             table_name_replace=name_template,
