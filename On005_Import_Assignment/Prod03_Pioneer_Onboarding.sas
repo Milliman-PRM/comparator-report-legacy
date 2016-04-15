@@ -444,7 +444,7 @@ run;
 for the member (should represent the last batch of CCLF files we observed them in).*/
 proc sql;
 	create table client_member_time as
-	select
+	select distinct
 		all.member_ID
 		,"" as mem_prv_id_align
 		,"" as assignment_indicator
