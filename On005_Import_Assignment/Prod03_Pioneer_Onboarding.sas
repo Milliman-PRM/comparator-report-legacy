@@ -363,6 +363,92 @@ run;
 %mend;
 %bene_exclusion;
 
+/*Determine which years members have claims in*/
+
+data parta (keep = bene_hic_num year);
+	set M020_Out.cclf1_parta_header;
+	year = year(clm_from_dt);
+	where clm_pmt_amt gt 0;
+run;
+
+data partb_phys (keep = bene_hic_num year);
+	set M020_Out.cclf5_partb_phys;
+	year = year(clm_from_dt);
+	where clm_line_cvrd_pd_amt gt 0;
+run;
+
+data partb_dme (keep = bene_hic_num year);
+	set M020_Out.cclf6_partb_dme;
+	year = year(clm_from_dt);
+	where clm_line_cvrd_pd_amt gt 0;
+run;
+
+proc summary nway missing data=parta;
+class bene_hic_num year;
+output out = parta_by_year (drop = _TYPE_ rename = (_FREQ_ = count));
+run;
+
+proc summary nway missing data=partb_phys;
+class bene_hic_num year;
+output out = partb_phys_by_year (drop = _TYPE_ rename = (_FREQ_ = count));
+run;
+
+proc summary nway missing data=partb_dme;
+class bene_hic_num year;
+output out = partb_dme_by_year (drop = _TYPE_ rename = (_FREQ_ = count));
+run;
+
+proc sql;
+	create table all_claims_year as
+	select
+		*
+	from parta_by_year
+	union all
+	select 
+		*
+	from partb_phys_by_year
+	union all
+	select
+		*
+	from partb_dme_by_year
+	;
+quit;
+
+proc summary nway missing data=all_claims_year;
+class bene_hic_num year;
+var count;
+output out = claim_counts (drop = _:)sum=total_claims;
+run;
+
+data elig_by_year (drop = total_claims);
+set claim_counts;
+where total_claims ge 1;
+
+date_start = mdy(1,1,year);
+date_end = mdy(12,31,year);
+
+%use_xref(bene_hic_num,member_id)
+drop bene_hic_num;
+run;
+
+/*Build Client_member_time. For Aged members ensure start date is not before 65th birthday, and ensure end date is capped at the Date_LatestPaid
+for the member (should represent the last batch of CCLF files we observed them in).*/
+proc sql;
+	create table client_member_time as
+	select
+		all.member_ID
+		,"" as mem_prv_id_align
+		,"" as assignment_indicator
+		,case when all.bene_orgnl_entlmt_rsn_cd = '0' then max(intnx('year',all.bene_dob, 65), elig.date_start)
+			else elig.date_start end as date_start
+		,min(elig.date_end, all.Date_LatestPaid) as date_end
+	from members_all as all
+	left join elig_by_year as elig
+	on all.member_ID = elig.member_ID
+	;
+quit;
+
+
 
 /*** MUNGE TO TARGET FORMATS ***/
 %macro output(name_dset_source,name_dset_target);
