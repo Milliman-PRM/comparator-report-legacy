@@ -59,17 +59,26 @@ quit;
 
 %setup_xref
 
+/*Derive data month from project name*/
+%let deliverable_month = %substr(%scan(&deliverable_name., 3, "_"), 5,2);
+%let deliverable_year = %substr(%scan(&deliverable_name., 3, "_"), 1,4);
+
+%put &=deliverable_month.;
+%put &=deliverable_year.;
+
+
+
 data members_all;
 	set %sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
 		,M035_out.member_raw_stack_warm_start
 		,M035_old.member_raw_stack
 		))
-/*		M020_out.cclf8_bene_demog (in = current_month)*/
+		M020_out.cclf8_bene_demog (in = current_month)
 		;
 	*Make a ficticious date_latestpaid for the current month.
 	Does not have to be accurate just accurate enough so we can
 	distinguish most recent.;
-/*	if current_month then date_latestpaid = %sysfunc(intnx(month,&max_date_latestpaid_history.,1,same));*/
+	if current_month then date_latestpaid = mdy(&deliverable_month., 28, &deliverable_year.);
 	%use_xref(bene_hic_num,member_id)
 	drop bene_hic_num;
 run;
