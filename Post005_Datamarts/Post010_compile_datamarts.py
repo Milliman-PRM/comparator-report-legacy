@@ -14,7 +14,7 @@ sys.path.append(os.path.join(os.environ['USERPROFILE'],
 import healthbi_env
 import shutil
 
-from prod01_generate_datamarts import DataMart
+from prm.meta.output_datamart import DataMart
 from pathlib import Path
 
 # =============================================================================
