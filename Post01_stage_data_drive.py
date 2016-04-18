@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Shea Parkes, Kyle Baird, Aaron Burgess
+### CODE OWNERS: Shea Parkes, Kyle Baird
 
 ### OBJECTIVE:
   Stage data drive folders for postboarding work.
