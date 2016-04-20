@@ -66,6 +66,39 @@ quit;
 %put &=deliverable_month.;
 %put &=deliverable_year.;
 
+%macro Derive_Assignment_Month(month, year);
+	
+	%put &=month.;
+
+	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
+		%let assignment_month = 09;
+		%let assignment_year = %eval(&year.-1);
+	%end;
+
+	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
+		%let assignment_month = 09;
+		%let assignment_year = %eval(&year.-1);
+	%end;
+
+	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
+		%let assignment_month = 09;
+		%let assignment_year = %eval(&year.-1);
+	%end;
+
+	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
+		%let assignment_month = 09;
+		%let assignment_year = %eval(&year.-1);
+	%end;
+
+	%put &=assignment_month.;
+	%put &=assignment_year.;
+
+%mend;
+
+
+%Derive_assignment_month(&deliverable_month., &deliverable_year.);
+
+
 
 
 data members_all;
