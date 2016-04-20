@@ -429,7 +429,7 @@ var count;
 output out = claim_counts (drop = _:)sum=total_claims;
 run;
 
-data elig_by_year (drop = total_claims);
+data claim_elig_by_year (drop = total_claims);
 set claim_counts;
 where total_claims ge 1;
 
@@ -440,23 +440,49 @@ date_end = mdy(12,31,year);
 drop bene_hic_num;
 run;
 
+/*Make sure we give eligibility in years we know the member is eligible based on CCLF8*/
+data client_mem_elig (keep = year date_start date_end member_id);
+	set client_member;
+
+	year = year(max_date_latestpaid);
+
+	date_start = mdy(1,1,year(max_date_latestpaid));
+	date_end = mdy(12,31,year(max_date_latestpaid));
+
+run;
+
+data elig_by_year;
+	set claim_elig_by_year
+		client_mem_elig;
+run;
+
 /*Build Client_member_time. For Aged members ensure start date is not before 65th birthday, and ensure end date is capped at the Date_LatestPaid
 for the member (should represent the last batch of CCLF files we observed them in).*/
 proc sql;
-	create table client_member_time as
+	create table client_member_time_pre as
 	select distinct
 		all.member_ID
-		,"" as mem_prv_id_align
-		,"" as assignment_indicator
-		,case when all.bene_orgnl_entlmt_rsn_cd = '0' then max(intnx('year',all.bene_dob, 65), elig.date_start)
-			else elig.date_start end as date_start
+		,mem.mem_prv_id_align as mem_prv_id_align
+		,coalesce(mem.assignment_indicator, "N") as assignment_indicator label = "Assigned Patient"
+		,case when all.bene_orgnl_entlmt_rsn_cd = '0' and elig.member_id is not null 
+			then coalesce(max(intnx('year',all.bene_dob, 65), elig.date_start), mdy(1,1,year(all.Date_LatestPaid)))
+			else coalesce(elig.date_start,mdy(1,1,year(all.Date_LatestPaid))) end as date_start
 		,min(elig.date_end, all.Date_LatestPaid) as date_end
 	from members_all as all
 	left join elig_by_year as elig
 	on all.member_ID = elig.member_ID
+	left join client_member as mem
+	on all.member_id = mem.member_id
+	order by all.member_id, calculated date_start, calculated date_end
 	;
 quit;
 
+data client_member_time;
+	set client_member_time_pre;
+	by member_id date_start date_end;
+
+	if last.date_start then output client_member_time;
+run;
 
 
 /*** MUNGE TO TARGET FORMATS ***/
