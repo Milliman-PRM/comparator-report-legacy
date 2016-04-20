@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Kyle Baird, Shea Parkes
+### CODE OWNERS: Kyle Baird, Shea Parkes, Aaron Burgess, Jason Altieri
 
 ### OBJECTIVE:
   Compile and do the code generation needed to utilize PRM data mart tool chain.
@@ -14,7 +14,7 @@ sys.path.append(os.path.join(os.environ['USERPROFILE'],
 import healthbi_env
 import shutil
 
-from prod01_generate_datamarts import DataMart
+from prm.meta.output_datamart import DataMart
 from pathlib import Path
 
 # =============================================================================

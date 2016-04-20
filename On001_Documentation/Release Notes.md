@@ -2,9 +2,6 @@
 
 ##v5.0.0
 
-###Deliverables
-- *none*
-
 ####Client Visible Changes (e.g. Updates to the Comparator Report Datamart)
 - *none*
 
