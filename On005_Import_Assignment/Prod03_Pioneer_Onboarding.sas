@@ -68,26 +68,29 @@ quit;
 
 %macro Derive_Assignment_Month(month, year);
 	
+	%global assignment_month assignment_year;
+
 	%put &=month.;
+	%put &=year.;
 
-	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
-		%let assignment_month = 09;
+	%if %sysfunc(find(01|02|03,&month.)) %then %do;
+		%let assignment_month = 12;
 		%let assignment_year = %eval(&year.-1);
 	%end;
 
-	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
-		%let assignment_month = 09;
-		%let assignment_year = %eval(&year.-1);
+	%if %sysfunc(find(04|05|06,&month.)) %then %do;
+		%let assignment_month = 03;
+		%let assignment_year = &year.;
 	%end;
 
-	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
-		%let assignment_month = 09;
-		%let assignment_year = %eval(&year.-1);
+	%if %sysfunc(find(07|08|09,&month.)) %then %do;
+		%let assignment_month = 06;
+		%let assignment_year = &year.;
 	%end;
 
-	%if %sysfunc(find(&month.,01|02|03)) = 0 %then %do;
+	%if %sysfunc(find(10|11|12,&month.)) %then %do;
 		%let assignment_month = 09;
-		%let assignment_year = %eval(&year.-1);
+		%let assignment_year = &year.;
 	%end;
 
 	%put &=assignment_month.;
@@ -95,10 +98,7 @@ quit;
 
 %mend;
 
-
 %Derive_assignment_month(&deliverable_month., &deliverable_year.);
-
-
 
 
 data members_all;
@@ -136,6 +136,8 @@ proc sql;
 	create table member_aggregates as
 	select
 		member_id
+		,sum(case when mdy(month(date_latestpaid), 1, year(date_latestpaid)) eq mdy(&assignment_month., 1, &assignment_year.) then 1 else 0)
+			end as assign_date_latestpaid
 		,count(distinct date_latestpaid) as cnt_date_latestpaid
 		,min(date_latestpaid) as min_date_latestpaid format = YYMMDDd10.
 		,max(date_latestpaid) as max_date_latestpaid format = YYMMDDd10.
