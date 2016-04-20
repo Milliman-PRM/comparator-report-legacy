@@ -136,8 +136,8 @@ proc sql;
 	create table member_aggregates as
 	select
 		member_id
-		,sum(case when mdy(month(date_latestpaid), 1, year(date_latestpaid)) eq mdy(&assignment_month., 1, &assignment_year.) then 1 else 0)
-			end as assign_date_latestpaid
+		,sum(case when mdy(month(Date_LatestPaid), 1, year(Date_LatestPaid)) eq mdy(&assignment_month., 1, &assignment_year.) then 1 else 0 end)
+			as assign_date_latestpaid
 		,count(distinct date_latestpaid) as cnt_date_latestpaid
 		,min(date_latestpaid) as min_date_latestpaid format = YYMMDDd10.
 		,max(date_latestpaid) as max_date_latestpaid format = YYMMDDd10.
@@ -202,10 +202,9 @@ data members;
 	by member_id;
 	if member_roster;
 	label assignment_indicator = "Assigned Patient";
-	*Verbose here to explain different categories for assignment;
-	if cnt_date_latestpaid eq &cnt_date_latestpaid. then assignment_indicator = "Y";
-	else if max_date_latestpaid eq &max_date_latestpaid. then assignment_indicator = "Y"; *Opt-Ins are assigned, but not reported.;
-	else if max_date_latestpaid ne &max_date_latestpaid. then do;
+	*Assign anyone who showed up in the appropriate quarter end CCLF8 along with people who no longer show up due to death;
+	if assign_date_latestpaid gt 0 then assignment_indicator = "Y";
+	else do;
 		if death_date_latestpaid ne . then assignment_indicator = "Y"; *If they no longer show up because of death, then assigned.;
 		else assignment_indicator = "N"; *Opt-outs/excluded are not assigned. These are likely people included in the quarterly CMS excluded file.;
 	end;
