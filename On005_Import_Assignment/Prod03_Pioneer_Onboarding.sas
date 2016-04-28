@@ -467,6 +467,7 @@ data claim_elig_by_year (drop = total_claims);
 set claim_counts;
 where total_claims ge 1;
 
+format date_start mmddyy10. date_end mmddyy10.;
 date_start = mdy(1,1,year);
 date_end = mdy(12,31,year);
 
@@ -480,6 +481,7 @@ data client_mem_elig (keep = year date_start date_end member_id);
 
 	year = year(max_date_latestpaid);
 
+	format date_start mmddyy10. date_end mmddyy10.;
 	date_start = mdy(1,1,year(max_date_latestpaid));
 	date_end = mdy(12,31,year(max_date_latestpaid));
 
@@ -513,6 +515,8 @@ quit;
 
 data client_member_time;
 	set client_member_time_pre;
+
+	format date_start mmddyy10. date_end mmddyy10.;
 	by member_id date_start date_end;
 
 	if last.date_start then output client_member_time;
