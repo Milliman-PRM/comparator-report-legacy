@@ -13,9 +13,7 @@ import os
 import sys
 import re
 
-sys.path.append(r"S:\Misc\_IndyMacros\Code\python\indypy")
-
-from file_utils import IndyPyPath
+from indypy.file_utils import IndyPyPath
 
 _ANTI_PATTERN = r'.*(_all|_\d+)\.(sas7bdat|sqlite|sas7bndx)'
 _EXT_PATTERN = r'^(all|\d+)$'
