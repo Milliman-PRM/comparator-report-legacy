@@ -57,7 +57,7 @@ if __name__ == '__main__':
     META = prm.meta.project.parse_project_metadata()
 
     CLIENT_ID = META["client_id"]
-    PATH_NETWORK_SHARE_ROOT = Path(META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT)
+    PATH_NETWORK_SHARE_ROOT = META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
     if CLIENT_ID.lower() not in \
@@ -66,7 +66,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     POSTBOARDING_ARGS = load_params(
-        Path(META["path_project_data"]) / "postboarding" \
+        META["path_project_data"] / "postboarding" \
         / "postboarding_directories.json"
         )
 

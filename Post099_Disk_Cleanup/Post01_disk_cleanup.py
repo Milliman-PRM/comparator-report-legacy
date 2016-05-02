@@ -16,4 +16,4 @@ from Prod01_disk_cleanup import dir_cleanup
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
 if __name__ == '__main__':
-    dir_cleanup(META["path_project_local"])
+    dir_cleanup(str(META["path_project_local"]))
