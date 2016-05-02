@@ -32,8 +32,6 @@ FILE_EXTENSIONS_SCRAPE = [
 # =============================================================================
 
 
-
-
 def load_params(path_param_json):
     """Return a dictionary of parameters"""
     def _wrap_json_load(path_json):
@@ -41,6 +39,7 @@ def load_params(path_param_json):
         with path_json.open("r") as fh_input:
             return json.load(fh_input)
     return {k: Path(v) for k, v in _wrap_json_load(path_param_json).items()}
+
 
 def generate_file_checksum(path_file):
     """Get the MD5 hash of the file"""
@@ -54,17 +53,11 @@ if __name__ == '__main__':
     import datetime
     import shutil
     import sys
-    import os
-    sys.path.append(
-        os.path.join(
-            os.environ['USERPROFILE'],
-            'HealthBI_LocalData',
-            )
-        )
-    import healthbi_env
+    import prm.meta.project
+    META = prm.meta.project.parse_project_metadata()
 
-    CLIENT_ID = healthbi_env.META["client_id"]
-    PATH_NETWORK_SHARE_ROOT = Path(healthbi_env.META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT)
+    CLIENT_ID = META["client_id"]
+    PATH_NETWORK_SHARE_ROOT = Path(META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT)
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
     if CLIENT_ID.lower() not in \
@@ -73,7 +66,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     POSTBOARDING_ARGS = load_params(
-        Path(healthbi_env.META["path_project_data"]) / "postboarding" \
+        Path(META["path_project_data"]) / "postboarding" \
         / "postboarding_directories.json"
         )
 
@@ -83,8 +76,8 @@ if __name__ == '__main__':
         if path_.suffix.lower() in FILE_EXTENSIONS_SCRAPE
         }
 
-    PATH_DIR_OUTPUT = PATH_NETWORK_SHARE_ROOT / healthbi_env.META["project_id"] \
-        / healthbi_env.META["deliverable_name"] \
+    PATH_DIR_OUTPUT = PATH_NETWORK_SHARE_ROOT / META["project_id"] \
+        / META["deliverable_name"] \
         / datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
     PATH_DIR_OUTPUT.mkdir(parents=True)
 
@@ -105,8 +98,8 @@ if __name__ == '__main__':
     print('\nSending notification email to interested parties.\n')
     msg = EmailMessage()
     msg['Subject'] = 'PRM Notification: New {}-{} Comparator Report Data Mart Available'.format(
-        healthbi_env.META["project_id"],
-        healthbi_env.META["deliverable_name"],
+        META["project_id"],
+        META["deliverable_name"],
         )
     msg['From'] = 'prm.operations@milliman.com'
     with (PATH_NETWORK_SHARE_ROOT / 'email_notification_list.txt').open() as fh_notify_list:
@@ -123,7 +116,7 @@ if __name__ == '__main__':
                 }),
             project_meta=pp.pformat({
                 k: v
-                for k, v in healthbi_env.META.items()
+                for k, v in META.items()
                 if not isinstance(k, tuple) and not isinstance(v, (list, dict))
                 })
             )
