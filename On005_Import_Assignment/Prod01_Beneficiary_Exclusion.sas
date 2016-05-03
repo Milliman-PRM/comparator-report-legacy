@@ -31,7 +31,7 @@ libname M017_Out "&M017_Out.";
 /*Member exclusion information*/
 
 proc sql noprint;
-	select filename
+	select max(filename)
 	into :bnexc_file trimmed
 	from ref_files
 ;
