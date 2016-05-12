@@ -27,7 +27,7 @@ def rename_files(directory, name_extension):
     all_ext_files = path.collect_files_extensions(['sas7bdat', 'sqlite', 'sas7bndx'])
     final_files = list(set(all_ext_files) - set(unwanted_files))
     for file in final_files:
-        new_name = file.parent / file.stem[:32] / file.suffix
+        new_name = file.parent / file.stem[:32]
         new_file = '{file}_{name}{ext}'.format(file=str(new_name),
                                                name=name_extension, ext=file.suffix)
         os.rename(str(file), new_file)
