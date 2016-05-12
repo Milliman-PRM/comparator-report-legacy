@@ -15,9 +15,7 @@ import re
 
 from indypy.file_utils import IndyPyPath
 
-_ANTI_PATTERN = r'.*(_all|_\d+)\.(sas7bdat|sqlite|sas7bndx)'
-_EXT_PATTERN = r'^(all|\d+)$'
-
+_ANTI_PATTERN = r'.*(_all|_a_)\.(sas7bdat|sqlite|sas7bndx)'
 
 def rename_files(directory, name_extension):
     """Target sas and sqlite files that do not feature
