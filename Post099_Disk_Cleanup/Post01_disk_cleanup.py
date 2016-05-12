@@ -9,6 +9,7 @@
 """
 
 import prm.meta.output_datamart
+import prm.meta.project
 META = prm.meta.project.parse_project_metadata()
 from Prod01_disk_cleanup import dir_cleanup
 
