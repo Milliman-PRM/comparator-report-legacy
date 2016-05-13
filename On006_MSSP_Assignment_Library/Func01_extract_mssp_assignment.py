@@ -17,7 +17,7 @@ from collections import defaultdict, Counter, OrderedDict, namedtuple
 import string
 import logging
 
-from python.file_utils import IndyPyPath
+from indypy.file_utils import IndyPyPath
 import prm.meta.project
 
 PRM_META = prm.meta.project.parse_project_metadata()

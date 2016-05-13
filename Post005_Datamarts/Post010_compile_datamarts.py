@@ -10,6 +10,7 @@
 
 import os
 import shutil
+from prm.meta.output_datamart import DataMart
 from pathlib import Path
 
 import prm.meta.project
