@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, David Pierce
+### CODE OWNERS: Kyle Baird, David Pierce, Jason Altieri
 
 ### OBJECTIVE:
 	Create client reference files for Pioneer ACOs
