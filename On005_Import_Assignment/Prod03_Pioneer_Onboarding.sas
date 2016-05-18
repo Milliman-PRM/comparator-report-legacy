@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, David Pierce
+### CODE OWNERS: Kyle Baird, David Pierce, Jason Altieri
 
 ### OBJECTIVE:
 	Create client reference files for Pioneer ACOs
@@ -59,6 +59,48 @@ quit;
 
 %setup_xref
 
+/*Derive data month from project name*/
+%let deliverable_month = %substr(%scan(&deliverable_name., 3, "_"), 5,2);
+%let deliverable_year = %substr(%scan(&deliverable_name., 3, "_"), 1,4);
+
+%put &=deliverable_month.;
+%put &=deliverable_year.;
+
+%macro Derive_Assignment_Month(month, year);
+	
+	%global assignment_month assignment_year;
+
+	%put &=month.;
+	%put &=year.;
+
+	%if %sysfunc(find(01|02|03,&month.)) %then %do;
+		%let assignment_month = 12;
+		%let assignment_year = %eval(&year.-1);
+	%end;
+
+	%if %sysfunc(find(04|05|06,&month.)) %then %do;
+		%let assignment_month = 03;
+		%let assignment_year = &year.;
+	%end;
+
+	%if %sysfunc(find(07|08|09,&month.)) %then %do;
+		%let assignment_month = 06;
+		%let assignment_year = &year.;
+	%end;
+
+	%if %sysfunc(find(10|11|12,&month.)) %then %do;
+		%let assignment_month = 09;
+		%let assignment_year = &year.;
+	%end;
+
+	%put &=assignment_month.;
+	%put &=assignment_year.;
+
+%mend;
+
+%Derive_assignment_month(&deliverable_month., &deliverable_year.);
+
+
 data members_all;
 	set %sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
 		,M035_out.member_raw_stack_warm_start
@@ -69,7 +111,7 @@ data members_all;
 	*Make a ficticious date_latestpaid for the current month.
 	Does not have to be accurate just accurate enough so we can
 	distinguish most recent.;
-	if current_month then date_latestpaid = %sysfunc(intnx(month,&max_date_latestpaid_history.,1,same));
+	if current_month then date_latestpaid = mdy(&deliverable_month., 28, &deliverable_year.);
 	%use_xref(bene_hic_num,member_id)
 	drop bene_hic_num;
 run;
@@ -94,6 +136,8 @@ proc sql;
 	create table member_aggregates as
 	select
 		member_id
+		,sum(case when mdy(month(Date_LatestPaid), 1, year(Date_LatestPaid)) eq mdy(&assignment_month., 1, &assignment_year.) then 1 else 0 end)
+			as assign_date_latestpaid
 		,count(distinct date_latestpaid) as cnt_date_latestpaid
 		,min(date_latestpaid) as min_date_latestpaid format = YYMMDDd10.
 		,max(date_latestpaid) as max_date_latestpaid format = YYMMDDd10.
@@ -158,10 +202,9 @@ data members;
 	by member_id;
 	if member_roster;
 	label assignment_indicator = "Assigned Patient";
-	*Verbose here to explain different categories for assignment;
-	if cnt_date_latestpaid eq &cnt_date_latestpaid. then assignment_indicator = "Y";
-	else if max_date_latestpaid eq &max_date_latestpaid. then assignment_indicator = "Y"; *Opt-Ins are assigned, but not reported.;
-	else if max_date_latestpaid ne &max_date_latestpaid. then do;
+	*Assign anyone who showed up in the appropriate quarter end CCLF8 along with people who no longer show up due to death;
+	if assign_date_latestpaid gt 0 then assignment_indicator = "Y";
+	else do;
 		if death_date_latestpaid ne . then assignment_indicator = "Y"; *If they no longer show up because of death, then assigned.;
 		else assignment_indicator = "N"; *Opt-outs/excluded are not assigned. These are likely people included in the quarterly CMS excluded file.;
 	end;
@@ -362,6 +405,122 @@ run;
 
 %mend;
 %bene_exclusion;
+
+/*Determine which years members have claims in*/
+
+data parta (keep = bene_hic_num year);
+	set M020_Out.cclf1_parta_header;
+	year = year(clm_from_dt);
+	where clm_pmt_amt gt 0;
+run;
+
+data partb_phys (keep = bene_hic_num year);
+	set M020_Out.cclf5_partb_phys;
+	year = year(clm_from_dt);
+	where clm_line_cvrd_pd_amt gt 0;
+run;
+
+data partb_dme (keep = bene_hic_num year);
+	set M020_Out.cclf6_partb_dme;
+	year = year(clm_from_dt);
+	where clm_line_cvrd_pd_amt gt 0;
+run;
+
+proc summary nway missing data=parta;
+class bene_hic_num year;
+output out = parta_by_year (drop = _TYPE_ rename = (_FREQ_ = count));
+run;
+
+proc summary nway missing data=partb_phys;
+class bene_hic_num year;
+output out = partb_phys_by_year (drop = _TYPE_ rename = (_FREQ_ = count));
+run;
+
+proc summary nway missing data=partb_dme;
+class bene_hic_num year;
+output out = partb_dme_by_year (drop = _TYPE_ rename = (_FREQ_ = count));
+run;
+
+proc sql;
+	create table all_claims_year as
+	select
+		*
+	from parta_by_year
+	union all
+	select 
+		*
+	from partb_phys_by_year
+	union all
+	select
+		*
+	from partb_dme_by_year
+	;
+quit;
+
+proc summary nway missing data=all_claims_year;
+class bene_hic_num year;
+var count;
+output out = claim_counts (drop = _:)sum=total_claims;
+run;
+
+data claim_elig_by_year (drop = total_claims);
+set claim_counts;
+where total_claims ge 1;
+
+format date_start mmddyy10. date_end mmddyy10.;
+date_start = mdy(1,1,year);
+date_end = mdy(12,31,year);
+
+%use_xref(bene_hic_num,member_id)
+drop bene_hic_num;
+run;
+
+/*Make sure we give eligibility in years we know the member is eligible based on CCLF8*/
+data client_mem_elig (keep = year date_start date_end member_id);
+	set client_member;
+
+	year = year(max_date_latestpaid);
+
+	format date_start mmddyy10. date_end mmddyy10.;
+	date_start = mdy(1,1,year(max_date_latestpaid));
+	date_end = mdy(12,31,year(max_date_latestpaid));
+
+run;
+
+data elig_by_year;
+	set claim_elig_by_year
+		client_mem_elig;
+run;
+
+/*Build Client_member_time. For Aged members ensure start date is not before 65th birthday, and ensure end date is capped at the Date_LatestPaid
+for the member (should represent the last batch of CCLF files we observed them in).*/
+proc sql;
+	create table client_member_time_pre as
+	select distinct
+		all.member_ID
+		,mem.mem_prv_id_align as mem_prv_id_align
+		,coalesce(mem.assignment_indicator, "N") as assignment_indicator label = "Assigned Patient"
+		,case when all.bene_orgnl_entlmt_rsn_cd = '0' and elig.member_id is not null 
+			then coalesce(max(intnx('year',all.bene_dob, 65), elig.date_start), mdy(1,1,year(all.Date_LatestPaid)))
+			else coalesce(elig.date_start,mdy(1,1,year(all.Date_LatestPaid))) end as date_start
+		,min(elig.date_end, all.Date_LatestPaid) as date_end
+	from members_all as all
+	left join elig_by_year as elig
+	on all.member_ID = elig.member_ID
+	left join client_member as mem
+	on all.member_id = mem.member_id
+	order by all.member_id, calculated date_start, calculated date_end
+	;
+quit;
+
+data client_member_time;
+	set client_member_time_pre;
+
+	format date_start mmddyy10. date_end mmddyy10.;
+	by member_id date_start date_end;
+
+	if last.date_start then output client_member_time;
+run;
 
 
 /*** MUNGE TO TARGET FORMATS ***/
