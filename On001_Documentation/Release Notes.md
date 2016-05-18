@@ -10,6 +10,7 @@
 
 ###Lower Level Changes
 - Derive the most recent Beneficiary Exclusion file
+- Fixed the market split naming code to only append the current market name
 
 
 
