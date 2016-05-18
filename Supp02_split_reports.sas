@@ -153,8 +153,8 @@ run;
 																		,%str()
 																		))
 			/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable))
-																		,Post050_output_deliverable
+																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable~Post01_disk_cleanup))
+																		,Post050_output_deliverable~Post01_disk_cleanup
 																		))
 			/* CC'd Email Recepients  */ ,list_cc_email           = %str()
 			/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
@@ -168,7 +168,7 @@ run;
 			%copy_originals(M035_Out.member_raw_stack,&group_name.);
 			%copy_originals(M018_Out.client_member_time,&group_name.);
 	
-			%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. &number,&path_project_logs.\_onboarding\Supp02_&number.log,prod3);
+			%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. a_&group_name,&path_project_logs.\_onboarding\Supp02_&group_name.log,prod3);
 			%AssertThat(&Py_code.,=,0);
 	
 		%end;

@@ -7,21 +7,18 @@
 ### DEVELOPER NOTES:
   Requires a standard PRM project to be set up and available
 """
-import sys
-import os
-sys.path.append(os.path.join(os.environ['USERPROFILE'],
-                             'HealthBI_LocalData'))
-import healthbi_env
-import shutil
 
+import os
+import shutil
 from prm.meta.output_datamart import DataMart
 from pathlib import Path
+
+import prm.meta.project
+META = prm.meta.project.parse_project_metadata()
 
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
-
-
 
 
 def main():
@@ -30,14 +27,14 @@ def main():
         provided data mart.
     """
     path_template_source = Path(os.path.realpath(__file__)).parent
-    path_dir_codegen_output = Path(healthbi_env.META[2, 'out'])
+    path_dir_codegen_output = META[2, 'out']
     list_template_names = [
         path_.name.lower() for path_ in path_template_source.iterdir() if path_.is_dir()
         ]
 
     mainline_template_names = {
         path_.name.lower()
-        for path_ in Path(healthbi_env.META[2, 'code']).iterdir()
+        for path_ in META[2, 'code'].iterdir()
         if path_.is_dir()
         }
 
@@ -46,12 +43,12 @@ def main():
     list_reference_files = ["Ref01_Data_Types.csv", "Ref02_sqlite_import_header.sql"]
     for name in list_reference_files:
         shutil.copyfile(
-            str(Path(healthbi_env.META[2, 'code']) / name),
+            str(META[2, 'code'] / name),
             str(path_template_source / name),
             )
 
     datamart_recursive = DataMart(
-        path_templates=Path(healthbi_env.META[2, 'code']),
+        path_templates=META[2, 'code'],
         template_name="_Recursive_Template",
         filepath_ref_datatypes=path_template_source / "Ref01_data_types.csv"
         )

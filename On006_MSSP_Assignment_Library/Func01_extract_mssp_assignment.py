@@ -17,14 +17,10 @@ from collections import defaultdict, Counter, OrderedDict, namedtuple
 import string
 import logging
 
-# pylint: disable=import-error
-# from python.file_utils import IndyPyPath
-# import prm.meta.project
-#
-# PRM_META = prm.meta.project.parse_project_metadata()
-sys.path.append(r's:\misc\_indymacros\code\python')
-
 from indypy.file_utils import IndyPyPath
+import prm.meta.project
+
+PRM_META = prm.meta.project.parse_project_metadata()
 
 from openpyxl import load_workbook
 
