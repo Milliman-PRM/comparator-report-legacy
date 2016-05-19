@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen, Jack Leemhuis
+### CODE OWNERS: Anna Chen, Jack Leemhuis, Jason Altieri, Sarah Prusinski
 ### OBJECTIVE:
 	Create a Supp program that can transfer the client market split reference file from txt file to csv. This program is for BSG only. 
 
