@@ -1,6 +1,7 @@
 #Release Notes
 
-##v5.1.0
+## v5.1.1
+  - Re-instated the `Path()` call in Wrap-Up so the resulting object would `Path` object as expected by the program
 
 ####Client Visible Changes (e.g. Updates to the Comparator Report Datamart)
 - *none*
