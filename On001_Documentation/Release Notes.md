@@ -1,5 +1,8 @@
 #Release Notes
 
+## v5.1.2
+  - Munge the `sys.path` in disk cleanup because the new python parser no longer does so for you. This allows functions to be imported from the main analytics-pipeline `disk_cleanup` script
+
 ## v5.1.1
   - Re-instated the `Path()` call in Wrap-Up so the resulting object would `Path` object as expected by the program
 
