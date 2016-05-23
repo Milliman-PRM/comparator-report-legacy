@@ -11,6 +11,8 @@
 import prm.meta.output_datamart
 import prm.meta.project
 META = prm.meta.project.parse_project_metadata()
+import sys
+sys.path.append(str(META[(999, "code")]))
 from Prod01_disk_cleanup import dir_cleanup
 
 # =============================================================================
