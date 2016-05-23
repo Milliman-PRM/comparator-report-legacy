@@ -57,7 +57,7 @@ if __name__ == '__main__':
     META = prm.meta.project.parse_project_metadata()
 
     CLIENT_ID = META["client_id"]
-    PATH_NETWORK_SHARE_ROOT = META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT
+    PATH_NETWORK_SHARE_ROOT = Path(META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT)
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
     if CLIENT_ID.lower() not in \
