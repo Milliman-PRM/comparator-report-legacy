@@ -279,10 +279,10 @@ proc sql;
 			as pct_ip_readmits label = "Percentage of IP discharges with an all cause readmission within 30 days"
 
 		,sum(case when upcase(detail.inpatient_readmit_yn) eq "Y" then detail.cnt_discharges_inpatient else 0 end)
-		 as cnt_ip_readmits label = "Count of IP discharges with an all cause readmission within 30 days"
+		 as cnt_ip_readmits label = "Number of IP discharges with an all cause readmission within 30 days"
 
 		,sum(case when upcase(detail.inpatient_readmit_potential_yn) eq "Y" then detail.cnt_discharges_inpatient else 0 end)
-			as cnt_pot_readmits label = "Count of IP discharges with the potential for readmission"
+			as cnt_pot_readmits label = "Number of IP discharges with the potential for readmission"
 
 		,sum(case when detail.acute_yn = 'Y' then detail.cnt_discharges_inpatient else 0 end)
 			as acute label="Acute Discharges"
