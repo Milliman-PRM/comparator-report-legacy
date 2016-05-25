@@ -74,6 +74,9 @@ proc sql;
 		,sum(case when memcnt.endoflife_numer_yn_chemolt14days eq "Y" then memcnt.memcnt else 0 end)
 			as cnt_chemo label = "Count of Cancer Decedents Recieving Chemotherapy Within 14 Days of Death"
 
+		,sum(case when memcnt.endoflife_denom_yn_chemolt14days = "Y" then memcnt.memcnt else 0 end)
+			as cnt_cancer label = "Count of Cancer Decedents"
+
 		,sum(case when memcnt.endoflife_numer_yn_hospicelt3day eq "Y" then memcnt.memcnt else 0 end) /
 			sum(case when memcnt.endoflife_denom_yn_hospicelt3day = "Y" then memcnt.memcnt else 0 end)
 			as pct_cancer_hospice_lt3days label = "Percentage of Cancer Decedents Admitted to Hospice for Less Than 3 Days"
