@@ -39,7 +39,13 @@ libname post010 "&post010.";
 
 /***** GENERATE RAW SOURCE DATA *****/
 
-proc summary nway missing data=post010.agg_claims_limited;
+data agg_claims_annaual_cost;
+	set post010.agg_claims_limited;
+
+	PRM_Costs = (PRM_Costs/memmos)*12;
+run;
+
+proc summary nway missing data=agg_claims_annaual_cost;
 	class member_id time_period elig_status_1;
 	var PRM_Costs;
 	output out = costs_by_member (drop = _:)sum=;
