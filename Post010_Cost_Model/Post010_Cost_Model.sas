@@ -110,6 +110,11 @@ proc sql;
 	;
 quit;
 
+/*Write this out so it can be used in the CPD program*/
+data post010.agg_claims_limited;
+	set agg_claims_limited;
+run;
+
 %GetVariableInfo(agg_claims_limited,meta_variables)
 
 proc sql noprint;
