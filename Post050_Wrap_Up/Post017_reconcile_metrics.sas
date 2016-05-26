@@ -50,7 +50,7 @@ run;
 	,cost_util_field /*The field to be summed from the cost_util table*/
 	);
 		proc sql;
-			create table cost_util_&metric_id. as
+			create table cost_util_rollup as
 			select
 				name_client
 				,time_period
@@ -74,7 +74,7 @@ run;
 				,cost.elig_status_1
 				,check
 				,metrics.metric_value
-			from cost_util_&metric_id. as cost
+			from cost_util_rollup as cost
 			left join post050.metrics_key_value as metrics on
 				cost.name_client = metrics.name_client and
 				cost.time_period = metrics.time_period and
@@ -94,8 +94,8 @@ run;
 
 
 /*Check sum of costs and sum of discharges*/
-%BasicMetricsTest(prm_costs_sum,prm_costs)
-%BasicMetricsTest(discharges_sum,prm_discharges)
+%BasicMetricsTest(prm_costs_sum_all_services,prm_costs)
+%BasicMetricsTest(discharges_sum_all_services,prm_discharges)
 
 
 /*Check per 1000 metric values*/
@@ -269,39 +269,6 @@ data pct_office_visits_diff;
 run;
 
 %AssertDatasetNotPopulated(pct_office_visits_diff,ReturnMessage=The pct_office_visists_pcp calculated from the cost_util table does not match the metrics_key_value table.)
-
-/*CPD Check*/
-
-proc summary nway missing data=post050.claims_distribution;
-	class name_client time_period elig_status_1;
-	var prm_costs;
-	output out=cpd_summ(drop = _:)sum=;
-run;
-
-proc sql;
-	create table cpd_check as
-	select
-		cost.name_client
-		,cost.time_period
-		,cost.elig_status_1
-		,check
-		,metrics.prm_costs
-	from cost_util_prm_costs_sum as cost
-	left join cpd_summ as metrics on
-		cost.name_client = metrics.name_client and
-		cost.time_period = metrics.time_period and
-		cost.elig_status_1 = metrics.elig_status_1
-	;
-quit;
-
-data cpd_cost_diff;
-	set cpd_check;
-	where round(check) ne round(prm_costs);
-run;
-
-%AssertDatasetNotPopulated(cpd_cost_diff,ReturnMessage=The total costs calculated from the cost_util table does not match the claims distribution table.)
-
-
 
 
 %put System Return Code = &syscc.;
