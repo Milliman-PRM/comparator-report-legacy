@@ -25,6 +25,7 @@ providerID,office_admin_drug,N,N
 claim_count,office_admin_drug,N,N
 provider,office_admin_drug,N,N
 specialty,office_admin_drug,N,N
+HCPCS,office_admin_drug,N,N
 name_client,memmos,Y,N
 time_period,memmos,Y,N
 elig_status_1,memmos,Y,N
