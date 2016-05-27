@@ -18,6 +18,13 @@ elig_status_1,claims_distribution,Y,N
 cost_bucket,claims_distribution,N,N
 member_count,claims_distribution,N,N
 prm_costs,claims_distribution,N,N
+name_client,office_admin_drug,Y,N
+time_period,office_admin_drug,Y,N
+elig_status_1,office_admin_drug,Y,N
+providerID,office_admin_drug,N,N
+claim_count,office_admin_drug,N,N
+provider,office_admin_drug,N,N
+specialty,office_admin_drug,N,N
 name_client,memmos,Y,N
 time_period,memmos,Y,N
 elig_status_1,memmos,Y,N

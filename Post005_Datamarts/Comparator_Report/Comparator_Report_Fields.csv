@@ -16,6 +16,10 @@ prm_allowed,,float,,N,,N,,Allowed costs
 prm_paid,,float,,N,,N,,Paid costs
 member_count,,integer,,N,,N,Members in a cost bucket for the CPD, The count of members in a given cost bucket of the claims distribution
 cost_bucket,,varchar,45,N,,N,Cost ranges for the CPD, Per member cost ranges for the claims disrtibution.
+providerID,,varchar,40,N,,N,Service provider ID., Service provider NPI.
+provider,,varchar,128,N,,N,Service provider name, Service provider name.
+claim_count,,integer,,N,,N,Count of office administered drug claims., Count of office administered drug claims.
+specialty,,varchar,2,N,,N,Provider specialty, Provider specialty code.
 prm_coverage_type,,varchar,8,N,Medical~Dental~Vision~Rx~Total,N,Type of coverage,"What type of coverage does this correspond to? (e.g. Medical, Rx)"
 type_benchmark,,varchar,8,N,Loosely~Well,N,,Type of benchmark (e.g. Loosely vs Well Managed)
 riskscr_service_avg_util,,float,,N,,N,Service level risk factor used for utilization,This is the service level risk adjustment factor applied to the published loosely or well managed benchmark utilization value.
