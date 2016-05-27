@@ -33,7 +33,7 @@ data part_b_drug_claims;
 run;
 
 proc summary nway missing data=part_b_drug_claims;
-	class name_client time_period elig_status_1 providerid;
+	class name_client time_period elig_status_1 HCPCS providerid;
 	var PRM_Costs;
 	output out=part_b_drug_summary(drop = _TYPE_ rename = (_FREQ_ = claim_count))sum=;
 run;
