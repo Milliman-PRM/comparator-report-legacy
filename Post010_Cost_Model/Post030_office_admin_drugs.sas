@@ -30,6 +30,7 @@ data part_b_drug_claims;
 	&assign_name_client.;
 	providerid = coalescec(providerid, "Unknown");
 	where mcrm_line in ("O16", "P34");
+	HCPCS = coalescec(HCPCS,"XXXXX");
 run;
 
 proc summary nway missing data=part_b_drug_claims;
