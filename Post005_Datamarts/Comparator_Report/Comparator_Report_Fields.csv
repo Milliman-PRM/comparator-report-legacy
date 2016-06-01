@@ -15,7 +15,7 @@ prm_costs,,float,,N,,N,Costs,"Costs chosen for the client.  This could be allowe
 prm_allowed,,float,,N,,N,,Allowed costs
 prm_paid,,float,,N,,N,,Paid costs
 member_count,,integer,,N,,N,Members in a cost bucket for the CPD, The count of members in a given cost bucket of the claims distribution
-cost_bucket,,varchar,45,N,,N,Cost ranges for the CPD, Per member cost ranges for the claims disrtibution.
+cost_bucket,,varchar,45,N,,N,Cost ranges for the CPD, Per member cost ranges for the claims distribution.
 providerID,,varchar,40,N,,N,Service provider ID., Service provider NPI.
 provider,,varchar,128,N,,N,Service provider name, Service provider name.
 claim_count,,integer,,N,,N,Count of office administered drug claims., Count of office administered drug claims.
