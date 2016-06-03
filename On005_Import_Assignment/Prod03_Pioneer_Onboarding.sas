@@ -111,7 +111,7 @@ data members_all;
 	*Make a ficticious date_latestpaid for the current month.
 	Does not have to be accurate just accurate enough so we can
 	distinguish most recent.;
-	if current_month then date_latestpaid = mdy(&deliverable_month., 28, &deliverable_year.);
+	if current_month then date_latestpaid = intnx('month',mdy(&deliverable_month., 1, &deliverable_year.),1)-1;
 	%use_xref(bene_hic_num,member_id)
 	drop bene_hic_num;
 run;
