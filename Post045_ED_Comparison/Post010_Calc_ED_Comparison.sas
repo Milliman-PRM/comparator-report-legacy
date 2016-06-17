@@ -115,33 +115,22 @@ proc sql;
 	select 
 		"&name_client." as name_client
 		,member_id
-		,aggs.time_period as time_period
-		,cases.elig_status_1
+		,time_slice as time_period
+		,elig_status_1
 		,"ER" as metric_category
-
 		,sum(PRM_Util)
 			as ED label="ED visits"
-
 		,sum(prm_util_riskadj)
 			as ED_rskadj label="ED visits Risk Adjusted"
-
-		,sum(cases.prm_nyu_emergent_avoidable * PRM_Util)
+		,sum(prm_nyu_emergent_avoidable * PRM_Util)
 			as ED_emer_prev label="# of ED visits Emergent Preventable (NYU logic)"
-	from Ed_cases_table as cases
-	left join 
-		Post010.basic_aggs_elig_status as aggs
-		on cases.time_slice = aggs.time_period
-		and cases.elig_status_1 = aggs.elig_status_1
+	from Ed_cases_table
 	group by
-		name_client
-		,member_id
-		,time_period
-		,cases.elig_status_1
-		,metric_category
-		,aggs.memmos_sum
-		,aggs.riskscr_1_avg
+		member_id
+		,time_slice
+		,elig_status_1
 	having
-		sum(cases.prm_nyu_emergent_avoidable * PRM_Util) > 0
+		sum(prm_nyu_emergent_avoidable * PRM_Util) > 0
 	order by time_period desc
 		,ED_emer_prev desc
 	;
