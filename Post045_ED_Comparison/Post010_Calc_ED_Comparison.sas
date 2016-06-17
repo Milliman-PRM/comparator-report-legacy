@@ -109,6 +109,41 @@ proc sql;
 	;
 quit;
 
+/*Calculate Preventable ED visits per member*/
+proc sql;
+	create table Ed_prev_by_member as
+	select 
+		"&name_client." as name_client
+		,member_id
+		,aggs.time_period as time_period
+		,cases.elig_status_1
+		,"ER" as metric_category
+
+		,sum(PRM_Util)
+			as ED label="ED visits"
+
+		,sum(prm_util_riskadj)
+			as ED_rskadj label="ED visits Risk Adjusted"
+
+		,sum(cases.prm_nyu_emergent_avoidable * PRM_Util)
+			as ED_emer_prev label="# of ED visits Emergent Preventable (NYU logic)"
+
+	from Ed_cases_table as cases
+	left join 
+		Post010.basic_aggs_elig_status as aggs
+		on cases.time_slice = aggs.time_period
+		and cases.elig_status_1 = aggs.elig_status_1
+	group by
+		name_client
+		,member_id
+		,time_period
+		,cases.elig_status_1
+		,metric_category
+		,aggs.memmos_sum
+		,aggs.riskscr_1_avg
+	;
+quit;
+
 /*Transpose the dataset to get the data into a long format*/
 proc transpose data=measures
 		out=metrics_transpose(rename=(COL1 = metric_value))
@@ -117,13 +152,18 @@ proc transpose data=measures
 	by name_client time_period metric_category elig_status_1;
 run;
 
-/*Write the table out to the post045 library*/
+/*Write the tables out to the post045 library*/
 data post045.metrics_ER;
 	format &metrics_key_value_cgfrmt.;
 	set metrics_transpose;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+
+data post045.ED_prev_by_mem;
+	set ED_prev_by_member;
+run;
+
 %LabelDataSet(post045.metrics_ER)
 
 %put return_code = &syscc.;
