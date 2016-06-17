@@ -127,7 +127,6 @@ proc sql;
 
 		,sum(cases.prm_nyu_emergent_avoidable * PRM_Util)
 			as ED_emer_prev label="# of ED visits Emergent Preventable (NYU logic)"
-
 	from Ed_cases_table as cases
 	left join 
 		Post010.basic_aggs_elig_status as aggs
@@ -141,6 +140,10 @@ proc sql;
 		,metric_category
 		,aggs.memmos_sum
 		,aggs.riskscr_1_avg
+	having
+		sum(cases.prm_nyu_emergent_avoidable * PRM_Util) > 0
+	order by time_period desc
+		,ED_emer_prev desc
 	;
 quit;
 
