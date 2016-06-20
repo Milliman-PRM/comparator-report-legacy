@@ -70,7 +70,8 @@ run;
 proc sql;
 	create table Heart_failure_by_patient as
 	select distinct
-		claims.time_slice
+		"&name_client." as name_client
+		,claims.time_slice
 		,claims.member_id
 		,mems.elig_status_1
 		,pqi_full_desc
