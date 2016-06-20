@@ -151,11 +151,11 @@ data post045.metrics_ER;
 	keep &metrics_key_value_cgflds.;
 	attrib _all_ label = ' ';
 run;
+%LabelDataSet(post045.metrics_ER)
 
 data post045.ED_prev_by_mem;
 	set ED_prev_by_member;
 run;
-
-%LabelDataSet(post045.metrics_ER)
+%LabelDataSet(post045.ED_prev_by_mem)
 
 %put return_code = &syscc.;
