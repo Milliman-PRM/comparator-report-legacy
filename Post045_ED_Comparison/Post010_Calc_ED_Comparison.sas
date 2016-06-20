@@ -117,7 +117,6 @@ proc sql;
 		,time_slice as time_period
 		,member_id
 		,elig_status_1
-		,"ER" as metric_category
 		,sum(PRM_Util)
 			as ED label="ED visits"
 		,sum(prm_util_riskadj)
