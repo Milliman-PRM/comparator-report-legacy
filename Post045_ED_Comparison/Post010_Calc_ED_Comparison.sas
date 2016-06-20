@@ -114,8 +114,8 @@ proc sql;
 	create table Ed_prev_by_member as
 	select 
 		"&name_client." as name_client
-		,member_id
 		,time_slice as time_period
+		,member_id
 		,elig_status_1
 		,"ER" as metric_category
 		,sum(PRM_Util)
