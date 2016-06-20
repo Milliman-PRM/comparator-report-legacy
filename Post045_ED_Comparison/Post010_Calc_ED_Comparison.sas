@@ -124,6 +124,8 @@ proc sql;
 			as ED_rskadj label="ED visits Risk Adjusted"
 		,sum(prm_nyu_emergent_avoidable * PRM_Util)
 			as ED_emer_prev label="# of ED visits Emergent Preventable (NYU logic)"
+		,sum(prm_nyu_emergent_primary_care * PRM_Util)
+			as ED_emer_pricare	label="# of ED visits Emergent Primary Care Treatable (NYU logic)"
 	from Ed_cases_table
 	group by
 		member_id
@@ -131,6 +133,8 @@ proc sql;
 		,elig_status_1
 	having
 		sum(prm_nyu_emergent_avoidable * PRM_Util) > 0
+			or
+		sum(prm_nyu_emergent_primary_care * PRM_Util) > 0
 	order by time_period desc
 		,ED_emer_prev desc
 	;
