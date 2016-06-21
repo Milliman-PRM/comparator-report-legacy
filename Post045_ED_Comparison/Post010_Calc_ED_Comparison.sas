@@ -119,23 +119,26 @@ proc sql;
 		,elig_status_1
 		,sum(PRM_Util)
 			as ED label="ED visits"
-		,sum(prm_util_riskadj)
-			as ED_rskadj label="ED visits Risk Adjusted"
-		,sum(prm_nyu_emergent_avoidable * PRM_Util)
-			as ED_emer_prev label="# of ED visits Emergent Preventable (NYU logic)"
 		,sum(prm_nyu_emergent_primary_care * PRM_Util)
 			as ED_emer_pricare	label="# of ED visits Emergent Primary Care Treatable (NYU logic)"
+		,sum(prm_nyu_emergent_primary_care * PRM_Util) / sum(PRM_Util)
+			as ED_prct_pricare label="% of ED visits Emergent Primary Care Treatable (NYU logic)"
+			format percent10.5
 	from Ed_cases_table
+	where time_slice in
+		(
+		select max(time_slice)
+		from Ed_cases_table
+		)
 	group by
 		member_id
 		,time_slice
 		,elig_status_1
 	having
-		sum(prm_nyu_emergent_avoidable * PRM_Util) > 0
-			or
 		sum(prm_nyu_emergent_primary_care * PRM_Util) > 0
-	order by time_period desc
-		,ED_emer_prev desc
+	order by
+		ED_emer_pricare desc
+		,ED_prct_pricare desc
 	;
 quit;
 
