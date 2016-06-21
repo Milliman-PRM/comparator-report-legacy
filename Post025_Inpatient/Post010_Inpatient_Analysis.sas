@@ -76,15 +76,20 @@ proc sql;
 		,mems.elig_status_1
 		,pqi_full_desc
 		,count(distinct caseadmitid) as case_count
-		,min(date_case_earliest) as earliest_case_starting format=YYMMDDd10.
-		,max(date_case_latest) as latest_case_ending format=YYMMDDd10.
 	from
 		Agg_claims_med_inpatient as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join M015_out.prm_ahrq_pqi as legend
 			on claims.prm_ahrq_pqi = legend.prm_ahrq_pqi
-	where upcase(claims.prm_ahrq_pqi) = 'PQI08'
+	where
+		upcase(claims.prm_ahrq_pqi) = 'PQI08'
+			and
+		claims.time_slice in
+			(
+			select max(time_slice)
+			from Agg_claims_med_inpatient
+			)
 	group by
 		claims.time_slice
 		,claims.member_id
