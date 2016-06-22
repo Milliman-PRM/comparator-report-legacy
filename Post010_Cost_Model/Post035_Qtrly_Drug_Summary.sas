@@ -82,4 +82,4 @@ quit;
 data post010.qtrly_drug_summary;
 	set qtrly_drug_costs;
 run;
-%LabelDataSet(post010.qtrly_drug_summary;
+%LabelDataSet(post010.qtrly_drug_summary);
