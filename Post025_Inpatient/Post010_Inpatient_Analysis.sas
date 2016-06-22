@@ -68,7 +68,7 @@ run;
 
 /*Generate member-level unaggregated Congestive Heart Failure metrics before Rollup*/
 proc sql;
-	create table Heart_failure_by_patient as
+	create table Heart_failure_by_member as
 	select distinct
 		"&name_client." as name_client
 		,claims.time_slice
@@ -368,10 +368,10 @@ proc transpose data = measures
 	by time_period elig_status_1;
 run;
 
-data post025.Heart_failure_by_patient;
-	set Heart_failure_by_patient;
+data post025.Heart_failure_by_mem;
+	set Heart_failure_by_member;
 run;
-%LabelDataSet(post025.Heart_failure_by_patient)
+%LabelDataSet(post025.Heart_failure_by_mem)
 
 data post025.metrics_inpatient;
 	format &metrics_key_value_cgfrmt.;
