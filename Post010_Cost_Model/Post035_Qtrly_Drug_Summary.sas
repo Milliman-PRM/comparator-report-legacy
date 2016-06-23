@@ -49,15 +49,15 @@ libname post010 "&post010.";
 
 proc sql;
 	create table qtrly_drug_costs as
-	select
+	select distinct
 		"&name_client." as name_client
 		,claims.time_slice as quarter
 		,claims.HCPCS
 		,description.hcpcs_desc
 		,sum(mr_procs * rowcnt) as utilization
 		,sum(prm_costs) as cost format dollar20.2
-		,sum(prm_costs) / sum(mr_procs * rowcnt) as avg_cost format dollar20.2
-		,sum(prm_costs) / qtr_total_cost as share_of_costs format percent10.4
+		,calculated cost / sum(mr_procs * rowcnt) as avg_cost format dollar20.2
+		,calculated cost / qtr_total_cost as share_of_costs format percent10.4
 	from
 		Agg_claims_med_drugs as claims
 	join
@@ -72,11 +72,11 @@ proc sql;
 	on claims.hcpcs = description.hcpcs
 	group by
 		claims.time_slice
-		,claims.HCPCS
+		,claims.hcpcs
 	having
-		sum(mr_procs * rowcnt) > 0
+		calculated utilization > 0
 			or
-		sum(prm_costs) > 0
+		calculated cost > 0
 	order by
 		quarter desc
 		,share_of_costs desc

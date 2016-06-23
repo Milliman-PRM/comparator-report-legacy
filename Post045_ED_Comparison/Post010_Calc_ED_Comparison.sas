@@ -118,10 +118,10 @@ proc sql;
 		,member_id
 		,elig_status_1
 		,sum(PRM_Util)
-			as ED label="ED visits"
+			as ED_util label="ED visits"
 		,sum(prm_nyu_emergent_primary_care * PRM_Util)
 			as ED_emer_pricare	label="# of ED visits Emergent Primary Care Treatable (NYU logic)"
-		,sum(prm_nyu_emergent_primary_care * PRM_Util) / sum(PRM_Util)
+		,calculated ED_emer_pricare / calculated ED_util
 			as ED_prct_pricare label="% of ED visits Emergent Primary Care Treatable (NYU logic)"
 			format percent10.5
 	from Ed_cases_table
@@ -135,7 +135,7 @@ proc sql;
 		,time_slice
 		,elig_status_1
 	having
-		sum(prm_nyu_emergent_primary_care * PRM_Util) > 0
+		calculated ED_emer_pricare > 0
 	order by
 		ED_emer_pricare desc
 		,ED_prct_pricare desc
