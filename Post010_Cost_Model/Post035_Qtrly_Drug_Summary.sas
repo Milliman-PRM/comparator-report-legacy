@@ -52,7 +52,8 @@ proc sql;
 	select
 		"&name_client." as name_client
 		,claims.time_slice as quarter
-		,HCPCS
+		,claims.HCPCS
+		,description.hcpcs_desc
 		,sum(mr_procs * rowcnt) as utilization
 		,sum(prm_costs) as cost format dollar20.2
 		,sum(prm_costs) / sum(mr_procs * rowcnt) as avg_cost format dollar20.2
@@ -66,9 +67,12 @@ proc sql;
 		group by time_slice
 		) as subtotal
 	on claims.time_slice = subtotal.time_slice
+	left join
+		M015_Out.Hcpcs_descr as description
+	on claims.hcpcs = description.hcpcs
 	group by
 		claims.time_slice
-		,HCPCS
+		,claims.HCPCS
 	having
 		sum(mr_procs * rowcnt) > 0
 			or
