@@ -102,24 +102,16 @@ proc sql;
 	as select
 		custom.time_period
 		,custom.elig_status_1
-		,round(custom.ED_util, .001) as custom_ED_util
-		,round(orig_visits.metric_value, .001) as original_ED_util
 		,round(custom.ED_emer_pricare, .001) as custom_preventable
 		,round(orig_prev.metric_value, .001) as original_preventable
 
 	from custom_ED_visits as custom
-	left join
-		original_ED_visits as orig_visits
-		on custom.time_period = orig_visits.time_period
-		and custom.elig_status_1 = orig_visits.elig_status_1
 	left join
 		original_ED_preventable as orig_prev
 		on custom.time_period = orig_prev.time_period
 		and custom.elig_status_1 = orig_prev.elig_status_1
 	where
 		calculated custom_preventable ne calculated original_preventable
-			or
-		calculated custom_ED_util ne calculated original_ED_util
 	;
 quit;
 
