@@ -75,7 +75,7 @@ proc sql;
 		,claims.member_id
 		,mems.elig_status_1
 		,pqi_full_desc
-		,count(distinct caseadmitid) as case_count
+		,sum(discharges) as case_count
 	from
 		Agg_claims_med_inpatient as claims
 		inner join post008.members as mems
