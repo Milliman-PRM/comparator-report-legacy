@@ -135,6 +135,8 @@ proc sql;
 		,time_slice
 		,elig_status_1
 	having
+		calculated ED_util > 0
+			or
 		calculated ED_emer_pricare > 0
 	order by
 		ED_emer_pricare desc
