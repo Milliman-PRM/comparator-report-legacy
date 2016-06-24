@@ -12,7 +12,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
 
-%let path_file_output = &post050.custom_report.xlsx;
+%let path_file_output = &post045.comparator_supplement.xlsx;
 %put path_file_output = &path_file_output.;
 
 libname post010 "&post010." access=readonly;

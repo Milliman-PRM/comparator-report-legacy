@@ -93,6 +93,8 @@ proc sql;
 	group by
 		claims.time_slice
 		,claims.member_id
+	having
+		calculated case_count > 0
 	order by claims.time_slice desc
 		,case_count desc
 		,member_id;
