@@ -13,7 +13,7 @@ import os
 import sys
 import re
 
-from indypy.file_utils import IndyPyPath
+from python.file_utils import IndyPyPath
 
 _ANTI_PATTERN = r'(_all|_a_).+?\.(sas7bdat|sqlite|sas7bndx)'
 
