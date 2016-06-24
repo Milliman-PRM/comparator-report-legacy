@@ -141,7 +141,7 @@ proc sql;
 	order by
 		ED_emer_pricare desc
 		,ED_prct_pricare desc
-		,ED desc
+		,ED_util desc
 	;
 quit;
 
