@@ -109,6 +109,40 @@ proc sql;
 	;
 quit;
 
+/*Calculate Preventable ED visits per member*/
+proc sql;
+	create table Ed_prev_by_member as
+	select 
+		"&name_client." as name_client
+		,time_slice as time_period
+		,member_id
+		,elig_status_1
+		,sum(PRM_Util)
+			as ED_util label="ED visits"
+		,sum(prm_nyu_emergent_primary_care * PRM_Util)
+			as ED_emer_pricare	label="# of ED visits Emergent Primary Care Treatable (NYU logic)"
+		,calculated ED_emer_pricare / calculated ED_util
+			as ED_prct_pricare label="% of ED visits Emergent Primary Care Treatable (NYU logic)"
+			format percent10.5
+	from Ed_cases_table
+	where time_slice in
+		(
+		select max(time_slice)
+		from Ed_cases_table
+		)
+	group by
+		member_id
+		,time_slice
+		,elig_status_1
+	having
+		calculated ED_emer_pricare > 0
+	order by
+		ED_emer_pricare desc
+		,ED_prct_pricare desc
+		,ED_util desc
+	;
+quit;
+
 /*Transpose the dataset to get the data into a long format*/
 proc transpose data=measures
 		out=metrics_transpose(rename=(COL1 = metric_value))
@@ -117,7 +151,7 @@ proc transpose data=measures
 	by name_client time_period metric_category elig_status_1;
 run;
 
-/*Write the table out to the post045 library*/
+/*Write the tables out to the post045 library*/
 data post045.metrics_ER;
 	format &metrics_key_value_cgfrmt.;
 	set metrics_transpose;
@@ -125,5 +159,10 @@ data post045.metrics_ER;
 	attrib _all_ label = ' ';
 run;
 %LabelDataSet(post045.metrics_ER)
+
+data post045.ED_prev_by_mem;
+	set ED_prev_by_member;
+run;
+%LabelDataSet(post045.ED_prev_by_mem)
 
 %put return_code = &syscc.;
