@@ -1,8 +1,24 @@
 #Release Notes
 
+## v6.0.0
+
+### Client Visible Changes
+ - Added member level reporting for CaroMont for the following metrics:
+  - Preventable ED
+  - Ambulatory Sensitive Admissions for Heart Failure
+  - Part B Drug Expense and Utilization (non-chemo)
+ 
+###  Logic Changes
+ - *none* 
+
+### Lower Level Changes
+ - Removed reference to retired ```prm_parser```
+ - Updated report split program to call postboarding libraries after assignment
+
+
 ## v5.2.0
 
-#### Client Visible Changes (e.g. Updates to the Comparator Report Datamart)
+### Client Visible Changes (e.g. Updates to the Comparator Report Datamart)
 - Added readmission and cancer denominator counts
 - Added a claims probability distribution to the output datamart
 - Added an office administered drug summary to the output datamart
@@ -22,7 +38,7 @@
 
 ## v5.1.0
 
-#### Client Visible Changes (e.g. Updates to the Comparator Report Datamart)
+### Client Visible Changes (e.g. Updates to the Comparator Report Datamart)
 - *none*
 
 ### Logic Changes
