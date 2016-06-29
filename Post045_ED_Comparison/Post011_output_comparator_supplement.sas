@@ -43,7 +43,7 @@ run;
 
 data original_CHF_admits;
 	set Post025.Metrics_inpatient;
-	where time_period = '2015Q1_2015Q4' and metric_id = 'pqi08_admits';
+	where metric_id = 'pqi08_admits';
 run;
 
 proc sql;
@@ -52,7 +52,7 @@ proc sql;
 		custom.*
 		,orig.metric_value
 	from custom_CHF_admits as custom
-	left join original_CHF_admits as orig
+	inner join original_CHF_admits as orig
 		on custom.time_slice = orig.time_period
 		and custom.elig_status_1 = orig.elig_status_1
 	where orig.metric_value ne custom.case_count
