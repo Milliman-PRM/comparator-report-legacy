@@ -87,14 +87,9 @@ proc summary nway missing data=Post045.Ed_prev_by_mem;
 	output out=custom_ED_visits (drop=_:) sum=;
 run;
 
-data original_ED_visits;
-	set Post045.Metrics_er;
-	where time_period = '2015Q1_2015Q4' and metric_id = 'ED';
-run;
-
 data original_ED_preventable;
 	set Post045.Metrics_er;
-	where time_period = '2015Q1_2015Q4' and metric_id = 'ED_emer_pricare';
+	where metric_id = 'ED_emer_pricare';
 run;
 
 proc sql;
@@ -106,7 +101,7 @@ proc sql;
 		,round(orig_prev.metric_value, .001) as original_preventable
 
 	from custom_ED_visits as custom
-	left join
+	inner join
 		original_ED_preventable as orig_prev
 		on custom.time_period = orig_prev.time_period
 		and custom.elig_status_1 = orig_prev.elig_status_1
