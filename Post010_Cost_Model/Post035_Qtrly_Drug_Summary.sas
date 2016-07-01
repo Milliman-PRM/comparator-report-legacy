@@ -21,16 +21,58 @@ libname M015_Out "&M015_Out." access=readonly;
 libname post008 "&post008." access=readonly;
 libname post010 "&post010.";
 
+%let months_runout_min = 3;
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
-/*  Currently hard-coded dates because the report is a one-off  */
-%let time_slices = 2015Q4~2015Q3~2015Q2~2015Q1~2014Q4~2014Q3~2014Q2~2014Q1~2013Q4~2013Q3~2013Q2~2013Q1;
-%let list_inc_start = 20362~20270~20179~20089~19997~19905~19814~19724~19632~19540~19449~19359;
-%let list_inc_end = 20453~20361~20269~20178~20088~19996~19904~19813~19723~19631~19539~19448;
-%let list_paid_thru = 20544~20453~20361~20269~20178~20088~19996~19904~19813~19723~19631~19539;
+/* Calculate custom quarterly time windows */
+data time_windows;
+	format
+		time_period $8.
+		inc_start
+		inc_end
+		paid_thru
+		YYMMDDd10.
+		;
+	paid_thru = &Date_LatestPaid_Round.;
+	inc_end = intnx('month', paid_thru, -&months_runout_min., 'end');
+	/*Now round to nearest calendar quarter.*/
+	inc_end = intnx('month', inc_end, -mod(month(inc_end), 3), 'end');
+	inc_start = intnx('month', inc_end, -2, 'beg');
+	time_period = cats(
+		year(inc_start), 'Q', ceil(month(inc_start)/3)
+		);
+	output;
+	do while(intnx('month', inc_start, -3, 'beg') ge &Date_CredibleStart.);
+		paid_thru = intnx('month', paid_thru, -3, 'end');
+		inc_end = intnx('month', inc_end, -3, 'end');
+		inc_start = intnx('month', inc_start, -3, 'beg');
+		time_period = cats(
+			year(inc_start), 'Q', ceil(month(inc_start)/3)
+			);
+		output;
+	end;
+run;
 
+proc sql noprint;
+	select
+		time_period
+		,inc_start format best12.
+		,inc_end format best12.
+		,paid_thru format best12.
+	into
+		:time_slices separated by "~"
+		,:list_inc_start separated by "~"
+		,:list_inc_end separated by "~"
+		,:list_paid_thru separated by "~"
+	from Time_windows
+	order by time_period desc;
+quit;
+%put &=time_slices.;
+%put &=list_inc_start.;
+%put &=list_inc_end.;
+%put &=list_paid_thru.;
 
 /***** GENERATE RAW SOURCE DATA *****/
 %agg_claims(
