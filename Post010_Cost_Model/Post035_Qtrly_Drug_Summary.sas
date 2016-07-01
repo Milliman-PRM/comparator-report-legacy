@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Brandon Patterson
+### CODE OWNERS: Brandon Patterson, Aaron Hoch
 
 ### OBJECTIVE:
 	Generate a (one-off) quarterly summary of non-part-D drug use,
