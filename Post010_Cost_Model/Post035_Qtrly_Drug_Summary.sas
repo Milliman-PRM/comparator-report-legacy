@@ -69,6 +69,10 @@ proc sql noprint;
 	from Time_windows
 	order by time_period desc;
 quit;
+%put &=time_slices.;
+%put &=list_inc_start.;
+%put &=list_inc_end.;
+%put &=list_paid_thru.;
 
 /***** GENERATE RAW SOURCE DATA *****/
 %agg_claims(
