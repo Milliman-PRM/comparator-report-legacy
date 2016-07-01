@@ -11,7 +11,6 @@
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
 /*Libnames*/
 libname M018_Out "&M018_Out.";
@@ -25,6 +24,8 @@ libname M180_Out "&M180_Out.";
 
 %RunPythonScript(,%GetParentFolder(0)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
 %AssertThat(&Path_code.,=,0);
+
+%include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
 /*Run the Supp04_MHS_Transpose.sas only if the client is MHS.*/
 %macro run_MHS_Only();

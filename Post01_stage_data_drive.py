@@ -84,25 +84,28 @@ class PostboardModule(object):
 
 
 if __name__ == '__main__':
+    import prm.meta.project
+    PRM_META = prm.meta.project.parse_project_metadata()
     import sys
-    sys.path.append(os.path.join(os.environ['USERPROFILE'], 'HealthBI_LocalData'))
-    import healthbi_env
+    sys.path.append(str(PRM_META[10, 'code'] / 'healthbi_driver'))
 
     # Rebuild all basic folders (especially local module folders)
     from driver import Driver
 
     driver_ = Driver(
-        project_id=healthbi_env.META['project_id'],
-        deliverable_name=healthbi_env.META['deliverable_name'],
+        project_id=PRM_META['project_id'],
+        deliverable_name=PRM_META['deliverable_name'],
         prod_input=os.path.join(
-            healthbi_env.META['path_project'],
+            str(
+                PRM_META['path_project']
+            ),
             'driver.json',
             ),
         )
     driver_.create_folders()
 
     # Move on to making postboarding folders
-    PATH_PROJECT_DATA = Path(healthbi_env.META['path_project_data']) / 'postboarding'
+    PATH_PROJECT_DATA = PRM_META['path_project_data'] / 'postboarding'
     try:
         PATH_PROJECT_DATA.mkdir()
     except FileExistsError:

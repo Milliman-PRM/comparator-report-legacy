@@ -66,6 +66,40 @@ data disch_xwalk;
 		;
 run;
 
+/*Generate member-level unaggregated Congestive Heart Failure metrics before Rollup*/
+proc sql;
+	create table Heart_failure_by_member as
+	select distinct
+		"&name_client." as name_client
+		,claims.time_slice
+		,claims.member_id
+		,mems.elig_status_1
+		,pqi_full_desc
+		,sum(discharges) as case_count
+	from
+		Agg_claims_med_inpatient as claims
+		inner join post008.members as mems
+			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
+		left join M015_out.prm_ahrq_pqi as legend
+			on claims.prm_ahrq_pqi = legend.prm_ahrq_pqi
+	where
+		upcase(claims.prm_ahrq_pqi) = 'PQI08'
+			and
+		claims.time_slice in
+			(
+			select max(time_slice)
+			from Agg_claims_med_inpatient
+			)
+	group by
+		claims.time_slice
+		,claims.member_id
+	having
+		calculated case_count > 0
+	order by claims.time_slice desc
+		,case_count desc
+		,member_id;
+quit;
+
 /*Rollup as far as we can to support both utilization metrics and details summary.*/
 /*There are some redundant columns (e.g. discharge status code and description) intentionally
   mapped on here so we can naively code gen a summary below to get details_inpatient*/
@@ -335,6 +369,11 @@ proc transpose data = measures
 	;
 	by time_period elig_status_1;
 run;
+
+data post025.Heart_failure_by_mem;
+	set Heart_failure_by_member;
+run;
+%LabelDataSet(post025.Heart_failure_by_mem)
 
 data post025.metrics_inpatient;
 	format &metrics_key_value_cgfrmt.;
