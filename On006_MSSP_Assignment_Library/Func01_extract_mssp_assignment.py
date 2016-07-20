@@ -335,10 +335,6 @@ def main():  # pragma: no cover
 
 
 if __name__ == '__main__':
-    sys.path.append(str(IndyPyPath(os.environ['USERPROFILE']) / 'HealthBI_LocalData'))
-    import prm_parser
-    PRM_META = prm_parser.parse_meta()
-    prm_parser.munge_python_path(PRM_META)
     _TARGET_PATH = PRM_META[(17, 'out')]
     _PATH_RECEIVED = PRM_META["path_project_received_ref"]
     main()
