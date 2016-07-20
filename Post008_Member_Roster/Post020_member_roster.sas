@@ -333,6 +333,18 @@ quit;
 
 %let zero_memmos_perc = %sysfunc(round(%sysevalf(&zero_memmos_lines_recent. / %getrecordcount(members_tmp_recent)),0.0001));
 %put Percentage of member records from the most recent time slice indicating zero member months: &zero_memmos_perc.;
-%assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
+
+*Check pioneers at a much higher threshold due to expected year-over-year turnover in membership.;
+%macro conditional_check();
+	
+	%if %upcase(&cclf_ccr_absent_any_prior_cclf8.) eq EXCLUDE %then %do;
+		%assertthat(&zero_memmos_perc.,lt,.10,ReturnMessage=An unusually high proportion of members have time periods with 0 member months);
+	%end;
+	%else %do;
+		%assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
+	%end;
+%mend;
+
+%conditional_check();
 
 %put System Return Code = &syscc.;
