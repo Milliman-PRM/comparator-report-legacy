@@ -66,8 +66,3 @@ quit;
 %LabelDataSet(post010.mem_capped_cost)
 
 %put System Return Code = &syscc.;
-
-
-
-
-
