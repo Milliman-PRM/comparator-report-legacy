@@ -14,16 +14,13 @@ import shutil
 import string
 from collections import defaultdict, Counter, OrderedDict, namedtuple
 from datetime import datetime
-
+from openpyxl import load_workbook
 import prm.meta.project
 from indypy.file_utils import IndyPyPath
 
 PRM_META = prm.meta.project.parse_project_metadata()
 
-from openpyxl import load_workbook
-
 LOGGER = logging.getLogger(__name__)
-
 
 _QUARTER_RANGE_DICT = {
     1: 4,
@@ -264,7 +261,7 @@ def _write_data_to_csvs(final_dictionary):
         try:
             actual_date = total_counter.most_common(1)[0][0]
         except IndexError:
-            LOGGER.debug("Actual Date not found for file %s" % str(workbook))
+            LOGGER.debug("Actual Date not found for file %s", str(workbook))
             continue
         date_range = _map_start_end_date(actual_date)
         if date_range[0].find('1-1') > -1 and date_range[1].find('12-31') > -1:
@@ -286,7 +283,8 @@ def _write_data_to_csvs(final_dictionary):
                         continue
                     elif row_number == values.header_row:
                         headers = [name.upper().strip()
-                                   for name in _TABLE_FIELD_DICT[values.inferred_table_name.upper()]]
+                                   for name in _TABLE_FIELD_DICT[values.inferred_table_name.upper()]
+                                   ]
                         if not values.inferred_table_name[-1] == '5':
                             for cell in row:
                                 clean_cell_value = re.sub(  # remove duplicate spaces
@@ -339,8 +337,12 @@ def _table_five_column_inference(row):
 
 
 def main():  # pragma: no cover
+    """
+    Crawl through reference files, detect assignment files, and parse out their useful
+    contents into a format that is easier to consume
+    """
     files = _exclude_files(IndyPyPath(_PATH_RECEIVED), 'Address')
-    LOGGER.debug("%d files found" % len(files))
+    LOGGER.debug("%d files found", len(files))
     tab_name_dict = _scrape_tab_names(files)
     LOGGER.debug("Processed Tab Names to Workbook mappings...")
     annotated_tab_name_dict = _identify_useful_tabs(tab_name_dict)
