@@ -62,7 +62,7 @@ _TABLE_FIELD_DICT = OrderedDict([
     ('TABLE 1-5', _FIELD_NAMES + ['Date of Death', 'NotAssigned1', 'NotAssigned2', 'NotAssigned3',
                                   'NotAssigned4', 'NotAssigned5', 'NotAssigned6']),
     ('TABLE 1-6', _FIELD_NAMES + ['Date of Death']),
-    ('TABLE 1-1', _FIELD_NAMES)
+    ('TABLE 1-1', _FIELD_NAMES + ['Monthly Eligibility Flag {}'.format(x) for x in range(1, 13)])
 ])
 
 _FILE_DATE_PATTERN_REGEX = re.compile(r'(QASSGN|HASSGN).+?(D\d{6}\.T\d{6})')
@@ -188,7 +188,8 @@ def _check_for_field_names(worksheet):
                 if _keyword_check(row_values, _TABLE5_KEYWORD):
                     return worksheet.title, row_number, prospective_check
             upper_case_fields = [field.upper().strip()
-                                 for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]]
+                                 for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]
+                                 if field.upper.find('ELIGIBILITY') == -1]  # may not be present
             field_check = set(upper_case_fields) <= set(row_values)
             if field_check:
                 return worksheet.title, row_number, prospective_check
@@ -196,7 +197,9 @@ def _check_for_field_names(worksheet):
             for table, fields in _TABLE_FIELD_DICT.items():
                 if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
                     prospective_check = True
-                upper_case_fields = [field.upper().strip() for field in fields]
+                upper_case_fields = [field.upper().strip()
+                                     for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]
+                                     if field.upper.find('ELIGIBILITY') == -1]  # may not be present
                 field_check = set(upper_case_fields) <= set(row_values)
                 if field_check:
                     return table, row_number, prospective_check
@@ -207,7 +210,8 @@ def _build_final_dict(annotated_tab_dict):
     and row position of beginning field names"""
     final_dict = defaultdict(list)
     valuable_tab_nt = namedtuple('valuable_tab_nt', ['actual_tab_name',
-                                                     'inferred_table_name', 'header_row',
+                                                     'inferred_table_name',
+                                                     'header_row',
                                                      'prospective_flag'])
     for table_path, inclusion_dict in annotated_tab_dict.items():
         wb = load_workbook(table_path)
