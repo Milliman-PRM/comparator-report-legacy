@@ -76,14 +76,17 @@ def _exclude_files(directory, anti_pattern):
     anti_files = main_directory.collect_files_regex(anti_pattern)
     potential_pro_files = [file for file in main_directory.rglob('*.*')
                            if file not in anti_files]
-    convert_files = [file / '.xlsx' for file in
+    convert_files = [file for file in
                      potential_pro_files if re.search(r'T\d{6}', str(file))]
     for file in convert_files:
         if re.search(r'T\d{6}$', str(file)):
-            new_file = file / '.xlsx'
-            shutil.move(str(file), str(new_file))
+            new_file_str = str(file) + '.xlsx'
+            shutil.move(str(file), new_file_str)
+        if re.search(r'T\d{6}\.xls$', str(file)):  # default format is .xlsx; .xls is likely a typo
+            new_file_str = str(file) + '.xlsx'
+            shutil.copy(str(file), new_file_str)
     return [final_file for final_file
-            in main_directory.collect_files_extensions(['xls', 'xlsx'])
+            in main_directory.collect_files_extensions(['xlsx'])
             if final_file not in anti_files and str(final_file).find('~$') == -1]
 
 
