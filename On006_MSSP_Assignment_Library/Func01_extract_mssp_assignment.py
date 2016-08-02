@@ -288,9 +288,16 @@ def _write_data_to_csvs(final_dictionary):
                         headers = [name.upper().strip()
                                    for name in _TABLE_FIELD_DICT[values.inferred_table_name.upper()]]
                         if not values.inferred_table_name[-1] == '5':
-                            header_columns = [cell.column for cell
-                                              in row
-                                              if str(cell.value).upper().strip() in headers]
+                            for cell in row:
+                                clean_cell_value = re.sub(  # remove duplicate spaces
+                                    ' +',
+                                    ' ',
+                                    str(cell.value).upper().strip()
+                                )
+                                if clean_cell_value.find("ELIGIBILITY") > -1:
+                                    clean_cell_value = clean_cell_value[:-1]  # remove superscript
+                                if clean_cell_value in headers:
+                                    header_columns.append(cell.column)
                         else:
                             header_columns = _table_five_column_inference(row)
                             table5_indicator = True
