@@ -187,9 +187,11 @@ def _check_for_field_names(worksheet):
             if worksheet.title.upper().strip() == 'TABLE 1-5':
                 if _keyword_check(row_values, _TABLE5_KEYWORD):
                     return worksheet.title, row_number, prospective_check
-            upper_case_fields = [field.upper().strip()
-                                 for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]
-                                 if field.upper.find('ELIGIBILITY') == -1]  # may not be present
+            upper_case_fields = [
+                field.upper().strip()
+                for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]
+                if field.upper().find('ELIGIBILITY') == -1  # may not be present
+                ]
             field_check = set(upper_case_fields) <= set(row_values)
             if field_check:
                 return worksheet.title, row_number, prospective_check
@@ -197,9 +199,10 @@ def _check_for_field_names(worksheet):
             for table, fields in _TABLE_FIELD_DICT.items():
                 if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
                     prospective_check = True
-                upper_case_fields = [field.upper().strip()
-                                     for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]
-                                     if field.upper.find('ELIGIBILITY') == -1]  # may not be present
+                upper_case_fields = [
+                    field.upper().strip() for field in fields
+                    if field.upper().find('ELIGIBILITY') == -1  # may not be present
+                    ]
                 field_check = set(upper_case_fields) <= set(row_values)
                 if field_check:
                     return table, row_number, prospective_check
