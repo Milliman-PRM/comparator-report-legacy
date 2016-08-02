@@ -309,7 +309,7 @@ def _write_data_to_csvs(final_dictionary):
                         continue
                     else:
                         clean_row = [str(cell.value).strip()
-                                     if cell.value else ''
+                                     if cell.value is not None else ''
                                      for cell in row
                                      if cell.column in header_columns]
                         if list(set(clean_row)) == [''] and row_number > values.header_row + 1:
