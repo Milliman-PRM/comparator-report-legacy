@@ -7,18 +7,16 @@
 ### DEVELOPER NOTES:
   Requires a full PRM environment when executed as a script.
 """
-import shutil
-import re
-import os
 import csv
-import sys
-from datetime import datetime
-from collections import defaultdict, Counter, OrderedDict, namedtuple
-import string
 import logging
+import re
+import shutil
+import string
+from collections import defaultdict, Counter, OrderedDict, namedtuple
+from datetime import datetime
 
-from indypy.file_utils import IndyPyPath
 import prm.meta.project
+from indypy.file_utils import IndyPyPath
 
 PRM_META = prm.meta.project.parse_project_metadata()
 
