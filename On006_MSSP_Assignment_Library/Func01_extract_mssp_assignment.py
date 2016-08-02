@@ -314,6 +314,9 @@ def _write_data_to_csvs(final_dictionary):
                                      if cell.column in header_columns]
                         if list(set(clean_row)) == [''] and row_number > values.header_row + 1:
                             break
+                        count_missing = len(headers) - len(clean_row)
+                        for n in range(count_missing):
+                            clean_row.append('')  # append blanks when elig status flag not present
                         final_row = list(date_range) + clean_row + [hassgn]
                         writer.writerow(final_row)
 
