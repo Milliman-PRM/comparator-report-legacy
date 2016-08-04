@@ -21,7 +21,7 @@ libname M018_Tmp "&M018_Tmp.";
 
 
 /*** CODEGEN FROM TARGET METADATA ***/
-%macro munge_mssp_assignment();
+%macro munge_monthly_mssp_assignment();
 
 	%let pioneer_test =%sysfunc(cats(&cclf_ccr_absent_any_prior_cclf8.,&cclf_ccr_limit_to_assigned_only.));
 	%put &=pioneer_test.;	
