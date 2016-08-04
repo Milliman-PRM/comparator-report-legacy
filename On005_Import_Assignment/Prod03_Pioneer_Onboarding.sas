@@ -14,6 +14,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func12_shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
+%Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 
 %AssertThat(
 	%upcase(&cclf_ccr_absent_any_prior_cclf8.)
@@ -397,7 +398,7 @@ quit;
 
 %else %do;
 
-data client_member;
+data client_member_pre;
 	set client_member_pre_exc;
 run;
 
@@ -477,7 +478,7 @@ run;
 
 /*Make sure we give eligibility in years we know the member is eligible based on CCLF8*/
 data client_mem_elig (keep = year date_start date_end member_id);
-	set client_member;
+	set client_member_pre;
 
 	year = year(max_date_latestpaid);
 
@@ -495,32 +496,69 @@ run;
 /*Build Client_member_time. For Aged members ensure start date is not before 65th birthday, and ensure end date is capped at the Date_LatestPaid
 for the member (should represent the last batch of CCLF files we observed them in).*/
 proc sql;
-	create table client_member_time_pre as
+	create table client_member_time_all as
 	select distinct
 		all.member_ID
+		,all.date_latestpaid
 		,mem.mem_prv_id_align as mem_prv_id_align
 		,coalesce(mem.assignment_indicator, "N") as assignment_indicator label = "Assigned Patient"
 		,case when all.bene_orgnl_entlmt_rsn_cd = '0' and elig.member_id is not null 
 			then coalesce(max(intnx('year',all.bene_dob, 65), elig.date_start), mdy(1,1,year(all.Date_LatestPaid)))
-			else coalesce(elig.date_start,mdy(1,1,year(all.Date_LatestPaid))) end as date_start
-		,min(elig.date_end, all.Date_LatestPaid) as date_end
+			else coalesce(elig.date_start,mdy(1,1,year(all.Date_LatestPaid))) end as date_start format YYMMDD10.
+		,min(elig.date_end, all.Date_LatestPaid) as date_end format YYMMDD10.
 	from members_all as all
 	left join elig_by_year as elig
-	on all.member_ID = elig.member_ID
-	left join client_member as mem
+	on all.member_ID = elig.member_ID and year(all.Date_LatestPaid) = elig.year
+	left join client_member_pre as mem
 	on all.member_id = mem.member_id
 	order by all.member_id, calculated date_start, calculated date_end
 	;
 quit;
 
+%massage_windows(
+	client_member_time_all
+	,client_member_time_massage
+	,date_start
+	,date_end
+	,dimensions=Member_ID
+	,tiebreaks=-date_latestpaid
+	)
+
+/*Extend windows to date latest paid*/
 data client_member_time;
-	set client_member_time_pre;
+	set client_member_time_massage;
+	by member_ID date_start date_end;
 
-	format date_start mmddyy10. date_end mmddyy10.;
-	by member_id date_start date_end;
+	output;
+	if last.member_ID and date_end ne &max_date_latestpaid. then do;
+		mem_prv_id_align = 'Unassigned';
+		assignment_indicator = 'N';
 
-	if last.date_start then output client_member_time;
+		/*Output windows until we hit date latest paid*/
+		do while (date_end ne &max_date_latestpaid.);
+			date_start = date_end + 1;
+			date_end = min(intnx('month', date_start, 0, 'end'), &max_date_latestpaid.);
+			output;
+		end;
+	end;
+
 run;
+
+proc sort nodup data=client_member_time;
+	by member_id;
+run;
+
+proc sql;
+	create table client_member as
+	select
+		mem.*
+		,case when memtim.assignment_indicator = "N" then "N" else mem.ind end as assignment_indicator label = "Assigned Patient"
+		,case when memtim.mem_prv_id_align = "Unassigned" then "Unassigned" else mem.prv_align end as mem_prv_id_align label = "Assigned Physician"
+	from client_member_pre (rename = (assignment_indicator = ind mem_prv_id_align = prv_align)) as mem 
+	left join client_member_time (where = (date_end = &max_date_latestpaid.)) as memtim
+		on mem.member_id = memtim.member_id
+	;
+quit;
 
 
 /*** MUNGE TO TARGET FORMATS ***/
