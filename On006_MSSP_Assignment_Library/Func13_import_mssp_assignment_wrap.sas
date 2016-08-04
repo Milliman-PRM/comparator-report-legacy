@@ -52,7 +52,7 @@ libname M020_Out "&M020_Out." access=readonly; *This is accessed out of "order";
 	/*Run the functions that create macros for importing and munging assignment data*/
 	%include "&On006_cde.Func02_import_raw_mssp_assignment.sas" / source2;
 	%include "&On006_cde.Func03_munge_mssp_assignment.sas" / source2;
-	%include "&On006_cde.Func04_munge_monghly_mssp_assignment.sas" / source2
+	%include "&On006_cde.Func04_munge_monghly_mssp_assignment.sas" / source2;
 
 	/*Run func02*/
 	%Import_Raw_Assignment(m017_out)
