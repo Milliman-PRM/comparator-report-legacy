@@ -7,25 +7,20 @@
 ### DEVELOPER NOTES:
   Requires a full PRM environment when executed as a script.
 """
-import shutil
-import re
-import os
 import csv
-import sys
-from datetime import datetime
-from collections import defaultdict, Counter, OrderedDict, namedtuple
-import string
 import logging
-
-from indypy.file_utils import IndyPyPath
+import re
+import shutil
+import string
+from collections import defaultdict, Counter, OrderedDict, namedtuple
+from datetime import datetime
+from openpyxl import load_workbook
 import prm.meta.project
+from indypy.file_utils import IndyPyPath
 
 PRM_META = prm.meta.project.parse_project_metadata()
 
-from openpyxl import load_workbook
-
 LOGGER = logging.getLogger(__name__)
-
 
 _QUARTER_RANGE_DICT = {
     1: 4,
@@ -62,7 +57,7 @@ _TABLE_FIELD_DICT = OrderedDict([
     ('TABLE 1-5', _FIELD_NAMES + ['Date of Death', 'NotAssigned1', 'NotAssigned2', 'NotAssigned3',
                                   'NotAssigned4', 'NotAssigned5', 'NotAssigned6']),
     ('TABLE 1-6', _FIELD_NAMES + ['Date of Death']),
-    ('TABLE 1-1', _FIELD_NAMES)
+    ('TABLE 1-1', _FIELD_NAMES + ['Monthly Eligibility Flag {}'.format(x) for x in range(1, 13)])
 ])
 
 _FILE_DATE_PATTERN_REGEX = re.compile(r'(QASSGN|HASSGN).+?(D\d{6}\.T\d{6})')
@@ -76,14 +71,17 @@ def _exclude_files(directory, anti_pattern):
     anti_files = main_directory.collect_files_regex(anti_pattern)
     potential_pro_files = [file for file in main_directory.rglob('*.*')
                            if file not in anti_files]
-    convert_files = [file / '.xlsx' for file in
+    convert_files = [file for file in
                      potential_pro_files if re.search(r'T\d{6}', str(file))]
     for file in convert_files:
         if re.search(r'T\d{6}$', str(file)):
-            new_file = file / '.xlsx'
-            shutil.move(str(file), str(new_file))
+            new_file_str = str(file) + '.xlsx'
+            shutil.move(str(file), new_file_str)
+        if re.search(r'T\d{6}\.xls$', str(file)):  # default format is .xlsx; .xls is likely a typo
+            new_file_str = str(file) + '.xlsx'
+            shutil.copy(str(file), new_file_str)
     return [final_file for final_file
-            in main_directory.collect_files_extensions(['xls', 'xlsx'])
+            in main_directory.collect_files_extensions(['xlsx'])
             if final_file not in anti_files and str(final_file).find('~$') == -1]
 
 
@@ -187,8 +185,11 @@ def _check_for_field_names(worksheet):
             if worksheet.title.upper().strip() == 'TABLE 1-5':
                 if _keyword_check(row_values, _TABLE5_KEYWORD):
                     return worksheet.title, row_number, prospective_check
-            upper_case_fields = [field.upper().strip()
-                                 for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]]
+            upper_case_fields = [
+                field.upper().strip()
+                for field in _TABLE_FIELD_DICT[worksheet.title.upper().strip()]
+                if field.upper().find('ELIGIBILITY') == -1  # may not be present
+                ]
             field_check = set(upper_case_fields) <= set(row_values)
             if field_check:
                 return worksheet.title, row_number, prospective_check
@@ -196,7 +197,10 @@ def _check_for_field_names(worksheet):
             for table, fields in _TABLE_FIELD_DICT.items():
                 if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
                     prospective_check = True
-                upper_case_fields = [field.upper().strip() for field in fields]
+                upper_case_fields = [
+                    field.upper().strip() for field in fields
+                    if field.upper().find('ELIGIBILITY') == -1  # may not be present
+                    ]
                 field_check = set(upper_case_fields) <= set(row_values)
                 if field_check:
                     return table, row_number, prospective_check
@@ -207,7 +211,8 @@ def _build_final_dict(annotated_tab_dict):
     and row position of beginning field names"""
     final_dict = defaultdict(list)
     valuable_tab_nt = namedtuple('valuable_tab_nt', ['actual_tab_name',
-                                                     'inferred_table_name', 'header_row',
+                                                     'inferred_table_name',
+                                                     'header_row',
                                                      'prospective_flag'])
     for table_path, inclusion_dict in annotated_tab_dict.items():
         wb = load_workbook(table_path)
@@ -256,7 +261,7 @@ def _write_data_to_csvs(final_dictionary):
         try:
             actual_date = total_counter.most_common(1)[0][0]
         except IndexError:
-            LOGGER.debug("Actual Date not found for file %s" % str(workbook))
+            LOGGER.debug("Actual Date not found for file %s", str(workbook))
             continue
         date_range = _map_start_end_date(actual_date)
         if date_range[0].find('1-1') > -1 and date_range[1].find('12-31') > -1:
@@ -278,11 +283,19 @@ def _write_data_to_csvs(final_dictionary):
                         continue
                     elif row_number == values.header_row:
                         headers = [name.upper().strip()
-                                   for name in _TABLE_FIELD_DICT[values.inferred_table_name.upper()]]
+                                   for name in _TABLE_FIELD_DICT[values.inferred_table_name.upper()]
+                                   ]
                         if not values.inferred_table_name[-1] == '5':
-                            header_columns = [cell.column for cell
-                                              in row
-                                              if str(cell.value).upper().strip() in headers]
+                            for cell in row:
+                                clean_cell_value = re.sub(  # remove duplicate spaces
+                                    ' +',
+                                    ' ',
+                                    str(cell.value).upper().strip()
+                                )
+                                if clean_cell_value.find("ELIGIBILITY") > -1:
+                                    clean_cell_value = clean_cell_value[:-1]  # remove superscript
+                                if clean_cell_value in headers:
+                                    header_columns.append(cell.column)
                         else:
                             header_columns = _table_five_column_inference(row)
                             table5_indicator = True
@@ -294,11 +307,14 @@ def _write_data_to_csvs(final_dictionary):
                         continue
                     else:
                         clean_row = [str(cell.value).strip()
-                                     if cell.value else ''
+                                     if cell.value is not None else ''
                                      for cell in row
                                      if cell.column in header_columns]
                         if list(set(clean_row)) == [''] and row_number > values.header_row + 1:
                             break
+                        count_missing = len(headers) - len(clean_row)
+                        for n in range(count_missing):
+                            clean_row.append('')  # append blanks when elig status flag not present
                         final_row = list(date_range) + clean_row + [hassgn]
                         writer.writerow(final_row)
 
@@ -321,8 +337,12 @@ def _table_five_column_inference(row):
 
 
 def main():  # pragma: no cover
+    """
+    Crawl through reference files, detect assignment files, and parse out their useful
+    contents into a format that is easier to consume
+    """
     files = _exclude_files(IndyPyPath(_PATH_RECEIVED), 'Address')
-    LOGGER.debug("%d files found" % len(files))
+    LOGGER.debug("%d files found", len(files))
     tab_name_dict = _scrape_tab_names(files)
     LOGGER.debug("Processed Tab Names to Workbook mappings...")
     annotated_tab_name_dict = _identify_useful_tabs(tab_name_dict)

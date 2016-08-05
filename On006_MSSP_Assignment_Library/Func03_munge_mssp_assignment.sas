@@ -19,6 +19,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %include "&M008_cde.Func02_massage_windows.sas";
+%include "%GetParentFolder(1)On005_Import_Assignment\Supp01_shared_code.sas";
 
 libname Ref_Prod "&Path_Product_Ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
