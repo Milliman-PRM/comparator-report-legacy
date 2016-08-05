@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Brandon Patterson
+### CODE OWNERS: Brandon Patterson, Jason Altieri
 
 ### OBJECTIVE:
 	Generate a monthly eligibility table from the new CMS assignment file data
