@@ -98,5 +98,8 @@ data M018_Out.client_provider (keep = &client_provider_keep.);
 	set M018_tmp.client_provider;
 run;
 
+data M018_Out.monthly_elig_status;
+	set M018_tmp.monthly_elig_status;
+run;
 
 %put System Return Code = &syscc.;

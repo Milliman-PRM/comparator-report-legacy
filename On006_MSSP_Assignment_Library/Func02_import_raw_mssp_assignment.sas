@@ -12,6 +12,7 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 libname M017_Out "&M017_Out.";
+%let lib_out =M017_Out;
 */
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
@@ -44,6 +45,18 @@ libname M017_Out "&M017_Out.";
 			hicno :$11.
 			first_name :$40.
 			last_name :$40.
+			monthly_elig_1 :$1.
+			monthly_elig_2 :$1.
+			monthly_elig_3 :$1.
+			monthly_elig_4 :$1.
+			monthly_elig_5 :$1.
+			monthly_elig_6 :$1.
+			monthly_elig_7 :$1.
+			monthly_elig_8 :$1.
+			monthly_elig_9 :$1.
+			monthly_elig_10 :$1.
+			monthly_elig_11 :$1.
+			monthly_elig_12 :$1.
 			hassgn :$5.
 			;
 		format date_: YYMMDDd10.;
