@@ -338,10 +338,10 @@ quit;
 %macro conditional_check();
 	
 	%if %upcase(&cclf_ccr_absent_any_prior_cclf8.) eq EXCLUDE %then %do;
-		%assertthat(&zero_memmos_perc.,lt,.10,ReturnMessage=An unusually high proportion of members have time periods with 0 member months);
+		%assertthat(&zero_memmos_perc.,lt,.10,ReturnMessage=An unusually high proportion of members have time periods with 0 member months, FailAction=NotifyOnly);
 	%end;
 	%else %do;
-		%assertthat(&zero_memmos_perc.,lt,.005,ReturnMessage=An unusually high proportion of members have time periods with 0 member months)
+		%assertthat(&zero_memmos_perc.,lt,.01,ReturnMessage=An unusually high proportion of members have time periods with 0 member months, FailAction=NotifyOnly)
 	%end;
 %mend;
 
