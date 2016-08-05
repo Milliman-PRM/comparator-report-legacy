@@ -23,17 +23,17 @@ libname post010 "&post010.";
 proc sql;
 	create table elig_map as
 	select distinct
-		old_elig.*
+		old_elig.member_id
+		,old_elig.elig_status_1
+		,old_elig.elig_month
+		,old_elig.memmos
 		,new_elig.elig_status as hassgn_elig_status
 	from M018_Out.monthly_elig_status as new_elig
-	right join
-	(
-		select member_id, elig_status_1, elig_month
-		from M035_Out.member_time
-	) as old_elig
+	right join M035_Out.member_time as old_elig
 	on
 		old_elig.member_id eq new_elig.hicno
 		and new_elig.date_elig_start + 14 eq old_elig.elig_month
+	where cover_medical = 'Y' and assignment_indicator = 'Y'
 	order by member_id, elig_month desc
 	;
 quit;
@@ -55,7 +55,7 @@ run;
 
 proc sql;
 	create table full_elig_windowed as
-	select elig.member_id, window.time_period, elig.elig_month, elig.new_elig as elig_status
+	select elig.member_id, window.time_period, elig.elig_month, elig.new_elig as elig_status, elig.memmos
 	from full_elig as elig
 	cross join post008.time_windows as window
 	where elig.elig_month between window.inc_start and window.inc_end
@@ -64,10 +64,13 @@ quit;
 
 proc sql;
 	create table elig_counts_long as
-	select member_id, time_period, elig_status, count(*) as elig_months
-	from full_elig_windowed
-	group by elig_status, member_id, time_period
-	order by member_id, time_period
+	select src.member_id, src.time_period, src.elig_status, sum(src.memmos) as elig_months
+	from full_elig_windowed as src
+	inner join post008.members as limit on
+		src.member_id eq limit.member_id
+		and src.time_period eq limit.time_period
+	group by src.elig_status, src.member_id, src.time_period
+	order by src.member_id, src.time_period
 	;
 quit;
 
