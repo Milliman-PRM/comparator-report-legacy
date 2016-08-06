@@ -22,7 +22,7 @@ libname post010 "&post010.";
 
 proc sql;
 	create table elig_map as
-	select distinct
+	select
 		old_elig.member_id
 		,old_elig.elig_status_1
 		,old_elig.elig_month
@@ -33,7 +33,7 @@ proc sql;
 	on
 		old_elig.member_id eq new_elig.hicno
 		and new_elig.date_elig_start + 14 eq old_elig.elig_month
-	where cover_medical = 'Y' and assignment_indicator = 'Y'
+	where cover_medical = 'Y'
 	order by member_id, elig_month desc
 	;
 quit;
