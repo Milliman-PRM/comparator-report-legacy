@@ -35,4 +35,36 @@ quit;
 
 %LabelDataSet(post010.elig_cost_summary)
 
+/*Assert that the total memmos reconcile with the member table. 
+Round to avoid floating point differences*/
+proc summary nway missing data=post008.members;
+	class member_id time_period;
+	var memmos;
+	output out = base_test (drop = _TYPE_)sum=;
+run;
+
+proc summary nway missing data=post010.elig_cost_summary;
+	class member_id time_period;
+	var months_total;
+	output out = new_test (drop = _TYPE_)sum=;
+run;
+
+proc sql;
+	create table memmos_mismatch as
+	select
+		base.member_id
+		,base.time_period
+		,round(base.memmos,.01) as base_memmos
+		,new.months_total as new_memmos
+	from base_test as base
+	full outer join new_test as new
+		on base.member_id = new.member_id and
+		base.time_period = new.time_period
+	where round(base.memmos,.01) ne round(new.months_total,.01)
+	;
+quit;
+
+%AssertDatasetNotPopulated(memmos_mismatch ,ReturnMessage=Members months do not reconcile with the Members table.);
+
+
 %put System Return Code = &syscc.;
