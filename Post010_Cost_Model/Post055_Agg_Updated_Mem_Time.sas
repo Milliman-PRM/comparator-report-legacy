@@ -84,13 +84,19 @@ proc transpose
 	var elig_months;
 run;
 
-data elig_counts_summed;
+data elig_counts_no_null;
 	set elig_counts;
+
+	months_aged_non_dual = coalesce(months_aged_non_dual, 0);
+	months_disabled = coalesce(months_disabled, 0);
+	months_aged_dual = coalesce(months_aged_dual, 0);
+	months_esrd = coalesce(months_esrd, 0);
+run;
+
+data elig_counts_summed;
+	set elig_counts_no_null;
 	months_total = 
-	coalesce(months_aged_non_dual, 0)
-	+ coalesce(months_disabled, 0)
-	+ coalesce(months_aged_dual, 0)
-	+ coalesce(months_esrd, 0)
+		sum(months_aged_non_dual, months_disabled, months_aged_dual, months_esrd)
 	;
 run;
 
