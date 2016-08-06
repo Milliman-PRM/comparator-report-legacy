@@ -24,8 +24,8 @@ run;
 
 /*Coalesce 0 for costs and capped costs since some members don't have claims*/
 proc sql;
-	create table post010.elig_cost_summary as
-	select elig.*, coalesce(costs.prm_costs, 0) as cost
+	create table post010.member_cost as
+	select elig.*, coalesce(costs.prm_costs, 0) as total_cost
 	from costs_by_mem as costs
 	full outer join post010.elig_summary as elig
 	on costs.member_id = elig.member_id
@@ -43,7 +43,7 @@ proc summary nway missing data=post008.members;
 	output out = base_test (drop = _TYPE_)sum=;
 run;
 
-proc summary nway missing data=post010.elig_cost_summary;
+proc summary nway missing data=post010.member_cost;
 	class member_id time_period;
 	var months_total;
 	output out = new_test (drop = _TYPE_)sum=;
