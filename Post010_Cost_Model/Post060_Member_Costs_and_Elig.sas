@@ -26,7 +26,7 @@ run;
 proc sql;
 	create table post010.member_cost as
 	select 
-		"&name_client." as name_client,
+		"&name_client." as name_client format $256. length 256,
 		elig.*, 
 		coalesce(costs.prm_costs, 0) as total_cost
 	from costs_by_mem as costs
