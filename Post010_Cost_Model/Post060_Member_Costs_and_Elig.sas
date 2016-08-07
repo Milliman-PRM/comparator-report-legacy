@@ -25,7 +25,10 @@ run;
 /*Coalesce 0 for costs and capped costs since some members don't have claims*/
 proc sql;
 	create table post010.member_cost as
-	select elig.*, coalesce(costs.prm_costs, 0) as total_cost
+	select 
+		"&name_client." as name_client,
+		elig.*, 
+		coalesce(costs.prm_costs, 0) as total_cost
 	from costs_by_mem as costs
 	full outer join post010.elig_summary as elig
 	on costs.member_id = elig.member_id
