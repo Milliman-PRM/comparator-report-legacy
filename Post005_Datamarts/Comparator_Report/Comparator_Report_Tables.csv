@@ -127,6 +127,15 @@ name_client,meta_field,Y,N
 meta_field,meta_field,Y,N
 meta_field_label,meta_field,N,N
 meta_field_comment,meta_field,N,N
+name_client,member_cost,Y,N
+member_id,member_cost,Y,N
+time_period,member_cost,Y,N
+months_aged_non_dual,member_cost,N,N
+months_disabled,member_cost,N,N
+months_aged_dual,member_cost,N,N
+months_ESRD,member_cost,N,N
+months_total,member_cost,N,N
+total_cost,member_cost,N,N
 name_client,meta_project,Y,N
 meta_project,meta_project,Y,N
 meta_project_string,meta_project,N,N
