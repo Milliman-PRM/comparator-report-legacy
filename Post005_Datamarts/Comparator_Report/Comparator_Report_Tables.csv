@@ -134,6 +134,7 @@ months_aged_non_dual,member_cost,N,N
 months_disabled,member_cost,N,N
 months_aged_dual,member_cost,N,N
 months_ESRD,member_cost,N,N
+months_unknown,member_cost,N,N
 months_total,member_cost,N,N
 total_cost,member_cost,N,N
 name_client,meta_project,Y,N
