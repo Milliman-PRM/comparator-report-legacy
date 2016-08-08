@@ -36,7 +36,7 @@ proc sql;
 	;
 quit;
 
-%LabelDataSet(post010.elig_cost_summary)
+%LabelDataSet(post010.member_cost)
 
 /*Assert that the total memmos reconcile with the member table. 
 Round to avoid floating point differences*/

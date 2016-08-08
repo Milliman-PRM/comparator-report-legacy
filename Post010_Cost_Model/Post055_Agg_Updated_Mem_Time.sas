@@ -91,12 +91,13 @@ data elig_counts_no_null;
 	months_disabled = coalesce(months_disabled, 0);
 	months_aged_dual = coalesce(months_aged_dual, 0);
 	months_esrd = coalesce(months_esrd, 0);
+	months_unknown = coalesce(months_unknown, 0);
 run;
 
 data elig_counts_summed;
 	set elig_counts_no_null;
 	months_total = 
-		sum(months_aged_non_dual, months_disabled, months_aged_dual, months_esrd)
+		sum(months_aged_non_dual, months_disabled, months_aged_dual, months_esrd,months_unknown)
 	;
 run;
 
