@@ -109,4 +109,6 @@ proc sql;
 	;
 quit;
 
+%AssertDatasetNotPopulated(memmos_mismatch ,ReturnMessage=Member months do not reconcile with the member roster.);
+
 %put System Return Code = &syscc.;
