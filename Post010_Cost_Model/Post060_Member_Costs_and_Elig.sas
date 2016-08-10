@@ -19,8 +19,17 @@ libname post010 "&post010.";
 proc summary nway missing data=post010.agg_claims_limited;
 	class time_period member_id;
 	var PRM_Costs;
-	output out = post010.member_costs (drop = _:)sum=;
+	output out = member_costs_calc (drop = _:)sum=;
 run;
+
+proc sql;
+	create table post010.member_costs as
+	select
+		"&name_client." as name_client format $256. length 256,
+		*
+	from member_costs_calc
+	;
+quit;
 
 %LabelDataSet(post010.member_costs)
 

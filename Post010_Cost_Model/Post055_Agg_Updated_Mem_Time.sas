@@ -64,7 +64,12 @@ quit;
 
 proc sql;
 	create table post010.member_elig as
-	select src.member_id, src.time_period, src.elig_status, sum(src.memmos) as elig_months
+	select 
+			"&name_client." as name_client format $256. length 256,
+			src.member_id, 
+			src.time_period, 
+			src.elig_status as elig_status_1, 
+			sum(src.memmos) as elig_months
 	from full_elig_windowed as src
 	inner join post008.members as limit on
 		src.member_id eq limit.member_id
@@ -76,6 +81,7 @@ quit;
 
 %LabelDataSet(post010.member_elig)
 
+/*Assert that memmos match the member roster*/
 proc summary nway missing data=post008.members;
 	class member_id time_period;
 	var memmos;
