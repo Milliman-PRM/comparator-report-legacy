@@ -37,7 +37,7 @@ quit;
 
 proc summary nway missing data=post010.member_costs;
 	class time_period;
-	var PRM_Costs;
+	var total_cost;
 	output out = new_cost_sum (drop = _:)sum=;
 run;
 
@@ -57,8 +57,8 @@ proc sql;
 	select
 		base.time_period,
 		round(base.prm_costs,.01) as base_costs,
-		round(new.prm_costs,.01) as new_costs,
-		(round(base.prm_costs,.01) - round(new.prm_costs,.01)) as diff
+		round(new.total_cost,.01) as new_costs,
+		(round(base.prm_costs,.01) - round(new.total_cost,.01)) as diff
 	from base_cost_sum as base
 	left join new_cost_sum as new
 		on base.time_period = new.time_period
