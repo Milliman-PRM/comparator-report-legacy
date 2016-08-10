@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Brandon Patterson
+### CODE OWNERS: Brandon Patterson, Jason Altieri
 
 ### OBJECTIVE:
 	Create sas dataset with the monthly eligibility status data from the Q/H-Assigns,
