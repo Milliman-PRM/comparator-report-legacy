@@ -63,7 +63,7 @@ proc sql;
 quit;
 
 proc sql;
-	create table elig_counts_long as
+	create table post010.member_elig as
 	select src.member_id, src.time_period, src.elig_status, sum(src.memmos) as elig_months
 	from full_elig_windowed as src
 	inner join post008.members as limit on
@@ -74,37 +74,33 @@ proc sql;
 	;
 quit;
 
-proc transpose
-		data=elig_counts_long
-		out=elig_counts(drop=_name_)
-		prefix=months_
-		;
-	by member_id time_period;
-	id elig_status;
+%LabelDataSet(post010.member_elig)
+
+proc summary nway missing data=post008.members;
+	class member_id time_period;
+	var memmos;
+	output out = base_test (drop = _:)sum=;
+run;
+
+proc summary nway missing data=post010.member_elig;
+	class member_id time_period;
 	var elig_months;
+	output out=elig_memmos (drop = _:)sum=elig_memmos;
 run;
 
-data elig_counts_no_null;
-	set elig_counts;
+proc sql;
+	create table memmos_mismatch as
+	select
+		base.member_id
+		,base.time_period
+		,round(base.memmos,.01) as base_memmos
+		,new.elig_memmos as new_memmos
+	from base_test as base
+	full outer join elig_memmos as new
+		on base.member_id = new.member_id and
+		base.time_period = new.time_period
 
-	months_aged_non_dual = coalesce(months_aged_non_dual, 0);
-	months_disabled = coalesce(months_disabled, 0);
-	months_aged_dual = coalesce(months_aged_dual, 0);
-	months_esrd = coalesce(months_esrd, 0);
-	months_unknown = coalesce(months_unknown, 0);
-run;
-
-data elig_counts_summed;
-	set elig_counts_no_null;
-	months_total = 
-		sum(months_aged_non_dual, months_disabled, months_aged_dual, months_esrd,months_unknown)
 	;
-run;
-
-data post010.elig_summary;
-	set elig_counts_summed;
-run;
-
-%LabelDataSet(post010.elig_summary)
+quit;
 
 %put System Return Code = &syscc.;
