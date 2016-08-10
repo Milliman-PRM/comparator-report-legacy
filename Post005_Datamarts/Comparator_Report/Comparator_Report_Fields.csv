@@ -94,10 +94,5 @@ mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5)
 mcrm_line_desc_L6,,varchar,128,Y,,N,,MCRM Service Category Description (Level 6)
 riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations
 member_id,,char,40,N,,N,Member ID,Member ID for member level reporting
-months_aged_non_dual,,float,,N,,N,,The number of months during the time period the member was classified as Aged Non-Dual
-months_disabled,,float,,N,,N,,The number of months during the time period the member was classified as Disabled
-months_aged_dual,,float,,N,,N,,The number of months during the time period the member was classified as AgedDual
-months_ESRD,,float,,N,,N,,The number of months during the time period the member was classified as ESRD
-months_unknown,,float,,N,,N,,The total number of member months during the time period classified as unknown
-months_total,,float,,N,,N,,The total number of member months during the time period
+elig_months,,float,,N,,N,,The number of months during the time period the member was in the given enrollment status
 total_cost,,float,,N,,N,,The total medical costs incurred by the member during the time period
