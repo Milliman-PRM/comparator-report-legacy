@@ -19,55 +19,44 @@ libname post010 "&post010.";
 proc summary nway missing data=post010.agg_claims_limited;
 	class time_period member_id;
 	var PRM_Costs;
-	output out = costs_by_mem (drop = _:)sum=;
+	output out = post010.member_costs (drop = _:)sum=;
 run;
 
-/*Coalesce 0 for costs and capped costs since some members don't have claims*/
-proc sql;
-	create table post010.member_cost as
-	select 
-		"&name_client." as name_client format $256. length 256,
-		elig.*, 
-		coalesce(costs.prm_costs, 0) as total_cost
-	from costs_by_mem as costs
-	full outer join post010.elig_summary as elig
-	on costs.member_id = elig.member_id
-	and costs.time_period = elig.time_period
-	;
-quit;
+%LabelDataSet(post010.member_costs)
 
-%LabelDataSet(post010.member_cost)
+/*Assert that the total costs reconcile between tables.*/
 
-/*Assert that the total memmos reconcile with the member table. 
-Round to avoid floating point differences*/
-proc summary nway missing data=post008.members;
-	class member_id time_period;
-	var memmos;
-	output out = base_test (drop = _TYPE_)sum=;
+proc summary nway missing data=post010.member_costs;
+	class time_period;
+	var PRM_Costs;
+	output out = new_cost_sum (drop = _:)sum=;
 run;
 
-proc summary nway missing data=post010.member_cost;
-	class member_id time_period;
-	var months_total;
-	output out = new_test (drop = _TYPE_)sum=;
+data medical_costs;
+	set post010.cost_util;
+	where upcase(prm_coverage_type) = "MEDICAL";
+run;
+
+proc summary nway missing data=medical_costs;
+	class time_period;
+	var prm_costs;
+	output out=base_cost_sum (drop = _:)sum=;
 run;
 
 proc sql;
-	create table memmos_mismatch as
+	create table cost_mismatch as
 	select
-		base.member_id
-		,base.time_period
-		,round(base.memmos,.01) as base_memmos
-		,new.months_total as new_memmos
-	from base_test as base
-	full outer join new_test as new
-		on base.member_id = new.member_id and
-		base.time_period = new.time_period
-	where round(base.memmos,.01) ne round(new.months_total,.01)
+		base.time_period,
+		round(base.prm_costs,.01) as base_costs,
+		round(new.prm_costs,.01) as new_costs,
+		(round(base.prm_costs,.01) - round(new.prm_costs,.01)) as diff
+	from base_cost_sum as base
+	left join new_cost_sum as new
+		on base.time_period = new.time_period
+	where calculated base_costs ne calculated new_costs
 	;
 quit;
 
-%AssertDatasetNotPopulated(memmos_mismatch ,ReturnMessage=Members months do not reconcile with the Members table.);
-
+%AssertDatasetNotPopulated(cost_mismatch ,ReturnMessage=Costs do not reconcile with the cost_util table.);
 
 %put System Return Code = &syscc.;
