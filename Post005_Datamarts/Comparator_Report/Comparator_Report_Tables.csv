@@ -127,10 +127,10 @@ name_client,meta_field,Y,N
 meta_field,meta_field,Y,N
 meta_field_label,meta_field,N,N
 meta_field_comment,meta_field,N,N
-name_client,member_cost,Y,N
+name_client,member_costs,Y,N
 member_id,member_costs,Y,N
 time_period,member_costs,Y,N
-total_cost,member_cost,N,N
+total_cost,member_costs,N,N
 name_client,member_elig,Y,N
 time_period,member_elig,Y,N
 member_id,member_elig,Y,N

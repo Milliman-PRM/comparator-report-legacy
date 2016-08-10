@@ -19,7 +19,7 @@ libname post010 "&post010.";
 proc summary nway missing data=post010.agg_claims_limited;
 	class time_period member_id;
 	var PRM_Costs;
-	output out = member_costs_calc (drop = _:)sum=;
+	output out = member_costs_calc (drop = _:)sum=total_cost;
 run;
 
 proc sql;
