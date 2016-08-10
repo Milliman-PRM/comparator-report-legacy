@@ -68,7 +68,7 @@ proc sql;
 			"&name_client." as name_client format $256. length 256,
 			src.member_id, 
 			src.time_period, 
-			src.elig_status as elig_status_1, 
+			src.elig_status as elig_status_1 label="Beneficiary Status", 
 			sum(src.memmos) as elig_months
 	from full_elig_windowed as src
 	inner join post008.members as limit on
@@ -105,7 +105,7 @@ proc sql;
 	full outer join elig_memmos as new
 		on base.member_id = new.member_id and
 		base.time_period = new.time_period
-
+	where round(base.memmos,.01) ne round(new_memmos,.01)
 	;
 quit;
 
