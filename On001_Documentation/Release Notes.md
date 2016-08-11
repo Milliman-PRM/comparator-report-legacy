@@ -1,5 +1,21 @@
 #Release Notes
 
+## v6.1.0
+
+### Client Visible Changes
+ - Added `Member_Cost` table to postboarding datamart
+ - Created `outclaims_w_prv` with the following additional fields:
+  - `CCN`
+  - `attending_prv_npi`
+  - `operating_prv_npi`
+
+### Logic Changes 
+ - *none*
+
+### Lower Level Changes
+ - Loosened zero member months assertion and change to `notify_only`
+ - Add zombie periods for pioneers
+
 ## v6.0.0
 
 ### Client Visible Changes

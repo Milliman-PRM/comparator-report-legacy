@@ -93,3 +93,6 @@ mcrm_line_desc_L4,,varchar,128,Y,,N,,MCRM Service Category Description (Level 4)
 mcrm_line_desc_L5,,varchar,128,Y,,N,,MCRM Service Category Description (Level 5)
 mcrm_line_desc_L6,,varchar,128,Y,,N,,MCRM Service Category Description (Level 6)
 riskscr_wgt,,float,,N,,N,,Medical member months for weighting risk score aggregations
+member_id,,char,40,N,,N,Member ID,Member ID for member level reporting
+elig_months,,float,,N,,N,,The number of months during the time period the member was in the given enrollment status
+total_cost,,float,,N,,N,,The total medical costs incurred by the member during the time period
