@@ -18,7 +18,7 @@ libname post010 "&post010.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 proc summary nway missing data=post010.agg_claims_limited;
 	class time_period member_id;
-	var PRM_Costs;
+	var prm_paid;
 	output out = member_costs_calc (drop = _:)sum=total_cost;
 run;
 
@@ -48,7 +48,7 @@ run;
 
 proc summary nway missing data=medical_costs;
 	class time_period;
-	var prm_costs;
+	var prm_paid;
 	output out=base_cost_sum (drop = _:)sum=;
 run;
 
@@ -56,9 +56,9 @@ proc sql;
 	create table cost_mismatch as
 	select
 		base.time_period,
-		round(base.prm_costs,.01) as base_costs,
+		round(base.prm_paid,.01) as base_costs,
 		round(new.total_cost,.01) as new_costs,
-		(round(base.prm_costs,.01) - round(new.total_cost,.01)) as diff
+		(round(base.prm_paid,.01) - round(new.total_cost,.01)) as diff
 	from base_cost_sum as base
 	left join new_cost_sum as new
 		on base.time_period = new.time_period
