@@ -3,7 +3,7 @@
 ## v6.1.1
 
 ### Client Visible Changes
- - *none*
+ - Use `PRM_Paid` rather than `PRM_Costs` in the `member_costs` table.
 
 ### Logic Changes
  - *none*
