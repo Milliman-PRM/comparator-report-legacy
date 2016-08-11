@@ -505,7 +505,7 @@ proc sql;
 		,case when all.bene_orgnl_entlmt_rsn_cd = '0' and elig.member_id is not null 
 			then coalesce(max(intnx('year',all.bene_dob, 65), elig.date_start), mdy(1,1,year(all.Date_LatestPaid)))
 			else coalesce(elig.date_start,mdy(1,1,year(all.Date_LatestPaid))) end as date_start format YYMMDD10.
-		,min(elig.date_end, all.Date_LatestPaid) as date_end format YYMMDD10.
+		,max(min(elig.date_end, all.Date_LatestPaid), calculated date_start) as date_end format YYMMDD10.
 	from members_all as all
 	left join elig_by_year as elig
 	on all.member_ID = elig.member_ID and year(all.Date_LatestPaid) = elig.year
