@@ -1,5 +1,16 @@
 #Release Notes
 
+## v6.1.1
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+ 
+### Lower Level Changes
+ - Make `date_end` the maximum of the `date_start` and calculated `date_end` for Pioneers
+
 ## v6.1.0
 
 ### Client Visible Changes
