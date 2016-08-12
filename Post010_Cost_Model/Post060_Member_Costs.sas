@@ -18,7 +18,7 @@ libname post010 "&post010.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 proc summary nway missing data=post010.agg_claims_limited;
 	class time_period member_id;
-	var prm_paid;
+	var paid;
 	output out = member_costs_calc (drop = _:)sum=total_cost;
 run;
 
