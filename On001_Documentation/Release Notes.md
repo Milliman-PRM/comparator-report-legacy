@@ -1,5 +1,16 @@
 #Release Notes
 
+## v6.1.2
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Updated assignment scraping code to ignore the word `Prospective` for QASSGN files
+
 ## v6.1.1
 
 ### Client Visible Changes
