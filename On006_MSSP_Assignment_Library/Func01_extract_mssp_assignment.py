@@ -49,6 +49,7 @@ _INCLUDE_TABS = ['TABLE 1-1', 'TABLE 1-2', 'TABLE 1-3', 'TABLE 1-4', 'TABLE 1-5'
 _EXCLUDE_TABS = ['COVER', 'TOC', 'GLOSSARY', 'PARAMETERS']
 _TABLE5_KEYWORD = 'HICNOs of beneficiaries'
 _PROSPECTIVE_KEYWORD = 'Prospective'
+_LIMIT_QASSIGN_PATTERN = 'Quarter'
 
 _TABLE_FIELD_DICT = OrderedDict([
     ('TABLE 1-4', _FIELD_NAMES + ['ACO Participant TIN', 'Individual NPI']),
@@ -171,7 +172,7 @@ def _check_for_field_names(worksheet):
     def _keyword_check(values, keyword):   # pragma: no cover
         """Check if dealing with table 5"""
         row_string = ' '.join(values)
-        if row_string.find(keyword.upper()) > -1:
+        if re.match(keyword, row_string):
             return True
 
     prospective_check = False
@@ -182,6 +183,8 @@ def _check_for_field_names(worksheet):
         if worksheet.title.upper().strip() in _TABLE_FIELD_DICT:
             if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
                 prospective_check = True
+                if _keyword_check(row_values, _LIMIT_QASSIGN_PATTERN):
+                    prospective_check = False
             if worksheet.title.upper().strip() == 'TABLE 1-5':
                 if _keyword_check(row_values, _TABLE5_KEYWORD):
                     return worksheet.title, row_number, prospective_check
