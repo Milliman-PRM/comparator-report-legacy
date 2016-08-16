@@ -200,6 +200,8 @@ def _check_for_field_names(worksheet):
             for table, fields in _TABLE_FIELD_DICT.items():
                 if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
                     prospective_check = True
+                    if _keyword_check(row_values, _LIMIT_QASSIGN_PATTERN):
+                        prospective_check = False
                 upper_case_fields = [
                     field.upper().strip() for field in fields
                     if field.upper().find('ELIGIBILITY') == -1  # may not be present
