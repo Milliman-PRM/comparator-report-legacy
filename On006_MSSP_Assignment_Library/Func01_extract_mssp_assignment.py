@@ -172,7 +172,7 @@ def _check_for_field_names(worksheet):
     def _keyword_check(values, keyword):   # pragma: no cover
         """Check if dealing with table 5"""
         row_string = ' '.join(values)
-        if re.match(keyword, row_string):
+        if row_string.upper().find(keyword.upper()) > - 1:
             return True
 
     prospective_check = False
@@ -200,6 +200,8 @@ def _check_for_field_names(worksheet):
             for table, fields in _TABLE_FIELD_DICT.items():
                 if _keyword_check(row_values, _PROSPECTIVE_KEYWORD):
                     prospective_check = True
+                    if _keyword_check(row_values, _LIMIT_QASSIGN_PATTERN):
+                        prospective_check = False
                 upper_case_fields = [
                     field.upper().strip() for field in fields
                     if field.upper().find('ELIGIBILITY') == -1  # may not be present
