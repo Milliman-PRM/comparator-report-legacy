@@ -1,5 +1,16 @@
 #Release Notes
 
+## v6.1.3
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Updated assignment scraping code to use correct casing when identifying prospective HASSGN files
+
 ## v6.1.2
 
 ### Client Visible Changes
