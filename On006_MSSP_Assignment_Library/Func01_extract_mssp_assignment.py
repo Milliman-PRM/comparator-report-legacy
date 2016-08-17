@@ -172,7 +172,7 @@ def _check_for_field_names(worksheet):
     def _keyword_check(values, keyword):   # pragma: no cover
         """Check if dealing with table 5"""
         row_string = ' '.join(values)
-        if re.match(keyword, row_string):
+        if row_string.upper().find(keyword.upper()) > - 1:
             return True
 
     prospective_check = False
