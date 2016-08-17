@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen
+### CODE OWNERS: Anna Chen, Aaron Burgess
 
 ### OBJECTIVE:
 	Call the MSSP import functions. 
@@ -15,13 +15,9 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 %include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
 
-%AssertThat(
-	%upcase(&name_client.)
-	,eq
-	,PIONEER VALLEY ACCOUNTABLE CARE
-	,ReturnMessage=PVA has different assignment files.
-	,FailAction=EndActiveSASSession
-	)
+%GetFileNamesFromDir(&path_project_received_ref., ngalign_count, NGALIGN);
+
+%AssertRecordCount(ngalign_count, gt, 0);
 
 %let name_datamart_src = references_client;
 
@@ -51,10 +47,14 @@ libname M018_Out "&M018_Out.";
 /*Create metadata targets*/
 %codegen_format_keep(&name_datamart_src.)
 
+proc sql noprint;
+	SELECT cat('20', substr(filename, 20, 2)), filename into :latest_year, :latest_file trimmed
+	FROM ngalign_count
+	HAVING max(substr(filename, 20, 6));
+quit;
 
-PROC IMPORT DATAFILE="&Path_Project_Received_Ref.P.V119.NGALIGN.RP.D160104.T1530361.TXT"
+PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
 	OUT=M017_out.member_align  
-	DBMS=DLM
 	REPLACE;
 	DELIMITER = "|";
 	run;
@@ -93,7 +93,7 @@ Quit;
 data client_membertime_mod;
 	set client_member_time;
 
-	if date_start ge '01Jan2016'd then assignment_indicator = "Y";
+	if date_start ge mdy(1,1,&latest_year.) then assignment_indicator = "Y";
 
 run;
 
