@@ -1,0 +1,108 @@
+/*
+### CODE OWNERS: Anna Chen
+
+### OBJECTIVE:
+	Call the MSSP import functions. 
+
+### DEVELOPER NOTES:
+	*/
+
+
+options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
+%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func12_shortcircuit-cclf-import.sas" / source2;
+%include "&M008_cde.func06_build_metadata_table.sas";
+%Include "&M008_Cde.Func02_massage_windows.sas" / source2;
+%include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
+
+%AssertThat(
+	%upcase(&name_client.)
+	,eq
+	,PIONEER VALLEY ACCOUNTABLE CARE
+	,ReturnMessage=PVA has different assignment files.
+	,FailAction=EndActiveSASSession
+	)
+
+%let name_datamart_src = references_client;
+
+/* Libnames */
+
+libname ref_prod "&path_product_ref." access=readonly;
+libname M015_Out "&M015_Out." access=readonly;
+libname M017_Out "&M017_Out.";
+libname M020_Out "&M020_Out." access=readonly;
+libname
+	%sysfunc(ifc("%upcase(&project_id_prior.)" eq "NEW"
+		,M035_out "&M035_out." /*If it is a warm start stacked member rosters will be seeded here*/
+		,M035_old "&M035_old." /*Otherwise, grab from prior project*/
+		))
+	access=readonly
+	;
+libname M018_Out "&M018_Out.";
+
+/**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
+
+/*Run the 020 import programs*/
+%shortcircuit_cclf_import()
+
+/*Import client reference information from claims file.*/
+%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func15_import_pioneer_info_wrap.sas" / source2;
+
+/*Create metadata targets*/
+%codegen_format_keep(&name_datamart_src.)
+
+
+PROC IMPORT DATAFILE="&Path_Project_Received_Ref.P.V119.NGALIGN.RP.D160104.T1530361.TXT"
+	OUT=M017_out.member_align  
+	DBMS=DLM
+	REPLACE;
+	DELIMITER = "|";
+	run;
+
+Proc SQl;
+	Create Table client_member as 
+		Select b.*
+		FROM M017_out.member_align as a
+		left join M018_out.client_member as b
+			on A.HICN_Number_ID = b.member_id;
+Quit;
+   
+data client_member_mod;
+	set client_member;
+
+	assignment_indicator = "Y";
+
+run;
+
+data M018_out.client_member(keep = &client_member_keep.);
+	format &client_member_format.;
+	set client_member_mod;
+	
+	where member_id ne '';
+
+run;
+
+Proc SQl;
+	Create Table client_member_time as 
+		Select b.*
+		FROM M017_out.member_align as a
+		left join M018_out.client_member_time as b
+			on A.HICN_Number_ID = b.member_id;
+Quit;
+
+data client_membertime_mod;
+	set client_member_time;
+
+	if date_start ge '01Jan2016'd then assignment_indicator = "Y";
+
+run;
+
+data M018_out.client_member_time(keep = &client_member_time_keep.);
+	format &client_member_time_format.;
+	set client_membertime_mod;
+	
+	where member_id ne '';
+
+run;
+
+%put System Return Code = &syscc.;
