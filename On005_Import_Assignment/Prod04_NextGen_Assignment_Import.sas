@@ -63,7 +63,7 @@ Proc SQl;
 	Create Table client_member as 
 		Select b.*
 		FROM M017_out.member_align as a
-		left join M018_out.client_member as b
+		inner join M018_out.client_member as b
 			on A.HICN_Number_ID = b.member_id;
 Quit;
    
@@ -77,16 +77,13 @@ run;
 data M018_out.client_member(keep = &client_member_keep.);
 	format &client_member_format.;
 	set client_member_mod;
-	
-	where member_id ne '';
-
 run;
 
 Proc SQl;
 	Create Table client_member_time as 
 		Select b.*
 		FROM M017_out.member_align as a
-		left join M018_out.client_member_time as b
+		inner join M018_out.client_member_time as b
 			on A.HICN_Number_ID = b.member_id;
 Quit;
 
@@ -100,9 +97,6 @@ run;
 data M018_out.client_member_time(keep = &client_member_time_keep.);
 	format &client_member_time_format.;
 	set client_membertime_mod;
-	
-	where member_id ne '';
-
 run;
 
 %put System Return Code = &syscc.;
