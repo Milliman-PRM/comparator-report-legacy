@@ -63,7 +63,7 @@ quit;
 	(
 	diffs_CHF_admits
 	,le
-	,2  /*  Wiggle room rare negative discharges in aggclaims  */
+	,2  /*  Wiggle room for rare negative discharges in aggclaims  */
 	,ReturnMessage = Member level results do not tie as closely as expected to Comparator Report for CHF admission counts
 	)
 
