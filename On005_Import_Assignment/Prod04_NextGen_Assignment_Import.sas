@@ -42,7 +42,7 @@ libname M018_Out "&M018_Out.";
 %shortcircuit_cclf_import()
 
 /*Import client reference information from claims file.*/
-%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func15_import_pioneer_info_wrap.sas" / source2;
+%include "%GetParentFolder(0)Supp02_import_pioneer_info_wrap.sas" / source2;
 
 /*Create metadata targets*/
 %codegen_format_keep(&name_datamart_src.)
