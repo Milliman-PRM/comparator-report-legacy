@@ -6,10 +6,6 @@
 
 ### DEVELOPER NOTES:
 	*/
-options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" "S:\PRM\PRMClient_Library\sas\mssp" sasautos) compress = yes;
-%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
-*/
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
