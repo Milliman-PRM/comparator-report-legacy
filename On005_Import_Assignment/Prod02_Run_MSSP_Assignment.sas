@@ -22,6 +22,14 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 	,FailAction=EndActiveSASSession
 	)
 
+%AssertThat(
+	%upcase(&name_client.)
+	,ne
+	,PIONEER VALLEY ACCOUNTABLE CARE
+	,ReturnMessage=PVA has different assignment files.
+	,FailAction=EndActiveSASSession
+	)
+
 %let name_datamart_src = references_client;
 
 /* Libnames */
