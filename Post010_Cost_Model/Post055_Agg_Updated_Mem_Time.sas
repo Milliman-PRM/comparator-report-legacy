@@ -26,97 +26,118 @@ libname post010 "&post010.";
 	%let pioneer_test =%sysfunc(cats(&cclf_ccr_absent_any_prior_cclf8.,&cclf_ccr_limit_to_assigned_only.));
 	%put &=pioneer_test.;	
 
-	%if %upcase(&pioneer_test.) eq "EXCLUDEFALSE" 
+	%if %upcase(&pioneer_test.) eq EXCLUDEFALSE %then %do;
 
-	proc sql;
-		create table elig_map as
-		select
-			old_elig.member_id
-			,old_elig.elig_status_1
-			,old_elig.elig_month
-			,old_elig.memmos
-			,new_elig.elig_status as hassgn_elig_status
-		from M018_Out.monthly_elig_status as new_elig
-		right join M035_Out.member_time as old_elig
-		on
-			old_elig.member_id eq new_elig.hicno
-			and new_elig.date_elig_start + 14 eq old_elig.elig_month
-		where cover_medical = 'Y'
-		order by member_id, elig_month desc
-		;
-	quit;
+		proc sql;
+			create table post010.member_elig as
+			select 
+					"&name_client." as name_client format $256. length 256,
+					member_id, 
+					time_period format $32. length 32, 
+					elig_status_1 label="Beneficiary Status", 
+					sum(memmos) as elig_months
+			from post008.members
+			group by elig_status_1, member_id, time_period
+			order by member_id, time_period
+			;
+		quit;
+	%end;
 
-	data full_elig;
-		set elig_map;
-		by member_id;
-		format prv_elig new_elig $64.;
-		retain prv_elig;
-		if first.member_id then do;
-			new_elig = coalescec(hassgn_elig_status, elig_status_1);
-			prv_elig = new_elig;
-		end;
-		else do;
-			new_elig = coalescec(hassgn_elig_status, prv_elig);
-			prv_elig = new_elig;
-		end;
-	run;
+	%else %do;
+		proc sql;
+			create table elig_map as
+			select
+				old_elig.member_id
+				,old_elig.elig_status_1
+				,old_elig.elig_month
+				,old_elig.memmos
+				,new_elig.elig_status as hassgn_elig_status
+			from M018_Out.monthly_elig_status as new_elig
+			right join M035_Out.member_time as old_elig
+			on
+				old_elig.member_id eq new_elig.hicno
+				and new_elig.date_elig_start + 14 eq old_elig.elig_month
+			where cover_medical = 'Y'
+			order by member_id, elig_month desc
+			;
+		quit;
 
-	proc sql;
-		create table full_elig_windowed as
-		select elig.member_id, window.time_period, elig.elig_month, elig.new_elig as elig_status, elig.memmos
-		from full_elig as elig
-		cross join post008.time_windows as window
-		where elig.elig_month between window.inc_start and window.inc_end
-		;
-	quit;
+		data full_elig;
+			set elig_map;
+			by member_id;
+			format prv_elig new_elig $64.;
+			retain prv_elig;
+			if first.member_id then do;
+				new_elig = coalescec(hassgn_elig_status, elig_status_1);
+				prv_elig = new_elig;
+			end;
+			else do;
+				new_elig = coalescec(hassgn_elig_status, prv_elig);
+				prv_elig = new_elig;
+			end;
+		run;
 
-	proc sql;
-		create table post010.member_elig as
-		select 
-				"&name_client." as name_client format $256. length 256,
-				src.member_id, 
-				src.time_period, 
-				src.elig_status as elig_status_1 label="Beneficiary Status", 
-				sum(src.memmos) as elig_months
-		from full_elig_windowed as src
-		inner join post008.members as limit on
-			src.member_id eq limit.member_id
-			and src.time_period eq limit.time_period
-		group by src.elig_status, src.member_id, src.time_period
-		order by src.member_id, src.time_period
-		;
-	quit;
+		proc sql;
+			create table full_elig_windowed as
+			select elig.member_id, window.time_period, elig.elig_month, elig.new_elig as elig_status, elig.memmos
+			from full_elig as elig
+			cross join post008.time_windows as window
+			where elig.elig_month between window.inc_start and window.inc_end
+			;
+		quit;
+
+		proc sql;
+			create table post010.member_elig as
+			select 
+					"&name_client." as name_client format $256. length 256,
+					src.member_id, 
+					src.time_period, 
+					src.elig_status as elig_status_1 label="Beneficiary Status", 
+					sum(src.memmos) as elig_months
+			from full_elig_windowed as src
+			inner join post008.members as limit on
+				src.member_id eq limit.member_id
+				and src.time_period eq limit.time_period
+			group by src.elig_status, src.member_id, src.time_period
+			order by src.member_id, src.time_period
+			;
+		quit;
+	%end;
 
 	%LabelDataSet(post010.member_elig)
 
-	/*Assert that memmos match the member roster*/
-	proc summary nway missing data=post008.members;
-		class member_id time_period;
-		var memmos;
-		output out = base_test (drop = _:)sum=;
-	run;
+%mend;
 
-	proc summary nway missing data=post010.member_elig;
-		class member_id time_period;
-		var elig_months;
-		output out=elig_memmos (drop = _:)sum=elig_memmos;
-	run;
+%create_mem_elig();
 
-	proc sql;
-		create table memmos_mismatch as
-		select
-			base.member_id
-			,base.time_period
-			,round(base.memmos,.01) as base_memmos
-			,new.elig_memmos as new_memmos
-		from base_test as base
-		full outer join elig_memmos as new
-			on base.member_id = new.member_id and
-			base.time_period = new.time_period
-		where round(base.memmos,.01) ne round(new_memmos,.01)
-		;
-	quit;
+/*Assert that memmos match the member roster*/
+proc summary nway missing data=post008.members;
+	class member_id time_period;
+	var memmos;
+	output out = base_test (drop = _:)sum=;
+run;
 
-	%AssertDatasetNotPopulated(memmos_mismatch ,ReturnMessage=Member months do not reconcile with the member roster.);
+proc summary nway missing data=post010.member_elig;
+	class member_id time_period;
+	var elig_months;
+	output out=elig_memmos (drop = _:)sum=elig_memmos;
+run;
+
+proc sql;
+	create table memmos_mismatch as
+	select
+		base.member_id
+		,base.time_period
+		,round(base.memmos,.01) as base_memmos
+		,new.elig_memmos as new_memmos
+	from base_test as base
+	full outer join elig_memmos as new
+		on base.member_id = new.member_id and
+		base.time_period = new.time_period
+	where round(base.memmos,.01) ne round(new_memmos,.01)
+	;
+quit;
+
+%AssertDatasetNotPopulated(memmos_mismatch ,ReturnMessage=Member months do not reconcile with the member roster.);
 
 %put System Return Code = &syscc.;
