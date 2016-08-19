@@ -17,7 +17,13 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 %GetFileNamesFromDir(&path_project_received_ref., ngalign_count, NGALIGN);
 
-%AssertRecordCount(ngalign_count, gt, 0);
+%AssertThat(
+	%getrecordcount(ngalign_count)
+	,gt
+	,0
+	,ReturnMessage=Only applicable for NextGen ACOs.
+	,FailAction=endactivesassession
+	)
 
 %let name_datamart_src = references_client;
 
