@@ -279,7 +279,7 @@ quit;
   when a subset is being ran (the table is a copy of the original combined Member table).*/
 %macro run_type;
 
-	%if %sysfunc(exist(M035_Out.Member_all)) eq 0 %then %do;
+	%if %sysfunc(exist(M035_Out.Member_all)) eq 0 or %upcase(&cclf_ccr_absent_any_prior_cclf8.) ne EXCLUDE %then %do;
 		%AssertThat(&pct_assigned_mems_in_cclf.,lt,1,ReturnMessage=An inprobable percentage of Assigned members were found in the CCLF data.)
 	%end;
 
