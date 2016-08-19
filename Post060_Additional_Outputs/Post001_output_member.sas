@@ -16,7 +16,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
 libname M035_Out "&M035_Out." access=readonly;
-libname post050 "&post050.";
+libname post060 "&post060.";
 
 %let NYMS_pre = K:\PHI\0273NYP\NewYorkMillimanShare\&project_id.\&deliverable_name.\;
 %GetFileNamesfromDir(&NYMS_pre.,comp_report_folders,);
@@ -46,7 +46,7 @@ libname NYMS "&NYMS_pre.&recent_comp_folder.\";
 
 /*Output member table to postboarding 050_Wrap_Up data directory*/
 
-data Post050.Member;
+data Post060.Member;
 	format name_client $256.;
 	set M035_Out.Member;
 	&assign_name_client.;
