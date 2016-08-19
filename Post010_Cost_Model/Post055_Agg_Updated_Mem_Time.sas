@@ -23,10 +23,15 @@ libname post010 "&post010.";
 
 %macro create_mem_elig();
 
+	%GetFileNamesFromDir(&path_project_received_ref., ngalign_count, NGALIGN);
+
+	%let ng_count = %GetRecordCount(ngalign_count);
+	%put &=ng_count.;
+
 	%let pioneer_test =%sysfunc(cats(&cclf_ccr_absent_any_prior_cclf8.,&cclf_ccr_limit_to_assigned_only.));
 	%put &=pioneer_test.;	
 
-	%if %upcase(&pioneer_test.) eq EXCLUDEFALSE %then %do;
+	%if %upcase(&pioneer_test.) eq EXCLUDEFALSE or &ng_count. gt 0 %then %do;
 
 		proc sql;
 			create table post010.member_elig as
