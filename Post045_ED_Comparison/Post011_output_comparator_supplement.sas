@@ -55,7 +55,7 @@ proc sql;
 	inner join original_CHF_admits as orig
 		on custom.time_slice = orig.time_period
 		and custom.elig_status_1 = orig.elig_status_1
-	where (orig.metric_value - custom.case_count) gt 2
+	where abs(orig.metric_value - custom.case_count) gt 2
 	;
 quit;
 
@@ -106,7 +106,7 @@ proc sql;
 		on custom.time_period = orig_prev.time_period
 		and custom.elig_status_1 = orig_prev.elig_status_1
 	where
-		(calculated custom_preventable - calculated original_preventable) gt 2
+		abs(calculated custom_preventable - calculated original_preventable) gt 2
 	;
 quit;
 
