@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jack Leemhuis, Jason Altieri
+### CODE OWNERS: Jason Altieri, Aaron Burgess
 
 ### OBJECTIVE:
 	Per client request, output the member table from 035_Staging_Membership to the comparator report deliverable.
@@ -14,50 +14,29 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "%GetParentFolder(0)share001_derive_output_directory.sas" / source2;
 
 libname M035_Out "&M035_Out." access=readonly;
 libname post060 "&post060.";
 
-%let NYMS_pre = K:\PHI\0273NYP\NewYorkMillimanShare\&project_id.\&deliverable_name.\;
-%GetFileNamesfromDir(&NYMS_pre.,comp_report_folders,);
-
-proc sort data=comp_report_folders out=comp_report_folders_sort;
-	by directory descending filename;
-run;
-
-data comp_report_folders_sort_dist;
-	set comp_report_folders_sort;
-	by directory descending filename;
-
-	if first.directory then output;
-run;
-
-proc sql noprint;
-	select filename
-	into :recent_comp_folder trimmed
-	from comp_report_folders_sort_dist
-	;
-quit;
-%put &=recent_comp_folder.;
-
-libname NYMS "&NYMS_pre.&recent_comp_folder.\";
-
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-/*Output member table to postboarding 050_Wrap_Up data directory*/
+/*Output members table to NewYorkMillimanShare data directory*/
 
-data Post060.Member;
+data NYMS.Members;
 	format name_client $256.;
-	set M035_Out.Member;
+	set post008.members;
 	&assign_name_client.;
 run;
 
-/*Output member table to NewYorkMillimanShare data directory*/
+/*Write member_time to Post060 then output to NewYorkMillimanShare*/
 
-data NYMS.Member;
-	format name_client $256.;
-	set M035_Out.Member;
-	&assign_name_client.;
+data post060.member_time;
+	set m035_out.member_time;
+run;
+
+data NYMS.member_time;
+	set post060.member_time;
 run;
 
 %put System Return Code = &syscc.;
