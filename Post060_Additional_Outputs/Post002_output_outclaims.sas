@@ -13,7 +13,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(1)share001_derive_output_directory.sas" / source2;
+%include "%GetParentFolder(0)share001_derive_output_directory.sas" / source2;
 
 libname M020_Out "&M020_Out." access=readonly;
 libname M073_Out "&M073_Out." access=readonly;
