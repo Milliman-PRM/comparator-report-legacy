@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Jack Leemhuis, Jason Altieri
+### CODE OWNERS: Jason Altieri, Aaron Burgess
 
 ### OBJECTIVE:
 	Per client request, output the member table from 035_Staging_Membership to the comparator report deliverable.
@@ -14,7 +14,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(1)share001_derive_output_directory.sas" / source2;
+%include "%GetParentFolder(0)share001_derive_output_directory.sas" / source2;
 
 libname M035_Out "&M035_Out." access=readonly;
 libname post060 "&post060.";
