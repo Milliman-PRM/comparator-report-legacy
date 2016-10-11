@@ -23,7 +23,7 @@ libname post060 "&post060.";
 to NewYorkMillimanShare*/
 
 proc sql;
-	create table post060.outclaims_w_prv (drop = claim_id) as
+	create table post060.outclaims_w_prv (drop = claim_id PRM_Avoidable_YN) as
 	select
 		base.*
 		,pass.*
@@ -33,7 +33,7 @@ proc sql;
 	;
 quit;
 
-data post060.outpharmacy_prm;
+data post060.outpharmacy_prm (drop = PRM_Avoidable_YN);
 	set M073_out.outpharmacy_prm;
 run;
 
