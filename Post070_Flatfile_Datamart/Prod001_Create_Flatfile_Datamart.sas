@@ -16,24 +16,28 @@ libname Post070 "&Post070.";
 %build_metadata_table(Post005_Datamarts)
 
 %macro CodeGen_Wrapper(name_table);
-
-%global _codegen_input_&name_table.;
-
-proc sql noprint;
-	select
-		name_field
-	into
-		 :_codegen_input_&name_table. separated by " "
-
-	from metadata_&name_table.
-	;
-quit;
-
-%put _codegen_spaces_&name_table. = &&_codegen_input_&name_table..;
+	%global _codegen_spaces_&name_table.;
+	%global _codegen_format_&name_table.;
+	proc sql noprint;
+		select
+			name_field
+			,catx(" "
+				,name_field
+				,SAS_Format
+				)
+		into 
+			:_codegen_spaces_&name_table. separated by " "
+			,:_codegen_format_&name_table. separated by " "
+		from meta_data
+		where upcase(name_table) eq "%upcase(&name_table.)"
+		;
+	quit;
+	%put _codegen_spaces_&name_table. = &&_codegen_spaces_&name_table..;
+	%put _codegen_format_&name_table. = &&_codegen_format_&name_table..;
 
 %mend CodeGen_Wrapper;
 
-%CodeGen_Wrapper(member);
+%CodeGen_Wrapper(member_months_elig);
 %CodeGen_Wrapper(outclaims);
 %CodeGen_Wrapper(outpharmacy);
 %CodeGen_Wrapper(reflines);
@@ -107,30 +111,32 @@ proc summary nway missing data = member_limit;
 output out = member_pre_summ (drop = _type_) sum=;
 run;
 
-data post070.member (keep = &_codegen_input_member.);
+data post070.member_months_elig (keep = &_codegen_input_member_months_elig.);
 	set member_pre_summ;
 run;
 
 data _null_;
-	set M190_out.outclaims;
-	file "K:\PHI\0273NYP\3.033-0273NYP(33-HH)\5-Support_Files\Data_Thru_201606_M6\190_PowerUser_DataMart_Client\outclaims.txt" dlm = ',';
+	set post070.outclaims;
+	file "&post070.\outclaims.txt" dlm = ',';
 	put &_codegen_input_outclaims.;
 run;
 
 data _null_;
-	set M190_out.outpharmacy;
-	file "K:\PHI\0273NYP\3.033-0273NYP(33-HH)\5-Support_Files\Data_Thru_201606_M6\190_PowerUser_DataMart_Client\outpharmacy.txt" dlm = ',';
+	set post070.outpharmacy;
+	file "&post070.\outpharmacy.txt" dlm = ',';
 	put &_codegen_input_outpharmacy.;
 run;
 
 data _null_;
-	set M190_out.ref_prm_line;
-	file "K:\PHI\0273NYP\3.033-0273NYP(33-HH)\5-Support_Files\Data_Thru_201606_M6\190_PowerUser_DataMart_Client\ref_prm_line.txt" dlm = ',';
+	set post070.ref_prm_line;
+	file "&post070.\ref_prm_line.txt" dlm = ',';
 	put &_codegen_input_reflines.;
 run;
 
 data _null_;
-	set M190_out.member;
-	file "K:\PHI\0273NYP\3.033-0273NYP(33-HH)\5-Support_Files\Data_Thru_201606_M6\190_PowerUser_DataMart_Client\member.txt" dlm = ',';
-	put &_codegen_input_member.;
+	set post070.member_months_elig;
+	file "&post070.\member_months_elig.txt" dlm = ',';
+	put &_codegen_input_member_months_elig.;
 run;
+
+%put System Return Code = &syscc.;
