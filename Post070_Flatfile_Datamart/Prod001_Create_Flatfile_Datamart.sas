@@ -1,7 +1,18 @@
+/*
+### CODE OWNERS: Aaron Burgess, Jason Altieri
+
+### OBJECTIVE:
+	Prepare a flatfile datamart for the client.
+
+### DEVELOPER NOTES:
+	<none>
+*/
+
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
+%include "%GetParentFolder(0)share001_test_config.sas" /source2;
 
 libname M015_Out "&M015_Out.";
 libname M025_Out "&M025_Out.";
@@ -9,9 +20,6 @@ libname M035_Out "&M035_Out.";
 libname M073_Out "&M073_Out.";
 libname Post008 "&Post008.";
 libname Post070 "&Post070.";
-
-%let path_dir_text_src = %GetParentFolder(0);
-%put path_dir_text_src = &path_dir_text_src.;
 
 %build_metadata_table(Flatfile_Report)
 
