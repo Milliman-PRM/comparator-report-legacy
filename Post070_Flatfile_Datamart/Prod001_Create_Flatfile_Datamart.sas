@@ -13,38 +13,7 @@ libname Post070 "&Post070.";
 %let path_dir_text_src = %GetParentFolder(0);
 %put path_dir_text_src = &path_dir_text_src.;
 
-proc import
-	datafile = "&path_dir_text_src.datamart_altered_specs_members.xlsx"
-	out = metadata_member
-	dbms = xlsx
-	replace
-	;
-run;
-
-proc import
-	datafile = "&path_dir_text_src.datamart_altered_specs_outclaims.xlsx"
-	out = metadata_outclaims
-	dbms = xlsx
-	replace
-	;
-run;
-
-proc import
-	datafile = "&path_dir_text_src.datamart_altered_specs_outPharmacy.xlsx"
-	out = metadata_outpharmacy
-	dbms = xlsx
-	replace
-	;
-run;
-
-proc import
-	datafile = "&path_dir_text_src.datamart_altered_specs_reflines.xlsx"
-	out = metadata_reflines
-	dbms = xlsx
-	replace
-	;
-run;
-
+%build_metadata_table(Post005_Datamarts)
 
 %macro CodeGen_Wrapper(name_table);
 
