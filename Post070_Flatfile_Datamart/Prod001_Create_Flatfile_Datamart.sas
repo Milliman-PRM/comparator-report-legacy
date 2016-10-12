@@ -13,7 +13,7 @@ libname Post070 "&Post070.";
 %let path_dir_text_src = %GetParentFolder(0);
 %put path_dir_text_src = &path_dir_text_src.;
 
-%build_metadata_table(Post005_Datamarts)
+%build_metadata_table(Flatfile_Report)
 
 %macro CodeGen_Wrapper(name_table);
 	%global _codegen_spaces_&name_table.;
