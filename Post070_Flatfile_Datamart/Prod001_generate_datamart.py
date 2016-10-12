@@ -14,7 +14,7 @@ from prm.meta.output_datamart import DataMart
 
 PRM_META = prm.meta.project.parse_project_metadata()
 
-NYP_PATH_TEMPLATES = PRM_META['path_onboarding_code']
+NYP_PATH_TEMPLATES = PRM_META['path_onboarding_code'] / 'Post005_Datamarts'
 PATH_TEMPLATES = PRM_META[2, 'code']
 PATH_REF_DATATYPES = PATH_TEMPLATES / "Ref01_data_types.csv"
 
@@ -27,7 +27,7 @@ def main():
     """Access Point"""
     NYP_DATAMART = DataMart(
                                 path_templates=NYP_PATH_TEMPLATES,
-                                template_name='Post005_Datamarts',
+                                template_name='Flatfile_Report',
                                 filepath_ref_datatypes=PATH_REF_DATATYPES
                             )
 

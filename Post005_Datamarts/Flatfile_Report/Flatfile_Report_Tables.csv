@@ -101,7 +101,7 @@ prm_util,outclaims,N,N
 prm_costs,outclaims,N,N
 prm_admits,outclaims,N,N
 prm_days,outclaims,N,N
-Member_ID,member_months_elig,N,N
+Member_ID,member_months_elig,Y,N
 elig_month,member_months_elig,N,N
 Elig_Status_1,member_months_elig,N,N
 age,member_months_elig,N,N
@@ -162,6 +162,6 @@ prv_net_hier_1,outpharmacy,N,N
 prm_util_type,outpharmacy,N,N
 prm_util,outpharmacy,N,N
 prm_costs,outpharmacy,N,N
-prm_line,ref_prm_line,N,N
+prm_line,ref_prm_line,Y,N
 prm_line_desc,ref_prm_line,N,N
 prm_line_category,ref_prm_line,N,N
