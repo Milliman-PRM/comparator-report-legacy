@@ -221,6 +221,10 @@ run;
 
 %Calc_Risk_Scores()
 
+data post008.member_hcc_flags;
+	set riskscr.hcc_results;
+run;
+
 data post008.MARA_scores_limited;
 	set riskscr.MARA_scores_limited;
 run;
