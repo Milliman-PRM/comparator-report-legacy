@@ -174,7 +174,7 @@ quit;
 
 proc sql;
 	create table post060.member_riskscores as
-	select
+	select distinct
 		hicno
 		,time_slice
 		,riskscr_mm
