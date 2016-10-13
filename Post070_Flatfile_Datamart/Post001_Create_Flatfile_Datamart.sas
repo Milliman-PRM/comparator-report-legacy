@@ -60,7 +60,7 @@ proc sql;
 		;
 quit;
 
-data post070.outclaims (keep = &_codegen_input_outclaims.);
+data post070.outclaims (keep = &_codegen_spaces_outclaims.);
 	set outclaims_pre;
 run;
 
@@ -76,11 +76,11 @@ proc sql;
 		;
 quit;
 
-data post070.outpharmacy (keep = &_codegen_input_outpharmacy.);
+data post070.outpharmacy (keep = &_codegen_spaces_outpharmacy.);
 	set outpharmacy_pre;
 run;
 
-data post070.ref_prm_line (keep = &_codegen_input_reflines.);
+data post070.ref_prm_line (keep = &_codegen_spaces_reflines.);
     set M015_Out.mr_line_info;
     rename
         mr_line = prm_line
@@ -119,7 +119,7 @@ proc summary nway missing data = member_limit;
 output out = member_pre_summ (drop = _type_) sum=;
 run;
 
-data post070.memmos_elig (keep = &_codegen_input_memmos_elig.);
+data post070.memmos_elig (keep = &_codegen_spaces_memmos_elig.);
 	set member_pre_summ;
 run;
 
