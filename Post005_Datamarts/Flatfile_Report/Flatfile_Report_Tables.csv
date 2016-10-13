@@ -157,7 +157,6 @@ UserDefNum2,outpharmacy,N,N
 UserDefNum3,outpharmacy,N,N
 CaseAdmitID,outpharmacy,N,N
 prm_line,outpharmacy,N,N
-had_elig,outpharmacy,N,N
 prv_net_hier_1,outpharmacy,N,N
 prm_util_type,outpharmacy,N,N
 prm_util,outpharmacy,N,N
