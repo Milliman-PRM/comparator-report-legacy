@@ -126,25 +126,25 @@ run;
 data _null_;
 	set post070.outclaims;
 	file "&post070.\outclaims.txt" dlm = ',';
-	put &_codegen_input_outclaims.;
+	put &_codegen_spaces_outclaims.;
 run;
 
 data _null_;
 	set post070.outpharmacy;
 	file "&post070.\outpharmacy.txt" dlm = ',';
-	put &_codegen_input_outpharmacy.;
+	put &_codegen_spaces_outpharmacy.;
 run;
 
 data _null_;
 	set post070.ref_prm_line;
 	file "&post070.\ref_prm_line.txt" dlm = ',';
-	put &_codegen_input_reflines.;
+	put &_codegen_spaces_reflines.;
 run;
 
 data _null_;
 	set post070.memmos_elig;
 	file "&post070.\memmos_elig.txt" dlm = ',';
-	put &_codegen_input_memmos_elig.;
+	put &_codegen_spaces_memmos_elig.;
 run;
 
 %put System Return Code = &syscc.;
