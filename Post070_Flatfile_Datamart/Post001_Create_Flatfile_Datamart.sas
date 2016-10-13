@@ -45,7 +45,7 @@ libname Post070 "&Post070.";
 
 %mend CodeGen_Wrapper;
 
-%CodeGen_Wrapper(member_months_elig);
+%CodeGen_Wrapper(memmos_elig);
 %CodeGen_Wrapper(outclaims);
 %CodeGen_Wrapper(outpharmacy);
 %CodeGen_Wrapper(reflines);
@@ -119,7 +119,7 @@ proc summary nway missing data = member_limit;
 output out = member_pre_summ (drop = _type_) sum=;
 run;
 
-data post070.member_months_elig (keep = &_codegen_input_member_months_elig.);
+data post070.memmos_elig (keep = &_codegen_input_memmos_elig.);
 	set member_pre_summ;
 run;
 
@@ -142,9 +142,9 @@ data _null_;
 run;
 
 data _null_;
-	set post070.member_months_elig;
-	file "&post070.\member_months_elig.txt" dlm = ',';
-	put &_codegen_input_member_months_elig.;
+	set post070.memmos_elig;
+	file "&post070.\memmos_elig.txt" dlm = ',';
+	put &_codegen_input_memmos_elig.;
 run;
 
 %put System Return Code = &syscc.;
