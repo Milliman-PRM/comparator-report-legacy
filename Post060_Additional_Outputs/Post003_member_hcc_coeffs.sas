@@ -151,7 +151,12 @@ proc sql;
 	select
 		mem.hicno
 		,mem.time_slice
-		,mem._NAME_ as variable label=''
+		,case when (upcase(substr(mem._NAME_,1,2)) = "NE" and mem.origds = 0 and mem.mcaid = 1) then cats('NORIGDIS_MCAID_', mem._NAME_)
+			when (upcase(substr(mem._NAME_,1,2)) = "NE" and mem.origds = 1 and mem.mcaid = 0) then cats('ORIGDIS_NMCAID_', mem._NAME_)
+			when (upcase(substr(mem._NAME_,1,2)) = "NE" and mem.origds = 1 and mem.mcaid = 1) then cats('ORIGDIS_MCAID_', mem._NAME_)
+			when (upcase(substr(mem._NAME_,1,2)) = "NE" and mem.origds = 0 and mem.mcaid = 0) then cats('NORIGDIS_NMCAID_', mem._NAME_) 
+			else mem._NAME_
+		end as variable label=''
 		,mem._LABEL_ as description label=''
 		,comm.col1 as comm_coeff
 		,case when (mem.origds = 0 and mem.mcaid = 0) then nenmno.col1
@@ -205,11 +210,12 @@ proc sql;
 	;
 quit;
 
-data recon (where = (diff ne 0));
+data recon (where = (diff_ne ne 0 or diff_comm ne 0));
 	set riskscore_compare;
 
-	if riskscr_mm le 11 then diff = round(sum(ne_coeff, -score_new_enrollee),.001);
-	else diff = round(sum(comm_coeff, -score_community),.001);
+	if SCORE_NEW_ENROLLEE ne 0.01 then diff_ne = round(sum(ne_coeff, -score_new_enrollee),.001);
+	else diff_ne = 0;
+	diff_comm = round(sum(comm_coeff, -score_community),.001);
 run;
 
 %AssertDatasetNotPopulated(recon);
