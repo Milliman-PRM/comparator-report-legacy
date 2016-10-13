@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Kyle Baird, Shea Parkes
+### CODE OWNERS: Kyle Baird, Shea Parkes, Aaron Burgess
 
 ### OBJECTIVE:
 	Prepare a data dictionary describing the provided data to share
