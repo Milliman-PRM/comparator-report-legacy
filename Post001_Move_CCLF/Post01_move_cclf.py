@@ -1,9 +1,9 @@
 """
-||| CODE OWNERS: <At least 2 names.>
-||| OBJECTIVE:
-  <What and WHY.>
-||| DEVELOPER NOTES:
-  <What future developers need to know.>
+### CODE OWNERS: Aaron Burgess
+### OBJECTIVE:
+  Move CCLF files from received to NYP Share
+### DEVELOPER NOTES:
+  <None>
 """
 import logging
 import typing
