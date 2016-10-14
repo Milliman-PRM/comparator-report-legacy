@@ -41,6 +41,7 @@ FILE_EXTENSIONS_SCRAPE = [
     ".xlsx",
     ".sas7bndx",
     ".html",
+    ".txt"
     ]
 
 # =============================================================================
@@ -135,7 +136,8 @@ if __name__ == '__main__':
 
     DELIVERABLE_COMPARATOR = _get_deliverable_files('post050', POSTBOARDING_ARGS)
     DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
-    DELIVERABLE_FLATFILES = _get_deliverable_files('post070', POSTBOARDING_ARGS)
+    DELIVERABLE_FLATFILES = [file for file in _get_deliverable_files('post070', POSTBOARDING_ARGS)
+                             if file.suffix == '.txt']
 
     post070_flag = True if DELIVERABLE_FLATFILES else False
     file_count = len(DELIVERABLE_COMPARATOR) + len(DELIVERABLE_PRM) + len(DELIVERABLE_FLATFILES)
@@ -159,7 +161,7 @@ if __name__ == '__main__':
         fh_trg.write('filename~md5\n')
         for deliverable_name, delivery_files in deliverable_mapping.items():
             for path_, hash_ in delivery_files.items():
-                all_files_super_dict[path_.name] = hash_
+                all_files_super_dict[path_] = hash_
                 print("Promoting {}...".format(path_.name))
                 shutil.copy(str(path_), str(directories[deliverable_name]))
                 fh_trg.write("{}~{}\n".format(path_.name, hash_))
