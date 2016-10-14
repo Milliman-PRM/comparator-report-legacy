@@ -11,7 +11,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(0)share001_derive_output_directory.sas" / source2;
 
 /* Libnames */
 libname HCC "&M090_cde.HCC\HCC Programs" access = readonly;
@@ -219,13 +218,5 @@ data recon (where = (diff_ne ne 0 or diff_comm ne 0));
 run;
 
 %AssertDatasetNotPopulated(recon);
-
-data NYMS.member_riskscores;
-	set post060.member_riskscores;
-run;
-
-data NYMS.member_riskscr_coeff;
-	set post060.member_riskscr_coeff;
-run;
 
 %put System Return Code = &syscc.;

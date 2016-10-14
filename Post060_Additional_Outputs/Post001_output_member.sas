@@ -14,7 +14,6 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(0)share001_derive_output_directory.sas" / source2;
 
 libname M035_Out "&M035_Out." access=readonly;
 libname post060 "&post060.";
@@ -23,7 +22,7 @@ libname post060 "&post060.";
 
 /*Output members table to NewYorkMillimanShare data directory*/
 
-data NYMS.Members;
+data post060.Members;
 	format name_client $256.;
 	set post008.members;
 	&assign_name_client.;
@@ -33,10 +32,6 @@ run;
 
 data post060.member_time;
 	set m035_out.member_time;
-run;
-
-data NYMS.member_time;
-	set post060.member_time;
 run;
 
 %put System Return Code = &syscc.;
