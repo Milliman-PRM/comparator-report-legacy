@@ -23,7 +23,16 @@ LOGGER = logging.getLogger(__name__)
 PRM_META = prm.meta.project.parse_project_metadata()
 CLIENT_ID = PRM_META["client_id"]
 
-SUBPATH_NETWORK_SHARE_ROOT = r":\PHI\0273NYP\NewYorkMillimanShare"
+_TEST_PROJECT_PATH = str(PRM_META['path_project_received'])
+
+_TEST_RUN_INDICATOR = False if _TEST_PROJECT_PATH.find('0273NYP') > -1 \
+                        and _TEST_PROJECT_PATH.find('5-Support_Files') > -1 else True
+
+SUBPATH_NETWORK_SHARE_ROOT = r":\PHI\0273NYP\NewYorkMillimanShare" if not _TEST_RUN_INDICATOR else r":\PHI\0273NYP\TestShare"
+
+PATH_NETWORK_SHARE_ROOT = IndyPyPath(PRM_META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT) \
+                            if not _TEST_RUN_INDICATOR \
+                            else IndyPyPath("K" + SUBPATH_NETWORK_SHARE_ROOT)
 
 WHITELIST_CLIENT_IDS = ["0273NYP"]
 FILE_EXTENSIONS_SCRAPE = [
@@ -57,7 +66,7 @@ def generate_file_checksum(path_file):
     return hsh.hexdigest()
 
 
-def _get_deliverable_files(postboarding_folder: str) -> typing.Dict[IndyPyPath, hashlib.md5]:
+def _get_deliverable_files(postboarding_folder: str, postboarding_config: dict) -> typing.Dict[IndyPyPath, str]:
     """
     Acquires files and checksums for those files from a given postboarding module
 
@@ -69,12 +78,12 @@ def _get_deliverable_files(postboarding_folder: str) -> typing.Dict[IndyPyPath, 
     """
     return {
         path_: generate_file_checksum(path_)
-        for path_ in POSTBOARDING_ARGS[postboarding_folder].iterdir()
+        for path_ in postboarding_config[postboarding_folder].iterdir()
         if path_.suffix.lower() in FILE_EXTENSIONS_SCRAPE
         }
 
 
-def _generate_directories(drive: IndyPyPath, post070_flag : bool = False) -> typing.Dict[str, IndyPyPath]:
+def _generate_directories(drive: IndyPyPath, post070_flag: bool = False) -> typing.Dict[str, IndyPyPath]:
     """
     Generate the appropriate directories for delivery
 
@@ -97,7 +106,7 @@ def _generate_directories(drive: IndyPyPath, post070_flag : bool = False) -> typ
     prm_output_path = deliverable_path_parent / 'PRM Outputs'
     prm_output_path.mkdir()
 
-    flatfile_output_path = deliverable_path_parent / 'Flatfile DataMart' if post070_flag else None
+    flatfile_output_path = deliverable_path_parent / 'Flatfile DataMart' if post070_flag else {}
     if post070_flag:
         flatfile_output_path.mkdir()
 
@@ -109,20 +118,13 @@ def _generate_directories(drive: IndyPyPath, post070_flag : bool = False) -> typ
             }
 
 
-def main() -> int:
-    """A function to enclose the execution of business logic."""
-    LOGGER.info('About to do something awesome.')
-
-    return 0
-
-
 if __name__ == '__main__':
     # pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
-    PATH_NETWORK_SHARE_ROOT = IndyPyPath(PRM_META['data_drive'] + SUBPATH_NETWORK_SHARE_ROOT)
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
     if CLIENT_ID.lower() not in \
-        [whitelist.lower() for whitelist in WHITELIST_CLIENT_IDS]:
+        [whitelist.lower() for whitelist in WHITELIST_CLIENT_IDS]\
+            and not _TEST_RUN_INDICATOR:
         print("Client ID {} is not available for sharing".format(CLIENT_ID))
         sys.exit(0)
 
@@ -131,14 +133,9 @@ if __name__ == '__main__':
         / "postboarding_directories.json"
         )
 
-    PATH_DIR_OUTPUT = PATH_NETWORK_SHARE_ROOT / PRM_META["project_id"] \
-        / PRM_META["deliverable_name"] \
-        / datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    PATH_DIR_OUTPUT.mkdir(parents=True)
-
-    DELIVERABLE_COMPARATOR = _get_deliverable_files('post050')
-    DELIVERABLE_PRM = _get_deliverable_files("post060")
-    DELIVERABLE_FLATFILES = _get_deliverable_files('post070')
+    DELIVERABLE_COMPARATOR = _get_deliverable_files('post050', POSTBOARDING_ARGS)
+    DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
+    DELIVERABLE_FLATFILES = _get_deliverable_files('post070', POSTBOARDING_ARGS)
 
     post070_flag = True if DELIVERABLE_FLATFILES else False
     file_count = len(DELIVERABLE_COMPARATOR) + len(DELIVERABLE_PRM) + len(DELIVERABLE_FLATFILES)
@@ -152,13 +149,12 @@ if __name__ == '__main__':
     print(
         "Promoting {} files to network share location:\n\n{}".format(
             file_count,
-            str(PATH_DIR_OUTPUT)
+            str(directories['deliverable_root'])
         )
     )
 
-
     all_files_super_dict = {}
-    PATH_FILE_TRIGGER = PATH_DIR_OUTPUT / "PRM_Analytics.trg"
+    PATH_FILE_TRIGGER = directories['deliverable_root'] / "PRM_Analytics.trg"
     with PATH_FILE_TRIGGER.open("w") as fh_trg:
         fh_trg.write('filename~md5\n')
         for deliverable_name, delivery_files in deliverable_mapping.items():
@@ -174,6 +170,7 @@ if __name__ == '__main__':
     )
 
     sender = 'prm.operations@milliman.com'
+
     with (PATH_NETWORK_SHARE_ROOT / 'email_notification_list.txt').open() as fh_notify_list:
         recipients = ', '.join(fh_notify_list.readlines()).replace('\n', '')
 
