@@ -136,8 +136,7 @@ if __name__ == '__main__':
 
     DELIVERABLE_COMPARATOR = _get_deliverable_files('post050', POSTBOARDING_ARGS)
     DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
-    DELIVERABLE_FLATFILES = [file for file in _get_deliverable_files('post070', POSTBOARDING_ARGS)
-                             if file.suffix == '.txt']
+    DELIVERABLE_FLATFILES = _get_deliverable_files('post070', POSTBOARDING_ARGS)
 
     post070_flag = True if DELIVERABLE_FLATFILES else False
     file_count = len(DELIVERABLE_COMPARATOR) + len(DELIVERABLE_PRM) + len(DELIVERABLE_FLATFILES)
