@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Aaron Burgess
+### CODE OWNERS: Aaron Burgess, Jason Altieri
 ### OBJECTIVE:
   Generate deliverable directory structure for NYP and copy appropriate deliverables to the corresponding
   delivery folder
