@@ -178,7 +178,7 @@ if __name__ == '__main__':
         Output files (and their MD5 values) include:\n{list_files}\n\n
         Major project level metadata includes:\n{project_meta}\n\n
         \n""".format(
-            dir_root=PATH_DIR_OUTPUT,
+            dir_root=directories['deliverable_root'],
             list_files=pp.pformat({
                 p.name: k
                 for p, k in all_files_super_dict.items()
