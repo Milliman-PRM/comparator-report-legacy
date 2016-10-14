@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Aaron Burgess
+### CODE OWNERS: Aaron Burgess, Jason Altieri
 ### OBJECTIVE:
   Generate deliverable directory structure for NYP and copy appropriate deliverables to the corresponding
   delivery folder
@@ -41,6 +41,7 @@ FILE_EXTENSIONS_SCRAPE = [
     ".xlsx",
     ".sas7bndx",
     ".html",
+    ".txt"
     ]
 
 # =============================================================================
@@ -159,7 +160,7 @@ if __name__ == '__main__':
         fh_trg.write('filename~md5\n')
         for deliverable_name, delivery_files in deliverable_mapping.items():
             for path_, hash_ in delivery_files.items():
-                all_files_super_dict[path_.name] = hash_
+                all_files_super_dict[path_] = hash_
                 print("Promoting {}...".format(path_.name))
                 shutil.copy(str(path_), str(directories[deliverable_name]))
                 fh_trg.write("{}~{}\n".format(path_.name, hash_))
