@@ -24,8 +24,6 @@ libname post050 "&post050.";
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
-
-
 %let M002_cde = %MockDirectoryGetPath();
 %put M002_cde = &M002_cde.;
 %CreateFolder(&M002_cde.&name_datamart_target.)
