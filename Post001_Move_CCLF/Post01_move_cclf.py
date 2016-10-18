@@ -49,7 +49,7 @@ def _create_dict_by_date(file_list: typing.List[IndyPyPath]) -> typing.Dict[str,
     return file_dict
 
 
-def _file_check(list_of_files: typing.List[IndyPyPath], date_path: IndyPyPath) -> typing.List[typing.Optional[IndyPyPath]]:
+def _file_check(list_of_files: typing.List[IndyPyPath], date_path: IndyPyPath) -> typing.List[typing.Optional[str]]:
     """
     Compares files to copy relative to existing files and returns difference
 
