@@ -13,5 +13,4 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 
 rem ### LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 
-call activate prod3
 python "%~dp0\Post01_stage_data_drive.py"
