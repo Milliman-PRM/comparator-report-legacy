@@ -95,6 +95,7 @@ if __name__ == '__main__':
     driver_ = Driver(
         project_id=PRM_META['project_id'],
         deliverable_name=PRM_META['deliverable_name'],
+        project_namespace=PRM_META['project_namespace'],
         prod_input=os.path.join(
             str(
                 PRM_META['path_project']
