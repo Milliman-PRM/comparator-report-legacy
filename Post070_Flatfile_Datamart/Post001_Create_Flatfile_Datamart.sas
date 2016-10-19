@@ -11,17 +11,14 @@
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
-%include "&M008_Cde.Func03_Prv_Name_RegEx.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "%GetParentFolder(0)share001_test_config.sas" /source2;
 
-libname NPI "&path_product_ref." access=readonly;
-libname M015_Out "&M015_Out." access=readonly;
-libname M020_Out "&M020_Out." access=readonly;
-libname M025_Out "&M025_Out." access=readonly;
-libname M035_Out "&M035_Out." access=readonly;
-libname M073_Out "&M073_Out." access=readonly;
-libname Post008 "&Post008." access=readonly;
+libname M015_Out "&M015_Out.";
+libname M025_Out "&M025_Out.";
+libname M035_Out "&M035_Out.";
+libname M073_Out "&M073_Out.";
+libname Post008 "&Post008.";
 libname Post070 "&Post070.";
 
 %build_metadata_table(Flatfile_Report)
@@ -54,90 +51,11 @@ libname Post070 "&Post070.";
 %CodeGen_Wrapper(reflines);
 
 proc sql;
-	create table npi_limit as
-	select
-		case when other_prvdr_id_type_cd_1 = '06' then other_prvdr_id_1
-			when other_prvdr_id_type_cd_2 = '06' then other_prvdr_id_2
-			when other_prvdr_id_type_cd_3 = '06' then other_prvdr_id_3
-			when other_prvdr_id_type_cd_4 = '06' then other_prvdr_id_4
-			when other_prvdr_id_type_cd_5 = '06' then other_prvdr_id_5
-			when other_prvdr_id_type_cd_6 = '06' then other_prvdr_id_6
-			when other_prvdr_id_type_cd_7 = '06' then other_prvdr_id_7
-			when other_prvdr_id_type_cd_8 = '06' then other_prvdr_id_8
-			when other_prvdr_id_type_cd_9 = '06' then other_prvdr_id_9
-			when other_prvdr_id_type_cd_10 = '06' then other_prvdr_id_10
-			when other_prvdr_id_type_cd_11 = '06' then other_prvdr_id_11
-			when other_prvdr_id_type_cd_12 = '06' then other_prvdr_id_12
-			when other_prvdr_id_type_cd_13 = '06' then other_prvdr_id_13
-			when other_prvdr_id_type_cd_14 = '06' then other_prvdr_id_14
-			when other_prvdr_id_type_cd_15 = '06' then other_prvdr_id_15
-			when other_prvdr_id_type_cd_16 = '06' then other_prvdr_id_16
-			when other_prvdr_id_type_cd_17 = '06' then other_prvdr_id_17
-			when other_prvdr_id_type_cd_18 = '06' then other_prvdr_id_18
-			when other_prvdr_id_type_cd_19 = '06' then other_prvdr_id_19
-			when other_prvdr_id_type_cd_20 = '06' then other_prvdr_id_20
-			when other_prvdr_id_type_cd_21 = '06' then other_prvdr_id_21
-			when other_prvdr_id_type_cd_22 = '06' then other_prvdr_id_22
-			when other_prvdr_id_type_cd_23 = '06' then other_prvdr_id_23
-			when other_prvdr_id_type_cd_24 = '06' then other_prvdr_id_24
-			when other_prvdr_id_type_cd_25 = '06' then other_prvdr_id_25
-			when other_prvdr_id_type_cd_26 = '06' then other_prvdr_id_26
-			when other_prvdr_id_type_cd_27 = '06' then other_prvdr_id_27
-			when other_prvdr_id_type_cd_28 = '06' then other_prvdr_id_28
-			when other_prvdr_id_type_cd_29 = '06' then other_prvdr_id_29
-			when other_prvdr_id_type_cd_30 = '06' then other_prvdr_id_30
-			when other_prvdr_id_type_cd_31 = '06' then other_prvdr_id_31
-			when other_prvdr_id_type_cd_32 = '06' then other_prvdr_id_32
-			when other_prvdr_id_type_cd_33 = '06' then other_prvdr_id_33
-			when other_prvdr_id_type_cd_34 = '06' then other_prvdr_id_34
-			when other_prvdr_id_type_cd_35 = '06' then other_prvdr_id_35
-			when other_prvdr_id_type_cd_36 = '06' then other_prvdr_id_36
-			when other_prvdr_id_type_cd_37 = '06' then other_prvdr_id_37
-			when other_prvdr_id_type_cd_38 = '06' then other_prvdr_id_38
-			when other_prvdr_id_type_cd_39 = '06' then other_prvdr_id_39
-			when other_prvdr_id_type_cd_40 = '06' then other_prvdr_id_40
-			when other_prvdr_id_type_cd_41 = '06' then other_prvdr_id_41
-			when other_prvdr_id_type_cd_42 = '06' then other_prvdr_id_42
-			when other_prvdr_id_type_cd_43 = '06' then other_prvdr_id_43
-			when other_prvdr_id_type_cd_44 = '06' then other_prvdr_id_44
-			when other_prvdr_id_type_cd_45 = '06' then other_prvdr_id_45
-			when other_prvdr_id_type_cd_46 = '06' then other_prvdr_id_46
-			when other_prvdr_id_type_cd_47 = '06' then other_prvdr_id_47
-			when other_prvdr_id_type_cd_48 = '06' then other_prvdr_id_48
-			else ''
-		end as OSCAR,
-		prvdr_org_name
-	from NPI.&Filename_SAS_NPI. as npi
-	where calculated OSCAR is not null
-	;
-quit;
-
-proc sql;
-	create table pass_w_org_name as
-	select
-		pass.*
-		,coalescec(propcase(npi.prvdr_org_name), "Unknown") as prvdr_org_name
-	from M020_Out.passarounds as pass
-	left join npi_limit as npi
-		on npi.oscar = pass.CCN
-	;
-quit;
-
-data propcase_names (drop = prvdr_org_name);
-	set pass_w_org_name;
-
-	%Prv_Name_RegEx(prvdr_org_name, prv_org_name);
-run;
-
-proc sql;
-		create table outclaims_pre (drop = claim_id)as
+		create table outclaims_pre as
 		select
-			base.*
-			,pass.*
+			*
 			,case when upcase(prm_util_type) = "DAYS" then prm_util else 0 end as prm_days
-		from M073_Out.outclaims_prm as base
-		left join propcase_names as pass
-			on base.claimid eq pass.claim_id
+		from M073_Out.outclaims_prm
 		order by sequencenumber
 		;
 quit;

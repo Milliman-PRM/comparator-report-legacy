@@ -101,10 +101,6 @@ prm_util,outclaims,N,N
 prm_costs,outclaims,N,N
 prm_admits,outclaims,N,N
 prm_days,outclaims,N,N
-CCN,outclaims,N,N
-attending_prv_npi,outclaims,N,N
-operating_prv_npi,outclaims,N,N
-prv_org_name,outclaims,N,N
 Member_ID,memmos_elig,Y,N
 elig_month,memmos_elig,N,N
 Elig_Status_1,memmos_elig,N,N
