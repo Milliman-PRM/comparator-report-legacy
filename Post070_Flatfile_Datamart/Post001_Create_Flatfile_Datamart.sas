@@ -56,7 +56,8 @@ libname Post070 "&Post070.";
 proc sql;
 	create table npi_limit as
 	select
-		case when other_prvdr_id_type_cd_1 = '06' then other_prvdr_id_1
+		*
+		,case when other_prvdr_id_type_cd_1 = '06' then other_prvdr_id_1
 			when other_prvdr_id_type_cd_2 = '06' then other_prvdr_id_2
 			when other_prvdr_id_type_cd_3 = '06' then other_prvdr_id_3
 			when other_prvdr_id_type_cd_4 = '06' then other_prvdr_id_4
@@ -105,12 +106,28 @@ proc sql;
 			when other_prvdr_id_type_cd_47 = '06' then other_prvdr_id_47
 			when other_prvdr_id_type_cd_48 = '06' then other_prvdr_id_48
 			else ''
-		end as OSCAR,
-		prvdr_org_name
+		end as OSCAR
 	from NPI.&Filename_SAS_NPI. as npi
 	where calculated OSCAR is not null
+	order by OSCAR, prvdr_org_name
 	;
 quit;
+
+proc transpose data=npi_limit out=npi_trans;
+	by OSCAR prvdr_org_name;
+	var other_prvdr_id_type_cd_:;
+run;
+
+proc sort data=npi_trans;
+	by OSCAR prvdr_org_name _NAME_;
+run;
+
+data oscar_limit;
+	set npi_trans;
+	by OSCAR;
+
+	if last.oscar then output;
+run;
 
 proc sql;
 	create table pass_w_org_name as
@@ -141,6 +158,8 @@ proc sql;
 		order by sequencenumber
 		;
 quit;
+
+%Assertthat(%GetRecordCount(outclaims_pre), eq, %GetRecordCount(M073_Out.outclaims_prm),ReturnMessage=Merging the passarounds on is cartesianing the claims table)
 
 data post070.outclaims (keep = &_codegen_spaces_outclaims.);
 	set outclaims_pre;
