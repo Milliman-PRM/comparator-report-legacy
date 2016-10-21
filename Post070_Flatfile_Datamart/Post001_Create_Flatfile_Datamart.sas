@@ -133,10 +133,10 @@ proc sql;
 	create table pass_w_org_name as
 	select
 		pass.*
-		,coalescec(propcase(npi.prvdr_org_name), "Unknown") as prvdr_org_name
+		,coalescec(propcase(oscar.prvdr_org_name), "Unknown") as prvdr_org_name
 	from M020_Out.passarounds as pass
-	left join npi_limit as npi
-		on npi.oscar = pass.CCN
+	left join oscar_limit as oscar
+		on oscar.oscar = pass.CCN
 	;
 quit;
 
