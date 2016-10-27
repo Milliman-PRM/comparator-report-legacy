@@ -3,10 +3,10 @@
 ## v6.2.0
 
 ### Client Visible Changes
- - Added scrip to copy CCLF data to the NewYorkMillimanShare
+ - Added script to copy CCLF data to the NewYorkMillimanShare
  - Added flatfile datamart to be provided to external clients
  - Added `members`, `member_time`, `outclaims_prm`, and `outpharmacy_prm` to the standard deliverable
- - Calculated and added `member_riskscores` and `member_riskscr_coeffs` to stadard outputs
+ - Calculated and added `member_riskscores` and `member_riskscr_coeffs` to standard outputs
 
 ### Logic Changes
  - Replace built in MSSP assignment logic with `prmclient-library`
@@ -24,6 +24,8 @@
  - Added `Fix_ICD_Version` and `Fix_Outclaims_PRM` to correct data issues with Pioneer and NextGen clients
  - Organized Pioneer specific programs into `Supp_NextGen_Pioneer_Programs` subfolder
  - Organized report split programs into `Report_Split_Programs` subfolder
+ - Disabled MARA API instead of updating to Spark API
+ - Set up dummy deliverable location `TestShare`
 
 ## v6.1.3
 
