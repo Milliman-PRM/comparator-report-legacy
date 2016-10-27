@@ -22,16 +22,16 @@ libname M180_Out "&M180_Out.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-%RunPythonScript(,%GetParentFolder(0)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
+%RunPythonScript(,%GetParentFolder(1)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
 %AssertThat(&Path_code.,=,0);
 
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 
-/*Run the Supp04_MHS_Transpose.sas only if the client is MHS.*/
+/*Run the Supp03_MHS_Transpose.sas only if the client is MHS.*/
 %macro run_MHS_Only();
 
 	%if %sysfunc(upcase(&name_client.)) eq (MERCY HEALTH SELECT) %then %do; 
- 		%include "&path_project.\01_Programs\Supp04_MHS_Transpose.sas" / source2;
+ 		%include "&path_project.\01_Programs\Report_Split_Programs\Supp03_MHS_Transpose.sas" / source2;
 	%end;
 
 %mend;
@@ -109,7 +109,7 @@ run;
 %copy_originals(M035_Out.member_raw_stack,all);
 %copy_originals(M018_Out.client_member_time,all);
 
-%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. all,&path_project_logs./_onboarding/Supp02_all.log,prod3);
+%RunPythonScript(,%GetParentFolder(0)Supp02_output_rename.py,,Py_code,&post050. all,&path_project_logs./_onboarding/Supp02_all.log,prod3);
 %AssertThat(&Py_code.,=,0);
 
 /*Create a new table with just the needed population*/
@@ -169,7 +169,7 @@ run;
 			%copy_originals(M035_Out.member_raw_stack,&group_name.);
 			%copy_originals(M018_Out.client_member_time,&group_name.);
 	
-			%RunPythonScript(,%GetParentFolder(0)Supp03_output_rename.py,,Py_code,&post050. a_&group_name,&path_project_logs.\_onboarding\Supp02_&group_name.log,prod3);
+			%RunPythonScript(,%GetParentFolder(0)Supp02_output_rename.py,,Py_code,&post050. a_&group_name,&path_project_logs.\_onboarding\Supp02_&group_name.log,prod3);
 			%AssertThat(&Py_code.,=,0);
 	
 		%end;

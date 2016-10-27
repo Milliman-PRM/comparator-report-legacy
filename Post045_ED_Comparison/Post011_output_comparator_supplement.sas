@@ -55,14 +55,14 @@ proc sql;
 	inner join original_CHF_admits as orig
 		on custom.time_slice = orig.time_period
 		and custom.elig_status_1 = orig.elig_status_1
-	where orig.metric_value ne custom.case_count
+	where abs(orig.metric_value - custom.case_count) gt 2
 	;
 quit;
 
 %AssertDataSetNotPopulated
 	(
 	diffs_CHF_admits
-	,ReturnMessage = Member level results do not tie to Comparator Report for CHF admission counts
+	,ReturnMessage = Member level results do not tie as closely as expected to Comparator Report for CHF admission counts
 	)
 
 
@@ -106,7 +106,7 @@ proc sql;
 		on custom.time_period = orig_prev.time_period
 		and custom.elig_status_1 = orig_prev.elig_status_1
 	where
-		calculated custom_preventable ne calculated original_preventable
+		abs(calculated custom_preventable - calculated original_preventable) gt 2
 	;
 quit;
 

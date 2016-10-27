@@ -7,18 +7,16 @@
 ### DEVELOPER NOTES:
 	*/
 
-
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func12_shortcircuit-cclf-import.sas" / source2;
-%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func13_import_mssp_assignment_wrap.sas" / source2;
-%include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
+%include "S:\PRM\PRMClient_Library\sas\mssp\shortcircuit-cclf-import.sas" / source2;
+%include "S:\PRM\PRMClient_Library\sas\mssp\import_mssp_assignment_wrap.sas" / source2;
 
 %AssertThat(
-	%upcase(&cclf_ccr_absent_any_prior_cclf8.)
-	,eq
-	,INCLUDE
-	,ReturnMessage=Pioneer client does not have assignment files.
+	%upcase(&name_client.)
+	,ne
+	,PIONEER VALLEY ACCOUNTABLE CARE
+	,ReturnMessage=PVA has different assignment files.
 	,FailAction=EndActiveSASSession
 	)
 

@@ -12,7 +12,7 @@ from collections import namedtuple
 
 import pytest
 
-from Supp03_output_rename import rename_files, IndyPyPath
+from Supp02_output_rename import rename_files, IndyPyPath
 
 @pytest.fixture
 def file_group(tmpdir):

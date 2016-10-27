@@ -1,5 +1,32 @@
 #Release Notes
 
+## v6.2.0
+
+### Client Visible Changes
+ - Added script to copy CCLF data to the NewYorkMillimanShare
+ - Added flatfile datamart to be provided to external clients
+ - Added `members`, `member_time`, `outclaims_prm`, and `outpharmacy_prm` to the standard deliverable
+ - Calculated and added `member_riskscores` and `member_riskscr_coeffs` to standard outputs
+
+### Logic Changes
+ - Replace built in MSSP assignment logic with `prmclient-library`
+ - Added NextGen assignment logic
+ - Change `select` to `select distinct` when creating passround table
+ - Update the `post010.member_elig` table to use the monthly elgibility status flags from the `QASSGN` files
+
+
+### Lower Level Changes
+ - Updated `meta_field_label` length to match v6.2.x of the `analytics-pipeline`
+ - Exempted NextGen from the `pct_assigned_in_cclf` assertion because assignment is partially derived from the CCLF data
+ - Added `project_namespace` to `stage_data_drive.py`
+ - Loosen assertion that the member level and aggregate reports match due to slight differences in exclusion logic
+ - Moved all deliverable movement to the NewYorkMillimanShare to `post090_output_deliverables`
+ - Added `Fix_ICD_Version` and `Fix_Outclaims_PRM` to correct data issues with Pioneer and NextGen clients
+ - Organized Pioneer specific programs into `Supp_NextGen_Pioneer_Programs` subfolder
+ - Organized report split programs into `Report_Split_Programs` subfolder
+ - Disabled MARA API instead of updating to Spark API
+ - Set up dummy deliverable location `TestShare`
+
 ## v6.1.3
 
 ### Client Visible Changes
