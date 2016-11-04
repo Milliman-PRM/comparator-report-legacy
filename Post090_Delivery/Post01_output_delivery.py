@@ -138,7 +138,8 @@ if __name__ == '__main__':
     DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
     DELIVERABLE_FLATFILES = _get_deliverable_files('post070', POSTBOARDING_ARGS)
 
-    post070_flag = True if DELIVERABLE_FLATFILES else False
+    # post070_flag = True if DELIVERABLE_FLATFILES else False
+    post070_flag = False
     file_count = len(DELIVERABLE_COMPARATOR) + len(DELIVERABLE_PRM) + len(DELIVERABLE_FLATFILES)
 
     directories = _generate_directories(PATH_NETWORK_SHARE_ROOT, post070_flag)
