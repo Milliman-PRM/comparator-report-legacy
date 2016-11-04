@@ -21,7 +21,7 @@ libname post060 "&post060.";
 /*Pull a copy of outclaims_prm and outpharmacy_prm to postboarding*/
 
 proc sql;
-	create table post060.outclaims_w_prv (drop = claim_id PRM_Avoidable_YN) as
+	create table post060.outclaims_w_prv (drop = claim_id prm_avoidable) as
 	select
 		base.*
 		,pass.*
@@ -31,7 +31,7 @@ proc sql;
 	;
 quit;
 
-data post060.outpharmacy_prm (drop = PRM_Avoidable_YN);
+data post060.outpharmacy_prm;
 	set M073_out.outpharmacy_prm;
 run;
 

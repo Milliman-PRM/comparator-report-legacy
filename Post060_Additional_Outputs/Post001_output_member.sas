@@ -16,6 +16,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 
 libname M035_Out "&M035_Out." access=readonly;
+libname post008 "&post008." access=readonly;
 libname post060 "&post060.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/

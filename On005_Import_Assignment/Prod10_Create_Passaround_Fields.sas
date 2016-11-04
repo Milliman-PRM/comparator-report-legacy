@@ -19,7 +19,7 @@ libname M020_Out "&M020_Out.";
 
 proc sql;
 	create table M020_out.passarounds as
-	select
+	select distinct
 		cats(compress(put(cur_clm_uniq_id,Z13.)),"PTA") as claim_id,
 		prvdr_oscar_num as CCN,
 		atndg_prvdr_npi_num as attending_prv_npi,

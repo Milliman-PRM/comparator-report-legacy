@@ -49,7 +49,7 @@ def _create_dict_by_date(file_list: typing.List[IndyPyPath]) -> typing.Dict[str,
     return file_dict
 
 
-def _file_check(list_of_files: typing.List[IndyPyPath], date_path: IndyPyPath) -> typing.List[typing.Optional[IndyPyPath]]:
+def _file_check(list_of_files: typing.List[IndyPyPath], date_path: IndyPyPath) -> typing.List[typing.Optional[str]]:
     """
     Compares files to copy relative to existing files and returns difference
 
@@ -61,7 +61,7 @@ def _file_check(list_of_files: typing.List[IndyPyPath], date_path: IndyPyPath) -
         Difference of existing and new files
     """
     all_date_files = [file for file in date_path.iterdir()]
-    return list(set(list_of_files) ^ set(all_date_files))
+    return list(set([lfile.name for lfile in list_of_files]) ^ set([dfile.name for dfile in all_date_files]))
 
 
 def _create_dirs_and_move_files(file_dict: typing.Dict[str, typing.List[IndyPyPath]]):
@@ -80,7 +80,7 @@ def _create_dirs_and_move_files(file_dict: typing.Dict[str, typing.List[IndyPyPa
         date_path = output_directory / date
         files_to_write = list_of_files
         if date_path.exists():
-            files_to_write = _file_check(list_of_files, date_path)
+            files_to_write = [f for f in files_to_write if f.name in _file_check(list_of_files, date_path)]
         else:
             date_path.mkdir()
         for file in files_to_write:
