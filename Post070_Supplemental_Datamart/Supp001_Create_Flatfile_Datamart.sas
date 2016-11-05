@@ -13,7 +13,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "&M008_Cde.Func03_Prv_Name_RegEx.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(0)share001_test_config.sas" /source2;
 
 libname NPI "&path_product_ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
