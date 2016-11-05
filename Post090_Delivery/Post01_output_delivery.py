@@ -126,13 +126,13 @@ if __name__ == '__main__':
 
     DELIVERABLE_COMPARATOR = _get_deliverable_files('post050', POSTBOARDING_ARGS)
     DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
-    FULL_DELIVERABLE = DELIVERABLE_COMPARATOR + DELIVERABLE_PRM
+    DELIVERABLE_COMPARATOR.update(DELIVERABLE_PRM)
 
-    file_count = FULL_DELIVERABLE
+    file_count = DELIVERABLE_COMPARATOR
 
     directories = _generate_directories(PATH_NETWORK_SHARE_ROOT)
 
-    deliverable_mapping = {'comparator': FULL_DELIVERABLE}
+    deliverable_mapping = {'comparator': DELIVERABLE_COMPARATOR}
 
     print(
         "Promoting {} files to network share location:\n\n{}".format(
