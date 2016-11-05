@@ -40,14 +40,6 @@ def main() -> int:
         / "postboarding_directories.json"
         )
 
-    LOGGER.info('Running Post060 supps...')
-    post60_supps = sorted(POSTBOARDING_ARGS['post060'].collect_files_regex('Supp\d{3}'))
-    for post60 in post60_supps:
-        check = subprocess.run(['sas', str(post60)])
-        if check:
-            raise RuntimeError("%s failed" % str(post60))
-    LOGGER.info('Post060 runs complete')
-
     LOGGER.info('Running Post070 supps...')
     post70_supps = sorted(POSTBOARDING_ARGS['post070'].collect_filex_regex('Supp\d{3}'))
     for post70 in post70_supps:
