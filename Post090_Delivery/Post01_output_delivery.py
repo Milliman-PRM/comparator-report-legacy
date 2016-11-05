@@ -84,13 +84,12 @@ def _get_deliverable_files(postboarding_folder: str, postboarding_config: dict) 
         }
 
 
-def _generate_directories(drive: IndyPyPath, post070_flag: bool = False) -> typing.Dict[str, IndyPyPath]:
+def _generate_directories(drive: IndyPyPath) -> typing.Dict[str, IndyPyPath]:
     """
     Generate the appropriate directories for delivery
 
     Args:
         drive (IndyPyPath): IndyPyPath representation of delivery drive
-        post070_flag (bool): Indicator whether resulting directory for flatfile outputs should exist
 
     Returns:
         Dict with string representation of deliverable with it's respective output directory as an
@@ -104,18 +103,9 @@ def _generate_directories(drive: IndyPyPath, post070_flag: bool = False) -> typi
     comparator_path = deliverable_path_parent / 'Comparator Report'
     comparator_path.mkdir()
 
-    prm_output_path = deliverable_path_parent / 'PRM Outputs'
-    prm_output_path.mkdir()
-
-    flatfile_output_path = deliverable_path_parent / 'Flatfile DataMart' if post070_flag else {}
-    if post070_flag:
-        flatfile_output_path.mkdir()
-
     return {
             'deliverable_root': deliverable_path_parent,
             'comparator': comparator_path,
-            'prm_output': prm_output_path,
-            'flatfile': flatfile_output_path
             }
 
 
@@ -136,17 +126,13 @@ if __name__ == '__main__':
 
     DELIVERABLE_COMPARATOR = _get_deliverable_files('post050', POSTBOARDING_ARGS)
     DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
-    DELIVERABLE_FLATFILES = _get_deliverable_files('post070', POSTBOARDING_ARGS)
+    FULL_DELIVERABLE = DELIVERABLE_COMPARATOR + DELIVERABLE_PRM
 
-    # post070_flag = True if DELIVERABLE_FLATFILES else False
-    post070_flag = False
-    file_count = len(DELIVERABLE_COMPARATOR) + len(DELIVERABLE_PRM) + len(DELIVERABLE_FLATFILES)
+    file_count = FULL_DELIVERABLE
 
-    directories = _generate_directories(PATH_NETWORK_SHARE_ROOT, post070_flag)
+    directories = _generate_directories(PATH_NETWORK_SHARE_ROOT)
 
-    deliverable_mapping = {'comparator': DELIVERABLE_COMPARATOR,
-                           'prm_output': DELIVERABLE_PRM,
-                           'flatfile': DELIVERABLE_FLATFILES}
+    deliverable_mapping = {'comparator': FULL_DELIVERABLE}
 
     print(
         "Promoting {} files to network share location:\n\n{}".format(
