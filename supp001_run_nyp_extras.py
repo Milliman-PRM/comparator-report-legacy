@@ -119,11 +119,10 @@ def main() -> int:
         )
 
     LOGGER.info('Running Post070 supps...')
-    post70_supps = sorted(POSTBOARDING_ARGS['post070'].collect_filex_regex('Supp\d{3}'))
+    post070_path = IndyPyPath(__file__).parent / 'Post070_Supplemental_Datamart'
+    post70_supps = post070_path.collect_files_regex('Supp\d{''3}')
     for post70 in post70_supps:
-        check = subprocess.run(['sas', str(post70)])
-        if check:
-            raise RuntimeError("%s failed" % str(post70))
+        subprocess.run(['sas', str(post70)], check=True)
     LOGGER.info('Post070 runs complete')
 
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
@@ -141,9 +140,11 @@ def main() -> int:
 
     DELIVERABLE_SUPPLEMENTAL = _get_deliverable_files('post070', POSTBOARDING_ARGS)
 
+    file_count = DELIVERABLE_SUPPLEMENTAL
+
     directories = _generate_directories(PATH_NETWORK_SHARE_ROOT)
 
-    deliverable_mapping = {'suplemental': DELIVERABLE_SUPPLEMENTAL}
+    deliverable_mapping = {'supplemental': DELIVERABLE_SUPPLEMENTAL}
 
     print(
         "Promoting {} files to network share location:\n\n{}".format(
