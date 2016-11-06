@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Aaron Burgess
+### CODE OWNERS: Aaron Burgess, Jason Altieri
 ### OBJECTIVE:
   Run NYP extras upon client request and/or payment
 ### DEVELOPER NOTES:
@@ -130,7 +130,7 @@ def main() -> int:
     if CLIENT_ID.lower() not in \
         [whitelist.lower() for whitelist in WHITELIST_CLIENT_IDS]\
             and not _TEST_RUN_INDICATOR:
-        print("Client ID {} is not available for sharing".format(CLIENT_ID))
+        LOGGER.info("Client ID {} is not available for sharing".format(CLIENT_ID))
         sys.exit(0)
 
     POSTBOARDING_ARGS = load_params(
@@ -146,7 +146,7 @@ def main() -> int:
 
     deliverable_mapping = {'supplemental': DELIVERABLE_SUPPLEMENTAL}
 
-    print(
+    LOGGER.info(
         "Promoting {} files to network share location:\n\n{}".format(
             file_count,
             str(directories['deliverable_root'])
