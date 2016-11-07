@@ -13,7 +13,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "&M008_Cde.Func03_Prv_Name_RegEx.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(0)share001_test_config.sas" /source2;
 
 libname NPI "&path_product_ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
@@ -222,30 +221,6 @@ run;
 
 data post070.memmos_elig (keep = &_codegen_spaces_memmos_elig.);
 	set member_pre_summ;
-run;
-
-proc export data=post070.outclaims
-	outfile="&post070.\outclaims.txt" 
-	dbms=csv
-	replace;
-run;
-
-proc export data=post070.outpharmacy
-	outfile="&post070.\outpharmacy.txt"
-	dbms=csv
-	replace;
-run;
-
-proc export data=post070.ref_prm_line
-	outfile="&post070.\ref_prm_line.txt"
-	dbms=csv
-	replace;
-run;
-
-proc export data=post070.memmos_elig
-	outfile="&post070.\memmos_elig.txt"
-	dbms=csv
-	replace;
 run;
 
 %put System Return Code = &syscc.;
