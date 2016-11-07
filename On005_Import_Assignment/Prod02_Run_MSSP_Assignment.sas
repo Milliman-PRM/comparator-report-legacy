@@ -13,7 +13,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "S:\PRM\PRMClient_Library\sas\mssp\import_mssp_assignment_wrap.sas" / source2;
 
 %AssertThat(
-	%upcase(&name_client.)
+	%bquote(%upcase(&name_client.))
 	,ne
 	,PIONEER VALLEY ACCOUNTABLE CARE
 	,ReturnMessage=PVA has different assignment files.
