@@ -116,7 +116,7 @@ if __name__ == '__main__':
     if CLIENT_ID.lower() not in \
         [whitelist.lower() for whitelist in WHITELIST_CLIENT_IDS]\
             and not _TEST_RUN_INDICATOR:
-        print("Client ID {} is not available for sharing".format(CLIENT_ID))
+        LOGGER.info("Client ID {} is not available for sharing".format(CLIENT_ID))
         sys.exit(0)
 
     POSTBOARDING_ARGS = load_params(
@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     deliverable_mapping = {'comparator': DELIVERABLE_COMPARATOR}
 
-    print(
+    LOGGER.info(
         "Promoting {} files to network share location:\n\n{}".format(
             file_count,
             str(directories['deliverable_root'])
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         for deliverable_name, delivery_files in deliverable_mapping.items():
             for path_, hash_ in delivery_files.items():
                 all_files_super_dict[path_] = hash_
-                print("Promoting {}...".format(path_.name))
+                LOGGER.info("Promoting {}...".format(path_.name))
                 shutil.copy(str(path_), str(directories[deliverable_name]))
                 fh_trg.write("{}~{}\n".format(path_.name, hash_))
 
