@@ -140,7 +140,7 @@ def main() -> int:
 
     DELIVERABLE_SUPPLEMENTAL = _get_deliverable_files('post070', POSTBOARDING_ARGS)
 
-    file_count = DELIVERABLE_SUPPLEMENTAL
+    file_count = len(DELIVERABLE_SUPPLEMENTAL.keys())
 
     directories = _generate_directories(PATH_NETWORK_SHARE_ROOT)
 
