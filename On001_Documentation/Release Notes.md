@@ -1,5 +1,17 @@
 #Release Notes
 
+## v6.2.1
+
+### Client Visible Changes
+ - Removed flatfile outputs
+ - Made `members_assign`, `memmos_elig`, `outclaims_prm`, `outpharmacy_prm`, `member_riskscores`, and `member_riskscr_coeffs` part of the supplemental datamart rather than automatic outputs
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Used `%bquote()` on `&client_name.` to protect against embedded commas
+
 ## v6.2.0
 
 ### Client Visible Changes
