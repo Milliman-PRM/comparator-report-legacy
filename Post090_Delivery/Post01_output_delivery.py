@@ -128,7 +128,7 @@ if __name__ == '__main__':
     DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
     DELIVERABLE_COMPARATOR.update(DELIVERABLE_PRM)
 
-    file_count = DELIVERABLE_COMPARATOR
+    file_count = len(DELIVERABLE_COMPARATOR.keys())
 
     directories = _generate_directories(PATH_NETWORK_SHARE_ROOT)
 
