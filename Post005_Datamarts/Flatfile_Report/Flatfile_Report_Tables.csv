@@ -106,7 +106,7 @@ attending_prv_npi,outclaims,N,N
 operating_prv_npi,outclaims,N,N
 prv_org_name,outclaims,N,N
 Member_ID,memmos_elig,Y,N
-elig_month,memmos_elig,N,N
+elig_month,memmos_elig,Y,N
 Elig_Status_1,memmos_elig,N,N
 age,memmos_elig,N,N
 gender,memmos_elig,N,N
@@ -168,3 +168,14 @@ prm_costs,outpharmacy,N,N
 prm_line,ref_prm_line,Y,N
 prm_line_desc,ref_prm_line,N,N
 prm_line_category,ref_prm_line,N,N
+hicno,member_riskscores,Y,N
+time_slice,member_riskscores,Y,N
+riskscr_mm,member_riskscores,N,N
+score_community,member_riskscores,N,N
+score_new_enrollee,member_riskscores,N,N
+hicno,member_riskscr_coeff,Y,N
+time_slice,member_riskscr_coeff,Y,N
+variable,member_riskscr_coeff,Y,N
+description,member_riskscr_coeff,N,N
+comm_coeff,member_riskscr_coeff,N,N
+ne_coeff,member_riskscr_coeff,N,N
