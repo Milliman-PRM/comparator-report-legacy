@@ -23,16 +23,10 @@ libname post060 "&post060.";
 
 /*Output members table to NewYorkMillimanShare data directory*/
 
-data post060.Members;
+data post060.Members_assign;
 	format name_client $256.;
 	set post008.members;
 	&assign_name_client.;
-run;
-
-/*Write member_time to Post060 then output to NewYorkMillimanShare*/
-
-data post060.member_time;
-	set m035_out.member_time;
 run;
 
 %put System Return Code = &syscc.;

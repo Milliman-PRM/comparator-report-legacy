@@ -15,7 +15,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname HCC "&M090_cde.HCC\HCC Programs" access = readonly;
 libname post008 "&post008." access = readonly;
-libname post060 "&post060.";
+libname post070 "&post070.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -146,7 +146,7 @@ data NE_NMCAID_NORIGDIS_coeff;
 run;
 
 proc sql;
-	create table post060.member_riskscr_coeff as
+	create table post070.member_riskscr_coeff as
 	select
 		mem.hicno
 		,mem.time_slice
@@ -177,7 +177,7 @@ proc sql;
 quit;
 
 proc sql;
-	create table post060.member_riskscores as
+	create table post070.member_riskscores as
 	select distinct
 		hicno
 		,time_slice
@@ -190,7 +190,7 @@ quit;
 
 
 /*TEST RECON*/
-proc summary nway missing data=post060.member_riskscr_coeff;
+proc summary nway missing data=post070.member_riskscr_coeff;
 	class hicno time_slice;
 	var ne_coeff comm_coeff;
 	output out=riskscr_recon (drop = _:)sum=;
@@ -204,7 +204,7 @@ proc sql;
 		,scr.score_community
 		,scr.score_new_enrollee
 	from riskscr_recon as coeff
-	left join post060.member_riskscores as scr
+	left join post070.member_riskscores as scr
 		on coeff.hicno = scr.hicno and coeff.time_slice = scr.time_slice
 	;
 quit;

@@ -13,7 +13,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "&M008_Cde.Func03_Prv_Name_RegEx.sas" / source2;
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
-%include "%GetParentFolder(0)share001_test_config.sas" /source2;
 
 libname NPI "&path_product_ref." access=readonly;
 libname M015_Out "&M015_Out." access=readonly;
@@ -51,7 +50,7 @@ libname Post070 "&Post070.";
 %CodeGen_Wrapper(memmos_elig);
 %CodeGen_Wrapper(outclaims);
 %CodeGen_Wrapper(outpharmacy);
-%CodeGen_Wrapper(reflines);
+%CodeGen_Wrapper(ref_prm_line);
 
 proc sql;
 	create table npi_limit as
@@ -162,6 +161,7 @@ quit;
 %Assertthat(%GetRecordCount(outclaims_pre), eq, %GetRecordCount(M073_Out.outclaims_prm),ReturnMessage=Merging the passarounds on is cartesianing the claims table)
 
 data post070.outclaims (keep = &_codegen_spaces_outclaims.);
+	format &_codegen_format_outclaims.;
 	set outclaims_pre;
 run;
 
@@ -178,15 +178,16 @@ proc sql;
 quit;
 
 data post070.outpharmacy (keep = &_codegen_spaces_outpharmacy.);
+	format &_codegen_format_outpharmacy.;
 	set outpharmacy_pre;
+	prv_net_hier_1 = coalescec(prv_net_hier_1, "OON");
 run;
 
-data post070.ref_prm_line (keep = &_codegen_spaces_reflines.);
+data post070.ref_prm_line (keep = &_codegen_spaces_ref_prm_line.);
+	format &_codegen_format_ref_prm_line.;
     set M015_Out.mr_line_info;
-    rename
-        mr_line = prm_line
-        prm_line_desc1 = prm_line_category
-        ;
+	prm_line = mr_line;
+	prm_line_category = prm_line_desc1;	
 run;
 
 proc sql;
@@ -221,31 +222,8 @@ output out = member_pre_summ (drop = _type_) sum=;
 run;
 
 data post070.memmos_elig (keep = &_codegen_spaces_memmos_elig.);
+	format &_codegen_format_memmos_elig.;
 	set member_pre_summ;
-run;
-
-proc export data=post070.outclaims
-	outfile="&post070.\outclaims.txt" 
-	dbms=csv
-	replace;
-run;
-
-proc export data=post070.outpharmacy
-	outfile="&post070.\outpharmacy.txt"
-	dbms=csv
-	replace;
-run;
-
-proc export data=post070.ref_prm_line
-	outfile="&post070.\ref_prm_line.txt"
-	dbms=csv
-	replace;
-run;
-
-proc export data=post070.memmos_elig
-	outfile="&post070.\memmos_elig.txt"
-	dbms=csv
-	replace;
 run;
 
 %put System Return Code = &syscc.;

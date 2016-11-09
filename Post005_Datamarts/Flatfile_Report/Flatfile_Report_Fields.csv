@@ -115,8 +115,8 @@ UserDefNum1,,float,,Y,,N,User Defined Numeric Variable 1,
 UserDefNum2,,float,,Y,,N,User Defined Numeric Variable 2,
 UserDefNum3,,float,,Y,,N,User Defined Numeric Variable 3,
 prv_net_hier_1,,varchar,8,N,,Y,Abbreviated network status for those providers in network.,
-elig_month,,varchar,,N,,N,yearmo of eligibility,
-Elig_Status_1,,varchar,40,N,,Y,"Aged Non-Dual, Aged Dual, Disabled, or ESRD",
+elig_month,,date,8,N,,N,yearmo of eligibility,
+Elig_Status_1,,varchar,64,N,,Y,"Aged Non-Dual, Aged Dual, Disabled, or ESRD",
 age,,integer,,Y,,N,Member's Age,
 gender,,varchar,1,N,M~F~U,N,Member's gender. M (Male) or F (Female),
 mem_name,,varchar,128,Y,,N,Member's Name,
@@ -132,3 +132,12 @@ CCN,,char,6,Y,,N,Provider CCN or OSCAR Number,
 attending_prv_npi,,char,10,Y,,N,Attending provider NPI,
 operating_prv_npi,,char,10,Y,,N,Operating provider NPI,
 prv_org_name,,char,200,Y,,N,Provider Organization Name (Based on CCN),
+hicno,,char,40,N,,N,CMS Member ID, CMS Member Identifier
+time_slice,,char,32,N,,N,Time period for calculations, Time Period for Calculations
+riskscr_mm,,float,,N,,N,Number of member months in the risk score training period,Number of member months in the risk score training period
+score_community,,float,,N,,N,Community risk score,Community Risk Score
+score_new_enrollee,,float,,N,,N,New Enrollee risk score,New Enrollee Risk Score
+variable,,char,200,N,,N,Name of the HCC coefficient,Name of the HCC coefficient
+description,,char,73,Y,,N,Description of HCC coefficient,Description of HCC coefficient
+comm_coeff,,float,,Y,,N,Community score coefficient value,Community score coefficient value
+ne_coeff,,float,,Y,,N,New Enrollee score coefficient value,New Enrollee score coefficient value

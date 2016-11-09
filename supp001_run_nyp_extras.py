@@ -1,10 +1,9 @@
 """
 ### CODE OWNERS: Aaron Burgess, Jason Altieri
 ### OBJECTIVE:
-  Generate deliverable directory structure for NYP and copy appropriate deliverables to the corresponding
-  delivery folder
+  Run NYP extras upon client request and/or payment
 ### DEVELOPER NOTES:
-  <None>
+  <none>
 """
 import logging
 import json
@@ -14,6 +13,7 @@ from datetime import datetime
 import shutil
 import sys
 import pprint as pp
+import subprocess
 
 import prm.meta.project
 from prmclient.client_functions import send_email
@@ -100,17 +100,31 @@ def _generate_directories(drive: IndyPyPath) -> typing.Dict[str, IndyPyPath]:
                      datetime.now().strftime("%Y-%m-%d_%H%M%S")
     deliverable_path_parent.mkdir(parents=True)
 
-    comparator_path = deliverable_path_parent / 'Comparator Report'
-    comparator_path.mkdir()
+    supplemental_path = deliverable_path_parent / 'Supplemental Datamart'
+    supplemental_path.mkdir()
 
     return {
             'deliverable_root': deliverable_path_parent,
-            'comparator': comparator_path,
+            'supplemental': supplemental_path,
             }
 
 
-if __name__ == '__main__':
-    # pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
+def main() -> int:
+    """A function to enclose the execution of business logic."""
+    LOGGER.info('Collecting postboarding information')
+
+    POSTBOARDING_ARGS = load_params(
+        PRM_META["path_project_data"] / "postboarding" \
+        / "postboarding_directories.json"
+        )
+
+    LOGGER.info('Running Post070 supps...')
+    post070_path = IndyPyPath(__file__).parent / 'Post070_Supplemental_Datamart'
+    post70_supps = post070_path.collect_files_regex('Supp\d{''3}')
+    for post70 in post70_supps:
+        subprocess.run(['sas', str(post70)], check=True)
+    LOGGER.info('Post070 runs complete')
+
     assert PATH_NETWORK_SHARE_ROOT.is_dir(), "Network share directory not available"
 
     if CLIENT_ID.lower() not in \
@@ -124,15 +138,13 @@ if __name__ == '__main__':
         / "postboarding_directories.json"
         )
 
-    DELIVERABLE_COMPARATOR = _get_deliverable_files('post050', POSTBOARDING_ARGS)
-    DELIVERABLE_PRM = _get_deliverable_files("post060", POSTBOARDING_ARGS)
-    DELIVERABLE_COMPARATOR.update(DELIVERABLE_PRM)
+    DELIVERABLE_SUPPLEMENTAL = _get_deliverable_files('post070', POSTBOARDING_ARGS)
 
-    file_count = len(DELIVERABLE_COMPARATOR.keys())
+    file_count = len(DELIVERABLE_SUPPLEMENTAL.keys())
 
     directories = _generate_directories(PATH_NETWORK_SHARE_ROOT)
 
-    deliverable_mapping = {'comparator': DELIVERABLE_COMPARATOR}
+    deliverable_mapping = {'supplemental': DELIVERABLE_SUPPLEMENTAL}
 
     LOGGER.info(
         "Promoting {} files to network share location:\n\n{}".format(
@@ -152,7 +164,7 @@ if __name__ == '__main__':
                 shutil.copy(str(path_), str(directories[deliverable_name]))
                 fh_trg.write("{}~{}\n".format(path_.name, hash_))
 
-    subject = 'PRM Notification: New {}-{} Comparator Report Data Mart Available'.format(
+    subject = 'PRM Notification: New {}-{} Supplemental Data Mart Available'.format(
         PRM_META["project_id"],
         PRM_META["deliverable_name"],
     )
@@ -179,3 +191,17 @@ if __name__ == '__main__':
             )
 
     send_email(sender, recipients, subject, body)
+
+    return 0
+
+
+if __name__ == '__main__':
+    # pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
+    import sys
+    import prm.utils.logging_ext
+
+    prm.utils.logging_ext.setup_logging_stdout_handler()
+
+    RETURN_CODE = main()
+
+    sys.exit(RETURN_CODE)
