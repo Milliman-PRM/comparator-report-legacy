@@ -10,7 +10,7 @@
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func12_shortcircuit-cclf-import.sas" / source2;
+%include "S:\PRM\PRMClient_Library\sas\mssp\shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 %include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
