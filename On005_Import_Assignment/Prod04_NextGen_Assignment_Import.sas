@@ -59,18 +59,40 @@ proc sql noprint;
 	HAVING max(substr(filename, 20, 6));
 quit;
 
+*Import assignment file. Do this because the assignment file for the two NextGen clients are in different format;
 PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
 	OUT=M017_out.member_align  
 	REPLACE;
 	DELIMITER = "|";
 	run;
 
+*Import exclusion file;
+
+%GetFileNamesfromDir(&Path_Project_Received_Ref.,ref_files,MNGREB)
+
+proc sql noprint;
+	SELECT filename into :exclu
+	FROM Ref_files
+	HAVING substr(filename, 26,3) eq "csv";
+quit;
+
+PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu.."
+	dbms = csv
+	OUT=M017_out.bene_exclusion
+	REPLACE;
+	DELIMITER = ",";
+run;
+
 Proc SQl;
 	Create Table client_member as 
-		Select b.*
-		FROM M017_out.member_align as a
-		inner join M018_out.client_member as b
-			on A.HICN_Number_ID = b.member_id;
+		Select mem.*
+			  ,coalescec(excl.reason,"") as Mem_Excluded_Reason length = 64 format = $64.
+
+		FROM M017_out.member_align as src
+		inner join M018_out.client_member (drop = Mem_Excluded_Reason) as mem 
+			on src.HICN_Number_ID = mem.member_id
+		left join M017_Out.bene_exclusion as excl
+			on mem.member_id = excl.HICNO;
 Quit;
    
 data client_member_mod;

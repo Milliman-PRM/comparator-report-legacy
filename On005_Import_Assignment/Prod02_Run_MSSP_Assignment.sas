@@ -16,7 +16,23 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 	%bquote(%upcase(&name_client.))
 	,ne
 	,PIONEER VALLEY ACCOUNTABLE CARE
-	,ReturnMessage=PVA has different assignment files.
+	,ReturnMessage=NextGen has different assignment files.
+	,FailAction=EndActiveSASSession
+	)
+
+%AssertThat(
+	%bquote(%upcase(&name_client.))
+	,ne
+	,Cone Health
+	,ReturnMessage=NextGen has different assignment files.
+	,FailAction=EndActiveSASSession
+	)
+
+%AssertThat(
+	%bquote(%upcase(&name_client.))
+	,ne
+	,CONE HEALTH
+	,ReturnMessage=NextGen has different assignment files.
 	,FailAction=EndActiveSASSession
 	)
 
