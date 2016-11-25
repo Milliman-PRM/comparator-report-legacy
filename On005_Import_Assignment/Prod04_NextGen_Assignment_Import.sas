@@ -86,7 +86,6 @@ Proc SQl;
 	Create Table client_member as 
 		Select mem.*
 			  ,coalescec(excl.reason,"") as Mem_Excluded_Reason length = 64 format = $64.
-
 		FROM M017_out.member_align as src
 		inner join M018_out.client_member (drop = Mem_Excluded_Reason) as mem 
 			on src.HICN_Number_ID = mem.member_id
@@ -97,7 +96,8 @@ Quit;
 data client_member_mod;
 	set client_member;
 
-	assignment_indicator = "Y";
+	if Mem_Excluded_Reason = "" then assignment_indicator = "Y";
+	else assignment_indicator = "N";
 
 run;
 
