@@ -68,6 +68,11 @@ PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
 
 *Import exclusion file;
 
+%RunPythonScript(,%GetParentFolder(0)Supp03_extract_exclusion_file.py,,Py_code,,&path_project_logs./_Onboarding/Supp03_extract_exclusion.log,&python_environment.);
+%AssertThat(&Py_code.,=,0);
+
+
+
 %GetFileNamesfromDir(&Path_Project_Received_Ref.,ref_files,MNGREB)
 
 proc sql noprint;
