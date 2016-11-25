@@ -23,14 +23,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %AssertThat(
 	%bquote(%upcase(&name_client.))
 	,ne
-	,Cone Health
-	,ReturnMessage=NextGen has different assignment files.
-	,FailAction=EndActiveSASSession
-	)
-
-%AssertThat(
-	%bquote(%upcase(&name_client.))
-	,ne
 	,CONE HEALTH
 	,ReturnMessage=NextGen has different assignment files.
 	,FailAction=EndActiveSASSession
