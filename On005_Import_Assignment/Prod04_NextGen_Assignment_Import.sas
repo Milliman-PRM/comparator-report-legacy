@@ -71,13 +71,12 @@ PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
 %GetFileNamesfromDir(&Path_Project_Received_Ref.,ref_files,MNGREB)
 
 proc sql noprint;
-	SELECT filename into :exclu
+	SELECT filename into :exclu trimmed
 	FROM Ref_files
 	HAVING substr(filename, 26,3) eq "csv";
 quit;
 
-PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu.."
-	dbms = csv
+PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu."
 	OUT=M017_out.bene_exclusion
 	REPLACE;
 	DELIMITER = ",";
