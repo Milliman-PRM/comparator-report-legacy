@@ -60,12 +60,29 @@ proc sql noprint;
 quit;
 
 *Import assignment file. Do this because the assignment file for the two NextGen clients are in different format;
-PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
-	OUT=M017_out.member_align  
-	REPLACE;
-	DELIMITER = "|";
-	run;
 
+%macro conditional_import();
+	
+	%if %upcase(&name_client.) eq "CONE HEALTH" %then %do;
+
+		PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
+			OUT=M017_out.member_align  
+			REPLACE;
+			DELIMITER = '09'x;
+			run;
+	%end;
+	%else %do;
+		PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
+			OUT=M017_out.member_align  
+			REPLACE;
+			DELIMITER = "|";
+			run;
+	%end;
+
+%mend();
+
+%conditional_import();
+	
 *Import exclusion file;
 
 %RunPythonScript(,%GetParentFolder(0)Supp03_extract_exclusion_file.py,,Py_code,,&path_project_logs./_Onboarding/Supp03_extract_exclusion.log,&python_environment.);
