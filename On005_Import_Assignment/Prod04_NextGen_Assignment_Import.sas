@@ -82,7 +82,7 @@ proc sql noprint;
 quit;
 
 PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu."
-	OUT=M017_out.bene_exclusion
+	OUT=M017_out.nextgen_exclusion
 	REPLACE;
 	DELIMITER = ",";
 run;
@@ -94,7 +94,7 @@ Proc SQl;
 		FROM M017_out.member_align as src
 		inner join M018_out.client_member (drop = Mem_Excluded_Reason) as mem 
 			on src.HICN_Number_ID = mem.member_id
-		left join M017_Out.bene_exclusion as excl
+		left join M017_Out.nextgen_exclusion as excl
 			on mem.member_id = excl.HICNO;
 Quit;
    
