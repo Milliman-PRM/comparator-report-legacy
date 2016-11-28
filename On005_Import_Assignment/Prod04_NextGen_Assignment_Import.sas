@@ -79,7 +79,7 @@ quit;
 			run;
 	%end;
 
-%mend();
+%mend;
 
 %conditional_import();
 	
@@ -130,16 +130,21 @@ run;
 
 Proc SQl;
 	Create Table client_member_time as 
-		Select b.*
-		FROM M017_out.member_align as a
-		inner join M018_out.client_member_time as b
-			on A.HICN_Number_ID = b.member_id;
+		Select mem.*
+				,case when excl.HICNO is not null then "Y" else "N" 
+					end as excl_flag
+		FROM M017_out.member_align as src
+		inner join M018_out.client_member_time as mem
+			on src.HICN_Number_ID = mem.member_id
+		left join M017_Out.nextgen_exclusion as excl
+			on src.HICN_Number_ID = excl.HICNO;
 Quit;
 
 data client_membertime_mod;
 	set client_member_time;
 
-	if date_start ge mdy(1,1,&latest_year.) then assignment_indicator = "Y";
+	if (date_start ge mdy(1,1,&latest_year.) and excl_flag eq "N") then assignment_indicator = "Y";
+	else assignment_indicator = "N";
 
 run;
 
