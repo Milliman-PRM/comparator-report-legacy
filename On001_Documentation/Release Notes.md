@@ -1,13 +1,29 @@
 #Release Notes
 
-## v6.2.1
+## v6.2.2
 
 ### Client Visible Changes
+
  - Limited metric time periods to 2014 onwards
 
 ### Logic Changes
- - Added `Cone Health` as a NextGen client
  - Utilized the exclusion files to remove NextGen members from the assigned list
+
+### Lower Level Changes
+ - *none*
+
+## v6.2.1
+
+### Client Visible Changes
+
+ - Removed flatfile outputs
+ - Made `members_assign`, `memmos_elig`, `outclaims_prm`, `outpharmacy_prm`, `member_riskscores`, and `member_riskscr_coeffs` part of the supplemental datamart rather than automatic outputs
+
+### Logic Changes
+ - Bypass standard logic for `Cone Health` because it is a NextGen ACO
+
+### Lower Level Changes
+ - Used `%bquote()` on `&client_name.` to protect against embedded commas
 
 ## v6.2.0
 

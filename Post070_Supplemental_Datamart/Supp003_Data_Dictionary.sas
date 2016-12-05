@@ -13,6 +13,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
+%include "&M002_cde.supp01_validation_functions.sas";
 %include "%GetParentFolder(0)share001_test_config.sas" /source2;
 
 %let path_file_output = &post070.Data Dictionary.xlsx;
@@ -20,6 +21,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %put path_file_output = &path_file_output.;
 
 libname M020_Out "&M002_Out." access=readonly;
+libname post070 "&post070.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -198,5 +200,10 @@ proc export
 	;
 	sheet = "Data Dictionary";
 run;
+
+%ValidateAgainstTemplate(
+	validate_libname=post070
+	,validate_template=&name_datamart_target.
+	)
 
 %put System Return Code = &syscc.;
