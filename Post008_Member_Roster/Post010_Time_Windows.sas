@@ -18,7 +18,7 @@ libname post008 "&post008.";
 %let months_runout_min = 2;
 %put months_runout_min = &months_runout_min.;
 
-%let historical_cutoff = 2014-01-01;
+%let historical_cutoff = mdy(1,1,2014);
 %put &=historical_cutoff.;
 
 
