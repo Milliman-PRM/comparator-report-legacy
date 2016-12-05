@@ -1,5 +1,5 @@
 /*
-### CODE OWNERS: Anna Chen, Aaron Burgess
+### CODE OWNERS: Anna Chen, Aaron Burgess, Jason Altieri
 
 ### OBJECTIVE:
 	Call the MSSP import functions. 
@@ -10,7 +10,7 @@
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "%GetParentFolder(1)On006_MSSP_Assignment_Library\Func12_shortcircuit-cclf-import.sas" / source2;
+%include "S:\PRM\PRMClient_Library\sas\mssp\shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 %include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
@@ -59,24 +59,67 @@ proc sql noprint;
 	HAVING max(substr(filename, 20, 6));
 quit;
 
-PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
-	OUT=M017_out.member_align  
+*Import assignment file. Do this because the assignment file for the two NextGen clients are in different format;
+
+%macro conditional_import();
+	
+	%if %upcase(&name_client.) eq "CONE HEALTH" %then %do;
+
+		PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
+			OUT=M017_out.member_align  
+			REPLACE;
+			DELIMITER = '09'x;
+			run;
+	%end;
+	%else %do;
+		PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
+			OUT=M017_out.member_align  
+			REPLACE;
+			DELIMITER = "|";
+			run;
+	%end;
+
+%mend;
+
+%conditional_import();
+	
+*Import exclusion file;
+
+%RunPythonScript(,%GetParentFolder(0)Supp03_extract_exclusion_file.py,,Py_code,,&path_project_logs./_Onboarding/Supp03_extract_exclusion.log,&python_environment.);
+%AssertThat(&Py_code.,=,0);
+
+
+
+%GetFileNamesfromDir(&Path_Project_Received_Ref.,ref_files,MNGREB)
+
+proc sql noprint;
+	SELECT filename into :exclu trimmed
+	FROM Ref_files
+	HAVING substr(filename, 26,3) eq "csv";
+quit;
+
+PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu."
+	OUT=M017_out.nextgen_exclusion
 	REPLACE;
-	DELIMITER = "|";
-	run;
+	DELIMITER = ",";
+run;
 
 Proc SQl;
 	Create Table client_member as 
-		Select b.*
-		FROM M017_out.member_align as a
-		inner join M018_out.client_member as b
-			on A.HICN_Number_ID = b.member_id;
+		Select mem.*
+			  ,coalescec(excl.reason,"") as Mem_Excluded_Reason length = 64 format = $64.
+		FROM M017_out.member_align as src
+		inner join M018_out.client_member (drop = Mem_Excluded_Reason) as mem 
+			on src.HICN_Number_ID = mem.member_id
+		left join M017_Out.nextgen_exclusion as excl
+			on mem.member_id = excl.HICNO;
 Quit;
    
 data client_member_mod;
 	set client_member;
 
-	assignment_indicator = "Y";
+	if Mem_Excluded_Reason = "" then assignment_indicator = "Y";
+	else assignment_indicator = "N";
 
 run;
 
@@ -87,16 +130,21 @@ run;
 
 Proc SQl;
 	Create Table client_member_time as 
-		Select b.*
-		FROM M017_out.member_align as a
-		inner join M018_out.client_member_time as b
-			on A.HICN_Number_ID = b.member_id;
+		Select mem.*
+				,case when excl.HICNO is not null then "Y" else "N" 
+					end as excl_flag
+		FROM M017_out.member_align as src
+		inner join M018_out.client_member_time as mem
+			on src.HICN_Number_ID = mem.member_id
+		left join M017_Out.nextgen_exclusion as excl
+			on src.HICN_Number_ID = excl.HICNO;
 Quit;
 
 data client_membertime_mod;
 	set client_member_time;
 
-	if date_start ge mdy(1,1,&latest_year.) then assignment_indicator = "Y";
+	if (date_start ge mdy(1,1,&latest_year.) and excl_flag eq "N") then assignment_indicator = "Y";
+	else assignment_indicator = "N";
 
 run;
 

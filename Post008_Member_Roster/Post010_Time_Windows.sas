@@ -18,6 +18,10 @@ libname post008 "&post008.";
 %let months_runout_min = 2;
 %put months_runout_min = &months_runout_min.;
 
+%let historical_cutoff = mdy(1,1,2014);
+%put &=historical_cutoff.;
+
+
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
 
@@ -65,7 +69,7 @@ data post008.time_windows;
 	format &time_windows_cgfrmt.;
 	set time_windows;
 
-	where inc_start ge &Date_CredibleStart.;
+	where inc_start ge max(&Date_CredibleStart., &historical_cutoff.);
 	&assign_name_client.;
 
 	format
