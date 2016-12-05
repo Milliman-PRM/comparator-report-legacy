@@ -1,5 +1,14 @@
 #Release Notes
 
+## v6.2.1
+
+### Client Visible Changes
+ - Limited metric time periods to 2014 onwards
+
+### Logic Changes
+ - Added `Cone Health` as a NextGen client
+ - Utilized the exclusion files to remove NextGen members from the assigned list
+
 ## v6.2.0
 
 ### Client Visible Changes
