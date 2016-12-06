@@ -1,9 +1,19 @@
 #Release Notes
 
+## v6.2.3
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Fixed time window assertion that was broken by limiting the metric time periods in the prior release.
+
 ## v6.2.2
 
 ### Client Visible Changes
-
  - Limited metric time periods to 2014 onwards
 
 ### Logic Changes
