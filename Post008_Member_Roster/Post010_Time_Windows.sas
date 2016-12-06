@@ -49,7 +49,7 @@ data time_windows;
 
 	output;
 
-	do while(intnx('month', inc_start, -3, 'beg') ge &Date_CredibleStart.);
+	do while(intnx('month', inc_start, -3, 'beg') ge max(&Date_CredibleStart., &historical_cutoff.));
 
 		paid_thru = intnx('month', paid_thru, -3, 'end');
 		inc_end = intnx('month', inc_end, -3, 'end');
