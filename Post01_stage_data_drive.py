@@ -86,13 +86,11 @@ class PostboardModule(object):
 if __name__ == '__main__':
     import prm.meta.project
     PRM_META = prm.meta.project.parse_project_metadata()
-    import sys
-    sys.path.append(str(PRM_META[10, 'code'] / 'healthbi_driver'))
 
     # Rebuild all basic folders (especially local module folders)
-    from driver import Driver
+    from prm.setup.project import Project
 
-    driver_ = Driver(
+    project_ = Project(
         project_id=PRM_META['project_id'],
         deliverable_name=PRM_META['deliverable_name'],
         project_namespace=PRM_META['project_namespace'],
@@ -103,7 +101,7 @@ if __name__ == '__main__':
             'driver.json',
             ),
         )
-    driver_.create_folders()
+    project_.create_project_folders()
 
     # Move on to making postboarding folders
     PATH_PROJECT_DATA = PRM_META['path_project_data'] / 'postboarding'
