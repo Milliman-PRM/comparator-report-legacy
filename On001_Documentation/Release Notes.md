@@ -1,5 +1,17 @@
 #Release Notes
 
+## v6.2.4
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Updated "Driver" to "Project" for postboarding folder setup
+ - Change `os.rename` to `shutil.move` to fix bug in report split renaming
+
 ## v6.2.3
 
 ### Client Visible Changes
