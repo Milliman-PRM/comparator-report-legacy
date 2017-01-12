@@ -9,7 +9,7 @@
   <none>
 """
 
-import os
+import shutil
 import sys
 import re
 
@@ -31,7 +31,7 @@ def rename_files(directory, name_extension):
         else:
             new_name = new_stem
         new_file = '{file}{ext}'.format(file=str(new_name), ext=file.suffix)
-        os.rename(str(file), new_file)
+        shutil.move(str(file), str(file.parent / new_file))
 
 
 if __name__ == '__main__':
