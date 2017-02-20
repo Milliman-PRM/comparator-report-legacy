@@ -125,4 +125,76 @@ proc sql;
 	drop table tables_target;
 quit;
 
+
+%macro MakeMetaFields_custom(
+	name_datamart
+	,name_outdset
+	,regex_memname_input
+	,path_dir_datamart_root=&path_product_code.python\prm\meta\datamarts\
+	);
+
+	/*Derive the labels from the labels of the columns on the SAS data set.*/
+	proc sql;
+	  create table _dynamic_labels as select distinct
+	  lowcase(name) as meta_field length = 32 format = $32. label = ""
+	  ,label as meta_field_label label = ""
+	  from dictionary.columns
+	  where label is not null
+	      and upcase(libname) net "SAS" /*Ignore SAS default libraries.*/
+	  %if %length(&regex_memname_input.) gt 0 %then %do;
+		  and prxmatch("&regex_memname_input.",strip(memname)) ne 0
+	  %end;
+	  ;
+	quit;
+
+
+	data &name_outdset. (keep = meta_field:)
+	  	 _Label_DupCheck
+	  ;
+	  /*Infile the meta field data files.  Apply overrides to values based on parameters.*/
+	  infile "&path_dir_datamart_root.\&name_datamart.\&name_datamart._Fields.csv" delimiter = "," dsd truncover lrecl = 10000 firstobs = 2;
+	  input meta_field :$32. @;
+	  *Combine the *_cat_ind and *_cat_lbl fields into one because they have duplicate labels
+	   and should be represented as duals in QlikView.;
+	  if index(upcase(meta_field),"_CAT_") > 0 then do;
+		if scan(upcase(meta_field),1,"_","B") = "IND" then meta_field = substr(meta_field,1,length(meta_field) - 4);
+		else delete;
+	  end;
+	  input
+		meta_field_label :$80.
+		date_type :$32.
+		date_size :best12.
+		allow_nulls :$1.
+		whitelist_nonnull_values :$128.
+		require_label_ifnotallnull :$1.
+		notes_develop :$4096.
+		meta_field_comment :$4096.
+		;
+
+	  meta_field = lowcase(meta_field);
+	  if _n_ = 1 then do;
+	    declare hash ht_dyn_labels (dataset:  "_dynamic_labels", duplicate: "ERROR");
+	    rc = ht_dyn_labels.DefineKey("meta_field");
+	    rc = ht_dyn_labels.DefineData("meta_field_label");
+	    rc = ht_dyn_labels.DefineDone();
+	  end;
+
+	  rc_label = ht_dyn_labels.Find();
+
+	  output &name_outdset.;
+	  if meta_field_label ne "" then output _Label_DupCheck;
+	run;
+	%AssertNoDuplicates(_Label_DupCheck,meta_field_label,ReturnMessage=Duplicates labels found. See _Label_DupCheck table.)
+	%LabelDataSet(&name_outdset.)
+
+	data _false_labels;
+		set _label_dupcheck;
+		where upcase(meta_field) eq upcase(meta_field_label) and rc_label eq 0;
+		run;
+	%AssertDataSetNotPopulated(_false_labels,ReturnMessage=Label noise is coming through and can potentially disrupt QlikView.)
+
+	%DeletePrivateDataSets()
+
+%mend MakeMetaFields_custom;
+
 %put System Return Code = &syscc.;
