@@ -174,8 +174,10 @@ run;
 proc sql noprint;
 	SELECT filename into :exclu trimmed
 	FROM Ref_files
-	HAVING substr(filename, 26,3) eq "csv";
+	HAVING filename contains("csv") and filename contains("MNGREB");
 quit;
+
+%put &=exclu.;
 
 PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu."
 	OUT=M017_out.nextgen_exclusion
