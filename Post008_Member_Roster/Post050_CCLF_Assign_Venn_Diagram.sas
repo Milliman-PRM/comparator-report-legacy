@@ -22,7 +22,6 @@ libname M020_Out "&M020_Out." access=readonly;
 libname M035_Out "&M035_Out." access=readonly;
 libname post008 "&post008.";
 
-%AssertThat(&Claims_Elig_Format.,eq,CCLF,ReturnMessage=The claims and eligibility format selected in the driver is not compatible with this program,FailAction=EndActiveSASSession);
 %AssertDataSetPopulated(M018_Out.Client_Member_Time,ReturnMessage=This program requires timeline assignment information.,FailAction=EndActiveSASSession);
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
