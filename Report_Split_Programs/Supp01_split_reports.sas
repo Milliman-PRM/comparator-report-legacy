@@ -22,7 +22,7 @@ libname M180_Out "&M180_Out.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-%RunPythonScript(,%GetParentFolder(1)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
+%RunPythonScript(,%GetParentFolder(1)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod2016_11);
 %AssertThat(&Path_code.,=,0);
 
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
