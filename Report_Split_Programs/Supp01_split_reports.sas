@@ -181,6 +181,10 @@ data _null_;
 	call execute('%nrstr(%Run_Process('||strip(name)||'))');
 run;
 
+/*Copy the outputs to the shared directory*/
+%RunPythonScript(,%GetParentFolder(1)Post090_Delivery\Post01_output_delivery.py,,Py_code,,&path_project_logs.\_onboarding\Split_Delivery.log,prod2016_11);
+%AssertThat(&Py_code.,=,0);
+
 /*Return the combined version of the various tables to the non-underscored form*/
 %macro return_originals(table);
 
