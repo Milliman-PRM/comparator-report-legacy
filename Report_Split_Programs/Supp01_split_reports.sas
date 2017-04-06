@@ -5,7 +5,7 @@
 	Create a Supp program that can be ran after the general process to create all of the files but split into client provided groups.
 
 ### DEVELOPER NOTES:
-	
+	"Market_Splits.csv" must be created with market names as the header and lists of HICNOs under each market.
 
 */
 
