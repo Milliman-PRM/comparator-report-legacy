@@ -154,8 +154,8 @@ run;
 																		,%str()
 																		))
 			/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable~Post01_disk_cleanup))
-																		,Post050_output_deliverable~Post01_disk_cleanup
+																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post016_Validate_Outputs~Post090_Delivery~Post01_disk_cleanup))
+																		,Post016_validate_outputs~Post090_Delivery~Post01_disk_cleanup
 																		))
 			/* CC'd Email Recepients  */ ,list_cc_email           = %str()
 			/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
