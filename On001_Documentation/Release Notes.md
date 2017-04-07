@@ -1,5 +1,17 @@
 #Release Notes
 
+## v6.3.0
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - Updated `Cone Health` next gen alignment file import to explicitly call out field names.
+
+### Lower Level Changes
+ - Updated `PRMClient_Library` references to use `prm_components`
+ - Updated datamart references to reflect updated datamart locations in `analytics-pipeline v6.4.x`
+
 ## v6.2.4
 
 ### Client Visible Changes

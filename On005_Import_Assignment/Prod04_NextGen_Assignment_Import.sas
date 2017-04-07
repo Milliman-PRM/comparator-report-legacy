@@ -10,7 +10,7 @@
 
 options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
 %include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
-%include "S:\PRM\PRMClient_Library\sas\mssp\shortcircuit-cclf-import.sas" / source2;
+%include "%sysget(PRMCLIENT_LIBRARY_HOME)\sas\mssp\shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 %include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
@@ -63,13 +63,92 @@ quit;
 
 %macro conditional_import();
 	
-	%if %upcase(&name_client.) eq "CONE HEALTH" %then %do;
+	%if %upcase(&name_client.) eq CONE HEALTH %then %do;
+      data M017_OUT.MEMBER_ALIGN    ;
+        infile "&Path_Project_Received_Ref.&latest_file."
+		delimiter='09'x MISSOVER DSD
+ 		lrecl=32767
+  		firstobs=2 ;
+	         informat ACO_NAME $29. ;
+	         informat HICN_Number_ID $11. ;
+	         informat Beneficiary_First_Name $9. ;
+	         informat Beneficiary_Last_Name $10. ;
+	         informat Beneficiary_Line_1_Address $27. ;
+	         informat Beneficiary_Line_2_Address $21. ;
+	         informat Beneficiary_Line_3_Address $1. ;
+	         informat Beneficiary_Line_4_Address $1. ;
+	         informat Beneficiary_Line_5_Address $1. ;
+	         informat Beneficiary_Line_6_Address $1. ;
+	         informat Bene_City_ID $15. ;
+	         informat Bene_USPS_State_Code_ID $2. ;
+	         informat Bene_Zip_5_ID $5. ;
+	         informat Bene_Zip_4_ID $4. ;
+	         informat BENE_SEX_CD_DESC $6. ;
+	         informat Bene_Birth_Date_ID mmddyy10. ;
+	         informat BENE_AGE best32. ;
+	         informat Eligible_Alignment_Year_1_Switch $1. ;
+	         informat Eligble_Alignment_Year_2_Switch $1. ;
+	         informat MAPD_Coverage_Alignment_Year_1_S $1. ;
+	         informat MAPD_Coverage_Alignment_Year_2_S $1. ;
+	         informat Alignment_Year_1_HCC_Score_Numbe best32. ;
+	         informat Alignment_Year_2_HCC_Score_Numbe best32. ;
+	         informat New_Alignment_Beneficiary_Switch $1. ;
+	         informat Provider_ACO_Alignment_By_Attest $1. ;
+	         format ACO_NAME $29. ;
+	         format HICN_Number_ID $11. ;
+	         format Beneficiary_First_Name $9. ;
+	         format Beneficiary_Last_Name $10. ;
+	         format Beneficiary_Line_1_Address $27. ;
+	         format Beneficiary_Line_2_Address $21. ;
+	         format Beneficiary_Line_3_Address $1. ;
+	         format Beneficiary_Line_4_Address $1. ;
+	         format Beneficiary_Line_5_Address $1. ;
+	         format Beneficiary_Line_6_Address $1. ;
+	         format Bene_City_ID $15. ;
+	         format Bene_USPS_State_Code_ID $2. ;
+	         format Bene_Zip_5_ID $5.;
+	         format Bene_Zip_4_ID $4. ;
+	         format BENE_SEX_CD_DESC $6. ;
+	         format Bene_Birth_Date_ID mmddyy10. ;
+	         format BENE_AGE best12. ;
+	         format Eligible_Alignment_Year_1_Switch $1. ;
+	         format Eligble_Alignment_Year_2_Switch $1. ;
+	         format MAPD_Coverage_Alignment_Year_1_S $1. ;
+	         format MAPD_Coverage_Alignment_Year_2_S $1. ;
+	         format Alignment_Year_1_HCC_Score_Numbe best12. ;
+	         format Alignment_Year_2_HCC_Score_Numbe best12. ;
+	         format New_Alignment_Beneficiary_Switch $1. ;
+	         format Provider_ACO_Alignment_By_Attest $1. ;
 
-		PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
-			OUT=M017_out.member_align  
-			REPLACE;
-			DELIMITER = '09'x;
-			run;
+      		 	input
+	                  ACO_NAME $
+	                  HICN_Number_ID $
+	                  Beneficiary_First_Name $
+	                  Beneficiary_Last_Name $
+	                  Beneficiary_Line_1_Address $
+	                  Beneficiary_Line_2_Address $
+	                  Beneficiary_Line_3_Address $
+	                  Beneficiary_Line_4_Address $
+	                  Beneficiary_Line_5_Address $
+	                  Beneficiary_Line_6_Address $
+	                  Bene_City_ID $
+	                  Bene_USPS_State_Code_ID $
+	                  Bene_Zip_5_ID $
+	                  Bene_Zip_4_ID $
+	                  BENE_SEX_CD_DESC $
+	                  Bene_Birth_Date_ID
+	                  BENE_AGE
+	                  Eligible_Alignment_Year_1_Switch $
+	                  Eligble_Alignment_Year_2_Switch $
+	                  MAPD_Coverage_Alignment_Year_1_S $
+	                  MAPD_Coverage_Alignment_Year_2_S $
+	                  Alignment_Year_1_HCC_Score_Numbe
+	                  Alignment_Year_2_HCC_Score_Numbe
+	                  New_Alignment_Beneficiary_Switch $
+	                  Provider_ACO_Alignment_By_Attest $
+				;
+run;
+
 	%end;
 	%else %do;
 		PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&latest_file."
@@ -85,8 +164,8 @@ quit;
 	
 *Import exclusion file;
 
-%RunPythonScript(,%GetParentFolder(0)Supp03_extract_exclusion_file.py,,Py_code,,&path_project_logs./_Onboarding/Supp03_extract_exclusion.log,&python_environment.);
-%AssertThat(&Py_code.,=,0);
+/*%RunPythonScript(,%GetParentFolder(0)Supp03_extract_exclusion_file.py,,Py_code,,&path_project_logs./_Onboarding/Supp03_extract_exclusion.log,&python_environment.);
+%AssertThat(&Py_code.,=,0);*/
 
 
 
@@ -95,8 +174,10 @@ quit;
 proc sql noprint;
 	SELECT filename into :exclu trimmed
 	FROM Ref_files
-	HAVING substr(filename, 26,3) eq "csv";
+	HAVING filename contains("csv") and filename contains("MNGREB");
 quit;
+
+%put &=exclu.;
 
 PROC IMPORT DATAFILE="&Path_Project_Received_Ref.&exclu."
 	OUT=M017_out.nextgen_exclusion
