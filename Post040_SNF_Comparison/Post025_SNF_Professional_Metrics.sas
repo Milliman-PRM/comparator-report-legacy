@@ -68,7 +68,7 @@ proc sql;
 		,coalesce(prof_snf.ProviderID,'Unknown') as prv_id_snf
 		,sum(prof_snf.PRM_Costs) as sum_costs_prof_snf
 		,sum(prof_snf.PRM_Costs / risk.riskscr_1_cost_avg) as sum_costs_prof_snf_riskadj
-	from agg_claims_med_snf_professional as prof_snf
+	from snf_professional as prof_snf
 	/*Limit to members active in the analysis*/
 	inner join post008.members as active
 		on prof_snf.time_slice = active.time_period 
