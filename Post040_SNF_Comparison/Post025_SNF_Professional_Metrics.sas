@@ -24,6 +24,17 @@ libname post040 "&post040.";
 
 
 
+%Agg_Claims(
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
+	,Time_Slice=&list_time_period.
+	,Ongoing_Util_Basis=&post_ongoing_util_basis.
+	,Dimensions=caseadmitid
+	,Force_Util=&post_force_util.
+	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
+	,suffix_output = snf_facility
+    );
 
 %Agg_Claims(
 	IncStart=&list_inc_start.
@@ -31,11 +42,22 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Dimensions=providerID~member_ID~prm_line~facilitycaseid
 	,Force_Util=&post_force_util.
-	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "p31b")
-	,suffix_output = snf_professional
+	,where_claims= %substr(%str(lowcase(outclaims_prm.prm_line),1,1) eq "p")
+	,suffix_output = professional_claims
     );
+
+proc sql;
+	create table snf_professional as
+	select
+		pro.*
+	from professional_claims as pro
+	inner join snf_facility as snf
+		on pro.facilitycaseid = pro.caseadmitid
+	where substr(lowcase(pro.prm_line),1,3) not in ('p81', 'p82', 'p84', 'p85')
+	;
+quit;
 
 proc sql;
 	create table details_SNF_professional as
