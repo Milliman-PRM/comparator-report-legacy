@@ -38,19 +38,8 @@ def main():
         if path_.is_dir()
         }
 
-    # Make a local copy of this reference file because the DataMart class
-    # requires it to be next to the source templates
-    list_reference_files = ["Ref01_Data_Types.csv", "Ref02_sqlite_import_header.sql"]
-    for name in list_reference_files:
-        shutil.copyfile(
-            str(META[2, 'code'] / name),
-            str(path_template_source / name),
-            )
-
     datamart_recursive = DataMart(
-        path_templates=META[2, 'code'],
-        template_name="_Recursive_Template",
-        filepath_ref_datatypes=path_template_source / "Ref01_data_types.csv"
+        template_name="_Recursive_Template"
         )
 
     for name_template in list_template_names:
@@ -69,12 +58,10 @@ def main():
         i_datamart = DataMart(
             path_templates=path_template_source,
             template_name=name_template,
-            filepath_ref_datatypes=path_template_source / "Ref01_data_types.csv"
             )
         i_datamart.generate_sqlite_cli_import(
             filepath_out=
                 path_dir_codegen_output / "{}.sql".format(name_template),
-                filepath_header=path_template_source / 'Ref02_sqlite_import_header.sql'
             )
 
         datamart_recursive.generate_sas_infiles(
@@ -86,9 +73,6 @@ def main():
             table_name_replace=name_template,
             )
 
-    for name in list_reference_files:
-        i_path = path_template_source / name
-        i_path.unlink()
 
 
 if __name__ == '__main__':
