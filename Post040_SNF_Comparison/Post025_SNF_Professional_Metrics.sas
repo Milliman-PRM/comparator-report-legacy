@@ -55,7 +55,9 @@ proc sql;
 		pro.*
 	from professional_claims as pro
 	inner join snf_facility as snf
-		on (pro.facilitycaseid = snf.caseadmitid and pro.member_id = snf.member_id)
+		on (pro.facilitycaseid = snf.caseadmitid and 
+			pro.member_id = snf.member_id and
+			pro.time_slice = snf.time_slice)
 	inner join M015_Out.mr_line_info as mr
 		on pro.prm_line = mr.mr_line
 	where ((upcase(mr.prm_line_desc1) = "PROF") or 
