@@ -46,15 +46,15 @@ libname post040 "&post040.";
 	,Dimensions=providerID~member_ID~prm_line~facilitycaseid
 	,Force_Util=&post_force_util.
 	,where_claims= %substr(%str(lowcase(outclaims_prm.prm_line),1,1) eq "p")
-	,suffix_output = professional_claims
+	,suffix_output = prof_claims
     );
 
 proc sql;
 	create table snf_professional as
 	select
 		pro.*
-	from professional_claims as pro
-	inner join snf_facility as snf
+	from agg_claims_med_prof_claims as pro
+	inner join agg_claims_med_snf_facility as snf
 		on (pro.facilitycaseid = snf.caseadmitid and 
 			pro.member_id = snf.member_id and
 			pro.time_slice = snf.time_slice)
