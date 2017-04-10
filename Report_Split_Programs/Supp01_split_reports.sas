@@ -5,7 +5,7 @@
 	Create a Supp program that can be ran after the general process to create all of the files but split into client provided groups.
 
 ### DEVELOPER NOTES:
-	
+	"Market_Splits.csv" must be created with market names as the header and lists of HICNOs under each market.
 
 */
 
@@ -154,8 +154,8 @@ run;
 																		,%str()
 																		))
 			/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable~Post01_disk_cleanup))
-																		,Post050_output_deliverable~Post01_disk_cleanup
+																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post016_Validate_Outputs~Post090_Delivery~Post01_disk_cleanup))
+																		,Post016_validate_outputs~Post090_Delivery~Post01_disk_cleanup
 																		))
 			/* CC'd Email Recepients  */ ,list_cc_email           = %str()
 			/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
@@ -180,6 +180,10 @@ data _null_;
 	set name_of_groups;
 	call execute('%nrstr(%Run_Process('||strip(name)||'))');
 run;
+
+/*Copy the outputs to the shared directory*/
+%RunPythonScript(,%GetParentFolder(1)Post090_Delivery\Post01_output_delivery.py,,Py_code,,&path_project_logs.\_onboarding\Split_Delivery.log,prod2016_11);
+%AssertThat(&Py_code.,=,0);
 
 /*Return the combined version of the various tables to the non-underscored form*/
 %macro return_originals(table);
