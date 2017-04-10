@@ -1,5 +1,16 @@
 #Release Notes
 
+## v6.4.0
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - Definition of SNF professional has been changed from `prm_line = "P31b"` to professional claims (and DME) with a `FacilityCaseID` matching a SNF case. This was done to accomodate the removal of `P31b` without a viable replacement in HCG Grouper 2016. There is likely to be a large shift in reported metrics. A decrease is expected because the previous methodology captured things other than SNF.
+
+### Lower Level Changes
+ - *none*
+
 ## v6.3.0
 
 ### Client Visible Changes
