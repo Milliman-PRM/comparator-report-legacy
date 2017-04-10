@@ -45,7 +45,7 @@ libname post040 "&post040.";
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Dimensions=providerID~member_ID~prm_line~facilitycaseid
 	,Force_Util=&post_force_util.
-	,where_claims= %substr(%str(lowcase(outclaims_prm.prm_line),1,1) eq "p")
+	,where_claims= %str(substr(lowcase(outclaims_prm.prm_line),1,1) eq "p")
 	,suffix_output = prof_claims
     );
 
