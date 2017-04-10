@@ -15,6 +15,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
+libname M015_Out "&M015_Out." access = readonly;
 libname post008 "&post008." access = readonly;
 libname post009 "&post009." access = readonly;
 libname post010 "&post010." access = readonly;
@@ -30,7 +31,7 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=caseadmitid
+	,Dimensions=caseadmitid~member_ID
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
 	,suffix_output = snf_facility
@@ -54,8 +55,11 @@ proc sql;
 		pro.*
 	from professional_claims as pro
 	inner join snf_facility as snf
-		on pro.facilitycaseid = pro.caseadmitid
-	where substr(lowcase(pro.prm_line),1,3) not in ('p81', 'p82', 'p84', 'p85')
+		on (pro.facilitycaseid = snf.caseadmitid and pro.member_id = snf.member_id)
+	inner join M015_Out.mr_line_info as mr
+		on pro.prm_line = mr.mr_line
+	where ((upcase(mr.prm_line_desc1) = "PROF") or 
+		(lowcase(mr.mr_line) in ('p84', 'p85'))) /*DME & Prosthetics*/
 	;
 quit;
 
