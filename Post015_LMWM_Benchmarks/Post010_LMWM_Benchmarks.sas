@@ -74,6 +74,7 @@ quit;
 data Post015.cost_util_benchmark (keep=&cost_util_benchmark_cgflds.);
 	format &cost_util_benchmark_cgfrmt.;
 	set Risk_adj_man_bench;
+	where upcase(elig_status_1) ne 'UNKNOWN';
 	&assign_name_client.;
 run;
 %LabelDataset(Post015.cost_util_benchmark);
