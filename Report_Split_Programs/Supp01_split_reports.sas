@@ -5,7 +5,7 @@
 	Create a Supp program that can be ran after the general process to create all of the files but split into client provided groups.
 
 ### DEVELOPER NOTES:
-	
+	"Market_Splits.csv" must be created with market names as the header and lists of HICNOs under each market.
 
 */
 
@@ -22,7 +22,7 @@ libname M180_Out "&M180_Out.";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
-%RunPythonScript(,%GetParentFolder(1)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod3);
+%RunPythonScript(,%GetParentFolder(1)Post01_stage_data_drive.py,,Path_code,,&path_project_logs.\_onboarding\Post01_split_initial_stage_data_drive.log,prod2016_11);
 %AssertThat(&Path_code.,=,0);
 
 %include "&path_project_data.postboarding\postboarding_libraries.sas" / source2;
@@ -109,7 +109,7 @@ run;
 %copy_originals(M035_Out.member_raw_stack,all);
 %copy_originals(M018_Out.client_member_time,all);
 
-%RunPythonScript(,%GetParentFolder(0)Supp02_output_rename.py,,Py_code,&post050. all,&path_project_logs./_onboarding/Supp02_all.log,prod3);
+%RunPythonScript(,%GetParentFolder(0)Supp02_output_rename.py,,Py_code,&post050. all,&path_project_logs./_onboarding/Supp02_all.log,prod2016_11);
 %AssertThat(&Py_code.,=,0);
 
 /*Create a new table with just the needed population*/
@@ -154,8 +154,8 @@ run;
 																		,%str()
 																		))
 			/* Onboarding Blacklist   */ ,keyword_blacklist       = %sysfunc(ifc("%upcase(&launcher_onboarding_blacklist.)" ne "ERROR"
-																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post050_output_deliverable~Post01_disk_cleanup))
-																		,Post050_output_deliverable~Post01_disk_cleanup
+																		,%sysfunc(cat(&launcher_onboarding_blacklist.,~Post016_Validate_Outputs~Post090_Delivery~Post01_disk_cleanup))
+																		,Post016_validate_outputs~Post090_Delivery~Post01_disk_cleanup
 																		))
 			/* CC'd Email Recepients  */ ,list_cc_email           = %str()
 			/* Email Subject Prefix   */ ,prefix_email_subject    = PRM Notification:
@@ -169,7 +169,7 @@ run;
 			%copy_originals(M035_Out.member_raw_stack,&group_name.);
 			%copy_originals(M018_Out.client_member_time,&group_name.);
 	
-			%RunPythonScript(,%GetParentFolder(0)Supp02_output_rename.py,,Py_code,&post050. a_&group_name,&path_project_logs.\_onboarding\Supp02_&group_name.log,prod3);
+			%RunPythonScript(,%GetParentFolder(0)Supp02_output_rename.py,,Py_code,&post050. a_&group_name,&path_project_logs.\_onboarding\Supp02_&group_name.log,prod2016_11);
 			%AssertThat(&Py_code.,=,0);
 	
 		%end;
@@ -180,6 +180,10 @@ data _null_;
 	set name_of_groups;
 	call execute('%nrstr(%Run_Process('||strip(name)||'))');
 run;
+
+/*Copy the outputs to the shared directory*/
+%RunPythonScript(,%GetParentFolder(1)Post090_Delivery\Post01_output_delivery.py,,Py_code,,&path_project_logs.\_onboarding\Split_Delivery.log,prod2016_11);
+%AssertThat(&Py_code.,=,0);
 
 /*Return the combined version of the various tables to the non-underscored form*/
 %macro return_originals(table);

@@ -15,6 +15,7 @@ options sasautos = ("S:\MISC\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%GetParentFolder(1)share01_postboarding.sas" / source2;
 %include "&M073_Cde.PUDD_Methods\*.sas" / source2;
 
+libname M015_Out "&M015_Out." access = readonly;
 libname post008 "&post008." access = readonly;
 libname post009 "&post009." access = readonly;
 libname post010 "&post010." access = readonly;
@@ -24,6 +25,17 @@ libname post040 "&post040.";
 
 
 
+%Agg_Claims(
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
+	,Time_Slice=&list_time_period.
+	,Ongoing_Util_Basis=&post_ongoing_util_basis.
+	,Dimensions=caseadmitid~member_ID
+	,Force_Util=&post_force_util.
+	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
+	,suffix_output = snf_facility
+    );
 
 %Agg_Claims(
 	IncStart=&list_inc_start.
@@ -31,11 +43,27 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Dimensions=providerID~member_ID~prm_line~facilitycaseid
 	,Force_Util=&post_force_util.
-	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "p31b")
-	,suffix_output = snf_professional
+	,where_claims= %str(substr(lowcase(outclaims_prm.prm_line),1,1) eq "p")
+	,suffix_output = prof_claims
     );
+
+proc sql;
+	create table snf_professional as
+	select
+		pro.*
+	from agg_claims_med_prof_claims as pro
+	inner join agg_claims_med_snf_facility as snf
+		on (pro.facilitycaseid = snf.caseadmitid and 
+			pro.member_id = snf.member_id and
+			pro.time_slice = snf.time_slice)
+	inner join M015_Out.mr_line_info as mr
+		on pro.prm_line = mr.mr_line
+	where ((upcase(mr.prm_line_desc1) = "PROF") or 
+		(lowcase(mr.mr_line) in ('p84', 'p85'))) /*DME & Prosthetics*/
+	;
+quit;
 
 proc sql;
 	create table details_SNF_professional as
@@ -46,7 +74,7 @@ proc sql;
 		,coalesce(prof_snf.ProviderID,'Unknown') as prv_id_snf
 		,sum(prof_snf.PRM_Costs) as sum_costs_prof_snf
 		,sum(prof_snf.PRM_Costs / risk.riskscr_1_cost_avg) as sum_costs_prof_snf_riskadj
-	from agg_claims_med_snf_professional as prof_snf
+	from snf_professional as prof_snf
 	/*Limit to members active in the analysis*/
 	inner join post008.members as active
 		on prof_snf.time_slice = active.time_period 
