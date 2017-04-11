@@ -9,7 +9,12 @@
  - Definition of SNF professional has been changed from `prm_line = "P31b"` to professional claims (and DME) with a `FacilityCaseID` matching a SNF case. This was done to accomodate the removal of `P31b` without a viable replacement in HCG Grouper 2016. There is likely to be a large shift in reported metrics. A decrease is expected because the previous methodology captured things other than SNF.
 
 ### Lower Level Changes
- - *none*
+ - Called `Medicare_ACO_Onboarding` component since it has been removed from the main `Analytics-Pipeline`
+ - Updated `prm_ahrq_pdi` length in the datamart from `5` to `16` to match the `Analytics-Pipeline`
+ - Updated market splitting python calls to use `prod2016_11`
+ - Updated market splitting program to call the deliverable output after all markets have been completed
+ - Updated `PRMClient-Library` reference to use the variable from `pipeline_components_env`
+ - Removed references to the `claims_elig_format` variable that has been retired
 
 ## v6.3.0
 
