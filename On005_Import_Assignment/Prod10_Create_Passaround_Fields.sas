@@ -8,8 +8,8 @@
 	*/
 
 
-options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
-%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%sysget(INDYHEALTH_LIBRARY_HOME)\include_sas_macros.sas" / source2;
+%include "%sysget(ANALYTICS_PIPELINE_HOME)\010_Master\Supp01_Parser.sas" / source2;
 
 /* Libnames */
 
