@@ -10,8 +10,8 @@
 	our current needs to do not require exact assignment information.  Full CMS
 	assignment logic was not implemented at this time.
 */
-options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
-%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%sysget(INDYHEALTH_LIBRARY_HOME)\include_sas_macros.sas" / source2;
+%include "%sysget(ANALYTICS_PIPELINE_HOME)\010_Master\Supp01_Parser.sas" / source2;
 %include "%sysget(PRMCLIENT_LIBRARY_HOME)sas\mssp\shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
