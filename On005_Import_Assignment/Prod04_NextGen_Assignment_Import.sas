@@ -8,8 +8,8 @@
 	*/
 
 
-options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compress = yes;
-%include "%sysget(UserProfile)\HealthBI_LocalData\Supp01_Parser.sas" / source2;
+%include "%sysget(INDYHEALTH_LIBRARY_HOME)\include_sas_macros.sas" / source2;
+%include "%sysget(MEDICARE_ACO_ONBOARDING_HOME)\Supp01_shared.sas" / source2;
 %include "%sysget(PRMCLIENT_LIBRARY_HOME)\sas\mssp\shortcircuit-cclf-import.sas" / source2;
 %include "&M008_cde.func06_build_metadata_table.sas";
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
