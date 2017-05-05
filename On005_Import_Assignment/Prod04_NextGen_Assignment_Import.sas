@@ -14,6 +14,7 @@
 %include "&M008_cde.func06_build_metadata_table.sas";
 %Include "&M008_Cde.Func02_massage_windows.sas" / source2;
 %include "%GetParentFolder(0)Supp01_shared_code.sas" / source2;
+%include "%sysget(MEDICARE_ACO_ONBOARDING_HOME)\Supp01_shared.sas" / source2;
 
 %GetFileNamesFromDir(&path_project_received_ref., ngalign_count, NGALIGN);
 
