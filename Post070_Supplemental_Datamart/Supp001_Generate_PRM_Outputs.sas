@@ -55,8 +55,7 @@ libname Post070 "&Post070.";
 proc sql;
 	create table npi_limit as
 	select
-		*
-		,case when other_prvdr_id_type_cd_1 = '06' then other_prvdr_id_1
+		case when other_prvdr_id_type_cd_1 = '06' then other_prvdr_id_1
 			when other_prvdr_id_type_cd_2 = '06' then other_prvdr_id_2
 			when other_prvdr_id_type_cd_3 = '06' then other_prvdr_id_3
 			when other_prvdr_id_type_cd_4 = '06' then other_prvdr_id_4
@@ -105,7 +104,8 @@ proc sql;
 			when other_prvdr_id_type_cd_47 = '06' then other_prvdr_id_47
 			when other_prvdr_id_type_cd_48 = '06' then other_prvdr_id_48
 			else ''
-		end as OSCAR
+		end as OSCAR,
+		prvdr_org_name
 	from NPI.&Filename_SAS_NPI. as npi
 	where calculated OSCAR is not null
 	order by OSCAR, prvdr_org_name
@@ -128,39 +128,27 @@ data oscar_limit;
 	if last.oscar then output;
 run;
 
-proc sql;
-	create table pass_w_org_name as
-	select
-		pass.*
-		,coalescec(propcase(oscar.prvdr_org_name), "Unknown") as prvdr_org_name
-	from M020_Out.passarounds as pass
-	left join oscar_limit as oscar
-		on oscar.oscar = pass.CCN
-	;
-quit;
-
 data propcase_names (drop = prvdr_org_name);
-	set pass_w_org_name;
+	set oscar_limit;
 
 	%Prv_Name_RegEx(prvdr_org_name, prv_org_name);
 run;
 
 proc sql;
-		create table outclaims_pre (drop = claim_id) as
+		create table outclaims_pre as
 		select
 			base.*
-			,pass.*
 			,case when upcase(prm_util_type) = "DAYS" then prm_util else 0 end as prm_days
 		from M073_Out.outclaims_prm as base
 		left join propcase_names as pass
-			on base.claimid eq pass.claim_id
+			on base.prm_prv_id_ccn eq pass.OSCAR
 		order by sequencenumber
 		;
 quit;
 
-%Assertthat(%GetRecordCount(outclaims_pre), eq, %GetRecordCount(M073_Out.outclaims_prm),ReturnMessage=Merging the passarounds on is cartesianing the claims table)
+%Assertthat(%GetRecordCount(outclaims_pre), eq, %GetRecordCount(M073_Out.outclaims_prm),ReturnMessage=Merging the provider organization name on is cartesianing the claims table)
 
-data post070.outclaims (keep = &_codegen_spaces_outclaims.);
+data post070.outclaims (keep = &_codegen_spaces_outclaims. prm_prv_id_tin prm_prv_id_ccn prm_prv_id_attending prm_prv_id_operating);
 	format &_codegen_format_outclaims.;
 	set outclaims_pre;
 run;
