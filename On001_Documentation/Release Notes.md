@@ -1,5 +1,21 @@
 #Release Notes
 
+## v6.5.0
+
+### Client Visible Changes
+ - Renamed the following fields in the supplemental datamart
+   - `CCN` is now `prm_prv_id_ccn`
+   - `attending_prv_npi` is now `prm_prv_id_attending`
+   - `operating_prv_npi` is now `prm_prv_id_operating`
+   - `TIN` is now `prm_prv_id_tin`
+
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Removed the passaround table and instead used the `HCG_Pass_Thru` fields provided by `medicare_aco_onboarding`
+
 ## v6.4.0
 
 ### Client Visible Changes
