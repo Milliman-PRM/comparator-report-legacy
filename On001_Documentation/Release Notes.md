@@ -9,12 +9,13 @@
    - `operating_prv_npi` is now `prm_prv_id_operating`
    - `TIN` is now `prm_prv_id_tin`
 
-
 ### Logic Changes
  - *none*
 
 ### Lower Level Changes
  - Removed the passaround table and instead used the `HCG_Pass_Thru` fields provided by `medicare_aco_onboarding`
+ - Update file headers to utilize newly split out components
+ - Updated the Pioneer assignment logic used by NextGen clients to ensure date_latestpaid the the end of the month to avoid eligiblity issues.
 
 ## v6.4.0
 
