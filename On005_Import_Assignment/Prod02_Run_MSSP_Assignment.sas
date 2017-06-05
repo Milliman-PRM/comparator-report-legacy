@@ -28,6 +28,14 @@
 	,FailAction=EndActiveSASSession
 	)
 
+%AssertThat(
+	%bquote(%upcase(&name_client.))
+	,ne
+	,HENRY FORD
+	,ReturnMessage=NextGen has different assignment files.
+	,FailAction=EndActiveSASSession
+	)
+	
 %let name_datamart_src = references_client;
 
 /* Libnames */
