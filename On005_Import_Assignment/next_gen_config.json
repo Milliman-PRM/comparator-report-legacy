@@ -1,0 +1,15 @@
+{
+  "csv_mngreb": {
+    "old_column": "reason",
+    "new_column": "Reason for Exclusion"
+  },
+  "excel_mngreb": {
+    "sheet": 0,
+    "header_hints": ["HICNO", "First Name", "Last Name", "Reason for Exclusion"]
+  },
+  "xml_mngreb":{
+    "header_hints": ["HICNO", "First Name", "Last Name", "Reason for Exclusion"]
+  },
+  "header_selection": ["HICNO", "First Name", "Last Name", "Reason for Exclusion"],
+  "final_headers": ["hicno", "first_name", "last_name", "reason_for_exclusion"]
+}
