@@ -1,16 +1,17 @@
 """
-### CODE OWNERS: Jason Altieri
+### CODE OWNERS: Jason Altieri, Matthew Hawthorne
 
 ### OBJECTIVE:
   Create client_member and client_member_time for NextGen ACOs
 
 ### DEVELOPER NOTES:
-  NGALIGN file should be pipe delimited text. MNGREB should be .xlsx or .csv
+  NGALIGN file should be pipe delimited text. MNGREB will likely be a xml type file saved as xls.
+  This process checks first if the MNGREB file is a text file, then an excel file, and finally
+  processes as an xml file if it is not an excel or text file.
 """
 import logging
 import re
-import pandas as pd
-import typing
+import json
 from collections import namedtuple
 from operator import attrgetter
 from bs4 import BeautifulSoup
@@ -21,8 +22,10 @@ from pyspark.sql import DataFrame, Row
 
 import prm.meta.project
 from prm.spark.app import SparkApp
-from prmclient.spark.spark_utils import append_df
+from prmclient.spark.spark_utils import append_df, convert_string_to_date
 from prmclient.client_functions import process_excel_sheet_to_pandas
+
+from prm.spark.io_sas import read_sas_data
 
 from indypy.file_utils import IndyPyPath
 
@@ -35,6 +38,7 @@ _HEADER_LIST = ['HICNO', 'First Name',
 _FIELD_NAMES = ['hicno', 'not_applicable', 'first_name', 'last_name', 'address', 'address2',
                 'address3', 'address4', 'address5', 'address6', 'address7', 'address8', 'state',
                 'zip_code', 'gender', 'birth_date', 'date_of_exclusion', 'exclusion_reason']
+_NG_YEAR = {'10': 1, '11': 1, '12': 1, '01': 0, '02': 0, '03': 0}
 
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
@@ -84,27 +88,44 @@ def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list) -
                                               header=True
                                               )
         if not ngalign_df:
-            ngalign_df = import_df.withColumn('filedate', F.lit(date))
+            ngalign_df = import_df.withColumn('filedate', F.concat('20', F.lit(date)))
         else:
-            align_with_date_df = import_df.withColumn('filedate', F.lit(date))
+            align_with_date_df = import_df.withColumn('filedate', F.concat('20', F.lit(date)))
             ngalign_df = append_df(ngalign_df, align_with_date_df)
 
     return ngalign_df.select([F.col(name).alias(name.lower().strip().replace(' ', '_')) for name in
                               ngalign_df.columns])
 
 
+def _process_csv_mngreb_files(sparkapp: SparkApp, file: IndyPyPath,
+                              csv_config: dict, poss_delim: list) -> DataFrame:
+    """
+
+    Returns:
+
+    """
+    delim = _find_delimiter(file, poss_delim)
+    df_init = sparkapp.session.read.csv(str(file), header=True, sep=delim)
+    return df_init.select(
+        [F.col(field).alias(
+            csv_config['new_column'] if
+            field.lower().find(csv_config['old_column']) > -1 else field
+        ) for field in df_init.columns]
+    )
+
+
 def _process_excel_mngreb_files(
         sparkapp: SparkApp,
         file_path: IndyPyPath,
         file_config: dict
-) -> typing.Union[DataFrame, None]:
+) -> DataFrame:
     """
 
     Args:
         sparkapp: SparkApp to create Spark DataFrame from a pandas DataFrame
         file_path:  IndyPyPath
         file_config: dictionary with parameters for the process_excel_sheet_to_pandas call
-                     (sheet_name, header_hints) and final headers for import to spark
+                     (sheet_name, header_hints)
 
     Returns:
         Spark DataFrame
@@ -166,7 +187,8 @@ def _process_xml_mngreb_files(sparkapp: SparkApp, file_path: IndyPyPath,
     return sparkapp.session.createDataFrame(rdd_list)
 
 
-def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict) -> DataFrame:
+def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
+                       poss_delim: list, xref_df: DataFrame) -> DataFrame:
     """
 
     Args:
@@ -178,24 +200,47 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict) -
     """
     mngreb_df = None
     for file in file_list:
-        date = re.findall(r'D\d{6}', str(file))[0][1:]
         if file.suffix == '.csv':
-            pd_df = _process_csv_mngreb_files(file, file_config)
+            pd_df = _process_csv_mngreb_files(sparkapp, file, file_config['csv_mngreb'], poss_delim)
         else:
             try:
-                pd_df = _process_excel_mngreb_files(sparkapp, file, file_config)
+                pd_df = _process_excel_mngreb_files(sparkapp, file, file_config['excel_mngreb'])
             except XLRDError:
-                pd_df = _process_xml_mngreb_files(sparkapp, file, file_config)
+                pd_df = _process_xml_mngreb_files(sparkapp, file, file_config['xml_mngreb'])
 
-        loaded_df = sparkapp.session.createDataFrame(pd_df)
-        for column in loaded_df.columns:
-            loaded_df = loaded_df.withColumn(column, F.when(F.col(column) == F.lit('nan'),
-                                                                 F.lit(None)).otherwise(F.col(
-                column)))
+        exclusion_date_df = pd_df.withColumn(
+            'exclusion_date',
+            convert_string_to_date('Date of Exclusion (1) (2) ', 'M/d/yyyy')
+        )
+        agg_exclusion_df = exclusion_date_df.groupBy(
+            F.year(F.col('exclusion_date')).alias('year')
+        ).agg(
+            F.count('*').alias('record_count')
+        )
+        performance_year = agg_exclusion_df.orderBy(
+            F.col('record_count').desc()
+        ).limit(1).collect()[0]['year']
+
+        initial_selections = file_config['header_selection']
+        final_selections = file_config['final_headers']
+
+        mngreb_xref_df = pd_df.join(
+            F.broadcast(xref_df),
+            pd_df.HICNO == xref_df.prvs_hic_num,
+            'left_outer'
+        )
+        hicno_update_df = mngreb_xref_df.withColumn(
+            'HICNO',
+            F.coalesce(F.col('crnt_hic_num'), F.col('HICNO'))
+        )
+
+        loaded_df = hicno_update_df.select([F.col(field).alias(name) for field, name in
+                                           zip(initial_selections, final_selections)])
+
         if not mngreb_df:
-            mngreb_df = loaded_df.withColumn('filedate', F.lit(date))
+            mngreb_df = loaded_df.withColumn('filedate', F.lit(performance_year))
         else:
-            mngreb_with_date_df = loaded_df.withColumn('filedate', F.lit(date))
+            mngreb_with_date_df = loaded_df.withColumn('filedate', F.lit(performance_year))
             mngreb_df = append_df(mngreb_df, mngreb_with_date_df, de_dup=True)
     return mngreb_df
 
@@ -214,28 +259,25 @@ def _build_client_member_time(ngalign_df: DataFrame, mngreb_df: DataFrame)-> Dat
                                            'hicno',
                                            'left_outer'
                                            )
-    member_assign_df = member_exclusions_df.withColumn('date_start',
-                                                       F.concat(F.lit('20'),
-                                                                F.substring(
-                                                                    F.col('filedate'), 0,
-                                                                    2),
-                                                                F.lit('-01-01')
-                                                                ).cast('date')
-                                                       ).withColumn('date_end',
-                                                                    F.concat(F.lit('20'),
-                                                                             F.substring(
-                                                                                 F.col(
-                                                                                     'filedate'),
-                                                                                 0,
-                                                                                 2),
-                                                                             F.lit(
-                                                                                 '-12-31')
-                                                                             ).cast(
-                                                                        'date')
-                                                                    ).withColumn(
+    base_member_assign_df = member_exclusions_df.withColumn(
+        'date_start',
+        F.concat(
+            F.lit('20'),
+            F.substring(F.col('filedate'), 0, 2),
+            F.lit('-01-01')
+        ).cast('date')
+    ).withColumn(
+        'date_end',
+        F.concat(
+            F.lit('20'),
+            F.substring(F.col('filedate'), 0, 2),
+            F.lit('-12-31')
+        ).cast('date')
+    ).withColumn(
         'assignment_indicator',
         F.lit('Y')
     )
+
 
 
     return base_member_assign_df.select(
@@ -252,16 +294,24 @@ def main() -> int:
     """A function to enclose the execution of business logic."""
     LOGGER.info('Preparing to create client member and client member time')
     sparkapp = SparkApp(PRM_META['pipeline_signature'])
+    xref_path = PRM_META[20, 'out'] / 'cclf9_bene_xref.sas7bdat'
+    xref_df = read_sas_data(sparkapp.session, xref_path)
 
+    next_gen_config_path = IndyPyPath(__file__).parent / 'next_gen_config.json'
+    with next_gen_config_path.open() as json_file:
+        next_gen_config = json.load(json_file)
     possible_delimiters = ['\t', ',', '|']
 
     LOGGER.info('Loading NGALIGN files')
     ngalign_list = _REFERENCES.collect_files_regex('NGALIGN')
-    alignment_df = _load_ngalign_files(sparkapp, ngalign_list, possible_delimiters)
+    alignment_df = _load_ngalign_files(sparkapp, ngalign_list, possible_delimiters, xref_df)
 
     LOGGER.info('Loading MNGREB files')
     mngreb_list = _REFERENCES.collect_files_regex('MNGREB')
-    mngreb_df = _load_mngreb_files(sparkapp, mngreb_list, _HEADER_LIST, possible_delimiters)
+    mngreb_df = _load_mngreb_files(sparkapp, mngreb_list, next_gen_config, possible_delimiters,
+                                   xref_df)
+
+    xref_df.unpersist()
 
     return 0
 
