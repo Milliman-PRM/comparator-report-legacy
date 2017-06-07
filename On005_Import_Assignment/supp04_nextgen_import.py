@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from xlrd import XLRDError
 
 import pyspark.sql.functions as F
-from pyspark.sql import DataFrame, Row
+from pyspark.sql import DataFrame, Row, Window
 
 import prm.meta.project
 from prm.spark.app import SparkApp
@@ -68,13 +68,15 @@ def _find_delimiter(path: IndyPyPath, delim_list: list) -> str:
     return delim_obj(max_delim)
 
 
-def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list) -> DataFrame:
+def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list,
+                        xref_df: DataFrame) -> DataFrame:
     """
 
     Args:
         sparkapp:   sparkapp reference to call read.csv
         file_list:  list of ngalign files to load
         delim_list: list of potential delimiters for NGALIGN files
+        xref_df: dataframe mapping old hicnos to new hicnos
 
     Returns:
         DataFrame with stacked NGALIGN files tagged by date
@@ -82,19 +84,42 @@ def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list) -
     ngalign_df = None
     for file in file_list:
         date = re.findall(r'D\d{6}', str(file))[0][1:]
+        month = date[2:4]
+        year = '20' + str(int(date[0:2]) + _NG_YEAR[month])
+
         delim = _find_delimiter(file, delim_list)
-        import_df = sparkapp.session.read.csv(str(file),
-                                              sep=delim,
-                                              header=True
-                                              )
+        import_df = sparkapp.session.read.csv(
+            str(file),
+            sep=delim,
+            header=True
+        )
+        update_fields_df = import_df.select(
+            [F.col(name).alias(name.lower().strip().replace(' ', '_')) for name in
+             import_df.columns]
+        )
+        joined_xref_df = update_fields_df.join(
+            xref_df,
+            update_fields_df.hicn_number_id == xref_df.prvs_hic_num,
+            'left_outer'
+        )
+        hicno_update_df = joined_xref_df.withColumn(
+            'hicn_number_id',
+            F.coalesce(F.col('crnt_hic_num'), F.col('hicn_number_id'))
+        )
+
         if not ngalign_df:
-            ngalign_df = import_df.withColumn('filedate', F.concat('20', F.lit(date)))
+            ngalign_df = hicno_update_df.withColumn(
+                'filedate',
+                F.lit(year)
+            )
         else:
-            align_with_date_df = import_df.withColumn('filedate', F.concat('20', F.lit(date)))
+            align_with_date_df = hicno_update_df.withColumn(
+                'filedate',
+                F.lit(year)
+            )
             ngalign_df = append_df(ngalign_df, align_with_date_df)
 
-    return ngalign_df.select([F.col(name).alias(name.lower().strip().replace(' ', '_')) for name in
-                              ngalign_df.columns])
+    return ngalign_df
 
 
 def _process_csv_mngreb_files(sparkapp: SparkApp, file: IndyPyPath,
@@ -217,9 +242,9 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
         ).agg(
             F.count('*').alias('record_count')
         )
-        performance_year = agg_exclusion_df.orderBy(
+        performance_year = str(agg_exclusion_df.orderBy(
             F.col('record_count').desc()
-        ).limit(1).collect()[0]['year']
+        ).limit(1).collect()[0]['year'])
 
         initial_selections = file_config['header_selection']
         final_selections = file_config['final_headers']
@@ -245,40 +270,79 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
     return mngreb_df
 
 
-def _build_client_member_time(ngalign_df: DataFrame, mngreb_df: DataFrame)-> DataFrame:
+def _build_client_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
+                         phys_df: DataFrame, file_config: dict)-> DataFrame:
     """
 
     Args:
         ngalign_df:    DataFrame of stacked ngalign files
         mngreb_df:     DataFrame of stacked mngreb files
+        phys_df:       DataFrame with physician files
 
     Returns:
         DataFrame with eligibility spans by member
     """
+    performance_year = ngalign_df.select(
+        F.max(F.col('filedate')).alias('file_date')
+    ).collect()[0]['file_date']
     member_exclusions_df = ngalign_df.join(mngreb_df,
                                            'hicno',
                                            'left_outer'
                                            )
+    phys_window = Window.partitionBy(
+        F.col('cur_clm_uniq_id'), F.col('bene_hic_num'), F.col('rndrg_prvdr_npi_num')
+    ).orderBy(
+        F.col('cur_clm_uniq_id'), F.col('bene_hic_num'), F.col('rndrg_prvdr_npi_num')
+    )
+    reduced_phys_df = phys_df.withColumn(
+        'potential_pcp_claim',
+        F.when(
+            F.sum(
+                F.when(
+                    F.col('clm_line_hcpcs_cd').isin(file_config['pcp_visits']) |
+                    F.col('clm_prvdr_spclty_cd').isin(file_config['pcp_spec']),
+                    F.lit(1)
+                ).otherwise(
+                    F.lit(0)
+                )
+            ).over(phys_window) > 0,
+            F.lit(1)
+        ).otherwise(
+            F.lit(0)
+        )
+    ).where(
+        F.col('clm_from_dt') >= performance_year + '-01-01'
+    )
+    agg_phys_df = reduced_phys_df.groupBy(
+        F.col('bene_hic_num'), F.col('rndrg_prvdr_npi_num')
+    ).agg(
+        F.sum(F.col('potential_pcp_claim')).alias('pcp_visit_count'),
+        F.max(F.col('clm_from_dt')).alias('last_service_date')
+    )
+    member_window = Window.partitionBy(F.col('bene_hic_num')).orderBy(F.col('bene_hic_num'), F.col('pcp_visit_count').desc(), F.col('last_service_date').desc())
+    assign_phys_df = agg_phys_df.withColumn(
+        'pcp_order',
+        F.row_number().over(member_window)
+    ).where(
+        (F.col('pcp_order') == 1) & (F.col('pcp_visit_count') > 0)
+    )
+
     base_member_assign_df = member_exclusions_df.withColumn(
         'date_start',
         F.concat(
-            F.lit('20'),
-            F.substring(F.col('filedate'), 0, 2),
+            F.col('filedate'),
             F.lit('-01-01')
         ).cast('date')
     ).withColumn(
         'date_end',
         F.concat(
-            F.lit('20'),
-            F.substring(F.col('filedate'), 0, 2),
+            F.col('filedate'),
             F.lit('-12-31')
         ).cast('date')
     ).withColumn(
         'assignment_indicator',
         F.lit('Y')
     )
-
-
 
     return base_member_assign_df.select(
         F.col('hicno'),
@@ -289,13 +353,15 @@ def _build_client_member_time(ngalign_df: DataFrame, mngreb_df: DataFrame)-> Dat
     )
 
 
-
 def main() -> int:
     """A function to enclose the execution of business logic."""
     LOGGER.info('Preparing to create client member and client member time')
     sparkapp = SparkApp(PRM_META['pipeline_signature'])
     xref_path = PRM_META[20, 'out'] / 'cclf9_bene_xref.sas7bdat'
     xref_df = read_sas_data(sparkapp.session, xref_path)
+
+    phys_path = PRM_META[20, 'out'] / 'cclf5_partb_phys.sas7bdat'
+    phys_df = read_sas_data(sparkapp.session, phys_path)
 
     next_gen_config_path = IndyPyPath(__file__).parent / 'next_gen_config.json'
     with next_gen_config_path.open() as json_file:
@@ -312,6 +378,7 @@ def main() -> int:
                                    xref_df)
 
     xref_df.unpersist()
+    phys_df.unpersist()
 
     return 0
 

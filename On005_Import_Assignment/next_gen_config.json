@@ -11,5 +11,9 @@
     "header_hints": ["HICNO", "First Name", "Last Name", "Reason for Exclusion"]
   },
   "header_selection": ["HICNO", "First Name", "Last Name", "Reason for Exclusion"],
-  "final_headers": ["hicno", "first_name", "last_name", "reason_for_exclusion"]
+  "final_headers": ["hicno", "first_name", "last_name", "reason_for_exclusion"],
+  "pcp_visits": [
+    "99201", "99202", "99203", "99204", "99205", "99211", "99212", "99213", "99214", "99215"
+  ],
+  "pcp_spec": ["01", "08", "11", "37", "38", "50", "84", "89", "97", "X7", "Y8", "Y9"]
 }
