@@ -22,7 +22,7 @@ from pyspark.sql import DataFrame, Row, Window
 
 import prm.meta.project
 from prm.spark.app import SparkApp
-from prmclient.spark.spark_utils import append_df, convert_string_to_date
+from prmclient.spark.spark_utils import append_df, convert_string_to_date, propercase, create_member_months
 from prmclient.client_functions import process_excel_sheet_to_pandas
 
 from prm.spark.io_sas import read_sas_data
@@ -94,7 +94,7 @@ def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list,
             header=True
         )
         update_fields_df = import_df.select(
-            [F.col(name).alias(name.lower().strip().replace(' ', '_')) for name in
+            [F.col(name).alias('_'.join(name.lower().strip().split())) for name in
              import_df.columns]
         )
         joined_xref_df = update_fields_df.join(
@@ -117,9 +117,9 @@ def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list,
                 'filedate',
                 F.lit(year)
             )
-            ngalign_df = append_df(ngalign_df, align_with_date_df)
+            ngalign_df = append_df(ngalign_df, align_with_date_df, de_dup=True)
 
-    return ngalign_df
+    return ngalign_df.withColumnRenamed('hicn_number_id', 'hicno')
 
 
 def _process_csv_mngreb_files(sparkapp: SparkApp, file: IndyPyPath,
@@ -162,6 +162,27 @@ def _process_excel_mngreb_files(
     return sparkapp.session.createDataFrame(pd_df)
 
 
+def _clean_xml_file(file_path: IndyPyPath) -> IndyPyPath:
+    """
+
+    Args:
+        file_path:
+
+    Returns:
+
+    """
+    temp_dir_path = file_path.parent / 'temp'
+    if not temp_dir_path.exists():
+        temp_dir_path.mkdir()
+    temp_file_path = temp_dir_path / file_path.name
+    with file_path.open('rb') as infile:
+        with temp_file_path.open('wb') as outfile:
+            for line in infile:
+                clean_line = line.replace(b'\x3D', b'').replace(b'\r\n', b'')
+                outfile.write(clean_line)
+    return temp_file_path
+
+
 def _sniff_xml_header(parsed_xml: BeautifulSoup, header_hints: list):
     """
 
@@ -195,7 +216,8 @@ def _process_xml_mngreb_files(sparkapp: SparkApp, file_path: IndyPyPath,
 
     """
     header_hints = file_config['header_hints']
-    with file_path.open() as xml_path:
+    temp_path = _clean_xml_file(file_path)
+    with temp_path.open(encoding="cp1252") as xml_path:
         soup = BeautifulSoup(xml_path, "lxml")
     header_row, headers = _sniff_xml_header(parsed_xml=soup, header_hints=header_hints)
     rdd_list = []
@@ -204,7 +226,7 @@ def _process_xml_mngreb_files(sparkapp: SparkApp, file_path: IndyPyPath,
         if n > header_row:
             if any(columns):
                 zip_values = zip(headers, columns)
-                value_dict = {key: value.strip() for key, value in zip_values}
+                value_dict = {key: value.strip() if value else None for key, value in zip_values}
                 rdd_row = Row(**value_dict)
                 rdd_list.append(rdd_row)
             else:
@@ -225,6 +247,7 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
     """
     mngreb_df = None
     for file in file_list:
+        print(file)
         if file.suffix == '.csv':
             pd_df = _process_csv_mngreb_files(sparkapp, file, file_config['csv_mngreb'], poss_delim)
         else:
@@ -233,9 +256,12 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
             except XLRDError:
                 pd_df = _process_xml_mngreb_files(sparkapp, file, file_config['xml_mngreb'])
 
-        exclusion_date_df = pd_df.withColumn(
+        update_columns_df = pd_df.select(
+            [F.col(field).alias('_'.join(field.lower().strip().split())) for field in pd_df.columns]
+        )
+        exclusion_date_df = update_columns_df.withColumn(
             'exclusion_date',
-            convert_string_to_date('Date of Exclusion (1) (2) ', 'M/d/yyyy')
+            convert_string_to_date('date_of_exclusion_(1)_(2)', 'M/d/yyyy')
         )
         agg_exclusion_df = exclusion_date_df.groupBy(
             F.year(F.col('exclusion_date')).alias('year')
@@ -246,21 +272,19 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
             F.col('record_count').desc()
         ).limit(1).collect()[0]['year'])
 
-        initial_selections = file_config['header_selection']
-        final_selections = file_config['final_headers']
-
-        mngreb_xref_df = pd_df.join(
+        mngreb_xref_df = update_columns_df.join(
             F.broadcast(xref_df),
-            pd_df.HICNO == xref_df.prvs_hic_num,
+            update_columns_df.hicno == xref_df.prvs_hic_num,
             'left_outer'
         )
         hicno_update_df = mngreb_xref_df.withColumn(
-            'HICNO',
-            F.coalesce(F.col('crnt_hic_num'), F.col('HICNO'))
+            'hicno',
+            F.coalesce(F.col('crnt_hic_num'), F.col('hicno'))
         )
 
-        loaded_df = hicno_update_df.select([F.col(field).alias(name) for field, name in
-                                           zip(initial_selections, final_selections)])
+        final_selections = file_config['final_headers']
+
+        loaded_df = hicno_update_df.select([F.col(field) for field in final_selections])
 
         if not mngreb_df:
             mngreb_df = loaded_df.withColumn('filedate', F.lit(performance_year))
@@ -270,7 +294,7 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
     return mngreb_df
 
 
-def _build_client_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
+def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
                          phys_df: DataFrame, file_config: dict)-> DataFrame:
     """
 
@@ -299,7 +323,7 @@ def _build_client_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
         F.when(
             F.sum(
                 F.when(
-                    F.col('clm_line_hcpcs_cd').isin(file_config['pcp_visits']) |
+                    F.col('clm_line_hcpcs_cd').isin(file_config['pcp_visits']) &
                     F.col('clm_prvdr_spclty_cd').isin(file_config['pcp_spec']),
                     F.lit(1)
                 ).otherwise(
