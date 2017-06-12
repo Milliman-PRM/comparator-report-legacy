@@ -23,7 +23,7 @@ from pyspark.sql import DataFrame, Row, Window
 import prm.meta.project
 from prm.spark.app import SparkApp
 from prmclient.spark.spark_utils import append_df, convert_string_to_date, propercase, create_member_months
-from prmclient.client_functions import process_excel_sheet_to_pandas
+from prmclient.client_functions import process_excel_sheet_to_pyspark
 
 from prm.spark.io_sas import read_sas_data
 
@@ -158,8 +158,7 @@ def _process_excel_mngreb_files(
     """
     sheet = file_config['sheet']
     header_hint = file_config['header_hints']
-    pd_df = process_excel_sheet_to_pandas(file_path, sheet, header_hints=header_hint)
-    return sparkapp.session.createDataFrame(pd_df)
+    return process_excel_sheet_to_pyspark(sparkapp, file_path, sheet, header_hints=header_hint)
 
 
 def _clean_xml_file(file_path: IndyPyPath) -> IndyPyPath:
