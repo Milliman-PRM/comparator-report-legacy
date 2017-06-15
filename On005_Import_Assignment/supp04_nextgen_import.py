@@ -12,6 +12,8 @@
 import logging
 import re
 import json
+import shutil
+
 from collections import namedtuple
 from operator import attrgetter
 from bs4 import BeautifulSoup
@@ -31,6 +33,7 @@ from indypy.file_utils import IndyPyPath
 
 LOGGER = logging.getLogger(__name__)
 PRM_META = prm.meta.project.parse_project_metadata()
+_DATE_LATEST_PAID = PRM_META['date_latestpaid']
 
 _REFERENCES = PRM_META['path_project_received_ref']
 _HEADER_LIST = ['HICNO', 'First Name',
@@ -119,7 +122,8 @@ def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list,
             )
             ngalign_df = append_df(ngalign_df, align_with_date_df, de_dup=True)
 
-    return ngalign_df.withColumnRenamed('hicn_number_id', 'hicno')
+    trim_fields_df = ngalign_df.select([F.trim(F.col(field)).alias(field) for field in ngalign_df.columns])
+    return trim_fields_df.withColumnRenamed('hicn_number_id', 'hicno')
 
 
 def _process_csv_mngreb_files(sparkapp: SparkApp, file: IndyPyPath,
@@ -195,7 +199,8 @@ def _sniff_xml_header(parsed_xml: BeautifulSoup, header_hints: list):
     n = 0
     header_row = False
     for row in parsed_xml.findAll('tr'):
-        columns = [x.contents[0] if x.contents else None for x in row.findAll('td')]
+        columns = [x.contents[0] if x.contents else '_c{}'.format(n) for n, x in enumerate(row.findAll('td'))]
+
         if set(header_hints).issubset(set(columns)):
             return n, columns
         n += 1
@@ -219,17 +224,24 @@ def _process_xml_mngreb_files(sparkapp: SparkApp, file_path: IndyPyPath,
     with temp_path.open(encoding="cp1252") as xml_path:
         soup = BeautifulSoup(xml_path, "lxml")
     header_row, headers = _sniff_xml_header(parsed_xml=soup, header_hints=header_hints)
+
+    #HICNO, First name, Last name, Addr, Date of Exclusion, Reason for Exclusion
+    reduced_headers = headers[:4] + headers[8:10]
     rdd_list = []
+
     for n, row in enumerate(soup.findAll('tr')):
         columns = [x.contents[0] if x.contents else None for x in row.findAll('td')]
         if n > header_row:
             if any(columns):
-                zip_values = zip(headers, columns)
+                reduced_columns = columns[:4] + columns[13:15]
+                zip_values = zip(reduced_headers, reduced_columns)
                 value_dict = {key: value.strip() if value else None for key, value in zip_values}
                 rdd_row = Row(**value_dict)
                 rdd_list.append(rdd_row)
             else:
                 break
+
+    shutil.rmtree(str(temp_path.parent))
     return sparkapp.session.createDataFrame(rdd_list)
 
 
@@ -283,18 +295,27 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
 
         final_selections = file_config['final_headers']
 
-        loaded_df = hicno_update_df.select([F.col(field) for field in final_selections])
+        loaded_df = hicno_update_df.select([F.trim(F.col(field)).alias(field) for field in final_selections])
+
+        file_df = loaded_df.withColumn('file_of_origin', F.lit(str(file)))
 
         if not mngreb_df:
-            mngreb_df = loaded_df.withColumn('filedate', F.lit(performance_year))
+            mngreb_df = file_df.withColumn('filedate', F.lit(performance_year))
         else:
-            mngreb_with_date_df = loaded_df.withColumn('filedate', F.lit(performance_year))
+            mngreb_with_date_df = file_df.withColumn('filedate', F.lit(performance_year))
             mngreb_df = append_df(mngreb_df, mngreb_with_date_df, de_dup=True)
-    return mngreb_df
+
+    file_window = Window.orderBy(F.col('filedate'), F.col('file_of_origin').desc()).partitionBy(F.col('filedate'), F.col('hicno'))
+    return mngreb_df.select(
+        '*',
+        F.row_number().over(file_window).alias('reason_order')
+    ).where(
+        F.col('reason_order') == 1
+    )
 
 
 def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
-                         phys_df: DataFrame, file_config: dict)-> DataFrame:
+                         phys_df: DataFrame, npi_df: DataFrame, file_config: dict)-> DataFrame:
     """
 
     Args:
@@ -308,15 +329,20 @@ def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
     performance_year = ngalign_df.select(
         F.max(F.col('filedate')).alias('file_date')
     ).collect()[0]['file_date']
-    member_exclusions_df = ngalign_df.join(mngreb_df,
+
+    changed_filedate_mngreb_df = mngreb_df.withColumnRenamed('filedate', 'mngreb_filedate')
+
+    member_exclusions_df = ngalign_df.join(changed_filedate_mngreb_df,
                                            'hicno',
                                            'left_outer'
                                            )
+
     phys_window = Window.partitionBy(
         F.col('cur_clm_uniq_id'), F.col('bene_hic_num'), F.col('rndrg_prvdr_npi_num')
     ).orderBy(
         F.col('cur_clm_uniq_id'), F.col('bene_hic_num'), F.col('rndrg_prvdr_npi_num')
     )
+
     reduced_phys_df = phys_df.withColumn(
         'potential_pcp_claim',
         F.when(
@@ -336,13 +362,16 @@ def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
     ).where(
         F.col('clm_from_dt') >= performance_year + '-01-01'
     )
+
     agg_phys_df = reduced_phys_df.groupBy(
         F.col('bene_hic_num'), F.col('rndrg_prvdr_npi_num')
     ).agg(
         F.sum(F.col('potential_pcp_claim')).alias('pcp_visit_count'),
         F.max(F.col('clm_from_dt')).alias('last_service_date')
     )
+
     member_window = Window.partitionBy(F.col('bene_hic_num')).orderBy(F.col('bene_hic_num'), F.col('pcp_visit_count').desc(), F.col('last_service_date').desc())
+
     assign_phys_df = agg_phys_df.withColumn(
         'pcp_order',
         F.row_number().over(member_window)
@@ -353,28 +382,193 @@ def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
     base_member_assign_df = member_exclusions_df.withColumn(
         'date_start',
         F.concat(
-            F.col('filedate'),
-            F.lit('-01-01')
+            F.when(
+                F.col('mngreb_filedate').isNull(),
+                F.col('filedate')
+            ).otherwise(
+                F.col('mngreb_filedate')
+            ), F.lit('-01-01')
         ).cast('date')
     ).withColumn(
         'date_end',
         F.concat(
-            F.col('filedate'),
-            F.lit('-12-31')
+            F.when(
+                F.col('mngreb_filedate').isNull(),
+                F.col('filedate')
+            ).otherwise(
+                F.col('mngreb_filedate')
+            ), F.lit('-12-31')
         ).cast('date')
     ).withColumn(
         'assignment_indicator',
-        F.lit('Y')
+        F.when(
+            F.col('reason_for_exclusion').isNull(),
+            F.lit('Y')
+        ).otherwise(
+            F.lit('N')
+        )
+    ).withColumn(
+        'mem_dependent_status',
+        F.lit('P')
+    ).withColumn(
+        'member_name',
+        F.concat(
+            propercase(member_exclusions_df['beneficiary_last_name']),
+            F.lit(', '),
+            propercase(member_exclusions_df['beneficiary_first_name'])
+        )
     )
 
-    return base_member_assign_df.select(
-        F.col('hicno'),
+    base_member_phys_df = base_member_assign_df.join(
+        assign_phys_df,
+        base_member_assign_df.hicno == assign_phys_df.bene_hic_num,
+        'left_outer'
+    ).withColumn(
+        'mem_prv_id_align',
+        F.when(
+            F.col('rndrg_prvdr_npi_num').isNull(),
+            F.when(
+                F.col('assignment_indicator').isin('Y'),
+                F.lit('Unknown')
+            ).otherwise(
+                F.lit('Unassigned')
+            )
+        ).otherwise(
+            F.col('rndrg_prvdr_npi_num')
+        )
+    ).withColumn(
+        'mem_addr_zip',
+        F.col('bene_zip_5_id')
+    ).withColumn(
+        'mem_addr_street',
+        F.when(
+            F.col('beneficiary_line_2_address').isNotNull(),
+            F.concat(
+                base_member_assign_df['beneficiary_line_1_address'],
+                F.lit(' '),
+                base_member_assign_df['beneficiary_line_2_address'],
+            )
+        ).otherwise(
+            F.col('beneficiary_line_1_address')
+        )
+    ).withColumn(
+        'mem_addr_city',
+        propercase(base_member_assign_df['bene_city_id'])
+    ).withColumn(
+        'mem_report_hier_1',
+        F.lit('All')
+    ).withColumn(
+        'mem_report_hier_3',
+        F.lit('Not Implemented')
+    ).withColumn(
+        'mem_report_hier_4',
+        F.lit(None).cast('string')
+    ).withColumn(
+        'mem_report_hier_5',
+        F.lit(None).cast('string')
+    ).withColumn(
+        'mem_care_coordinator',
+        F.lit(None).cast('string')
+    ).withColumn(
+        'riskscr_client',
+        F.lit(None).cast('string')
+    )
+
+    reduced_npi_df = npi_df.select(
+        F.col('npi_npi'),
+        F.col('npi_prv_name_npi_prop')
+    )
+
+    npi_join_df = base_member_phys_df.join(
+        reduced_npi_df,
+        base_member_phys_df.mem_prv_id_align == reduced_npi_df.npi_npi,
+        'left_outer'
+    ).withColumn(
+        'npi_prv_name_with_nulls',
+        F.when(
+            F.col('npi_prv_name_npi_prop').isNull(),
+            F.col('mem_prv_id_align')
+        ).otherwise(
+            F.col('npi_prv_name_npi_prop')
+        )
+    )
+
+    return npi_join_df.select(
+        F.col('hicno').alias('member_id'),
+        F.col('mem_prv_id_align'),
+        F.col('assignment_indicator'),
         F.col('date_start'),
         F.col('date_end'),
-        F.col('assignment_indicator'),
-        F.col('mem_excluded_reason')
+        F.col('member_name'),
+        F.col('mem_dependent_status'),
+        F.col('mem_addr_street'),
+        F.col('mem_addr_city'),
+        F.col('bene_usps_state_code_id').alias('mem_addr_state'),
+        F.col('mem_addr_zip'),
+        F.col('mem_report_hier_1'),
+        F.col('npi_prv_name_with_nulls').alias('mem_report_hier_2'),
+        F.col('mem_report_hier_3'),
+        F.col('mem_report_hier_4'),
+        F.col('mem_report_hier_5'),
+        F.col('reason_for_exclusion').alias('mem_excluded_reason'),
+        F.col('mem_care_coordinator'),
+        F.col('riskscr_client'),
     )
 
+def _create_member_df(client_member_list: DataFrame)-> DataFrame:
+    """
+    Args:
+        client_member_list:    DataFrame returned from _build_client_all_member
+
+    Returns:
+        DataFrame ready for exporting to a client_member table.
+    """
+
+    return client_member_list.select(
+        F.col('member_id'),
+        F.col('member_name'),
+        F.col('mem_dependent_status'),
+        F.col('mem_prv_id_align'),
+        F.col('mem_addr_street'),
+        F.col('mem_addr_city'),
+        F.col('mem_addr_state'),
+        F.col('mem_addr_zip'),
+        F.col('mem_report_hier_1'),
+        F.col('mem_report_hier_2'),
+        F.col('mem_report_hier_3'),
+        F.col('mem_report_hier_4'),
+        F.col('mem_report_hier_5'),
+        F.col('mem_excluded_reason'),
+        F.col('mem_care_coordinator'),
+        F.col('riskscr_client'),
+        F.col('assignment_indicator')
+    )
+
+def _create_member_time_df(client_member_list: DataFrame)-> DataFrame:
+    """
+    Args:
+        client_member_list:    DataFrame returned from _build_client_all_member
+
+    Returns:
+       DataFrame ready for exporting to a client_member_time table.
+    """
+
+    exploded_df = create_member_months(client_member_list, 'hicno', 'date_start',
+                                       'date_end', _DATE_LATEST_PAID).drop(
+        'global_start'
+    ).drop(
+        'global_end'
+    ).drop(
+        'windows_array_split'
+    )
+
+    return exploded_df.select(
+        F.col('member_id'),
+        F.col('mem_prv_id_align'),
+        F.col('assignment_indicator'),
+        F.col('date_start'),
+        F.col('date_end')
+    )
 
 def main() -> int:
     """A function to enclose the execution of business logic."""
@@ -385,6 +579,8 @@ def main() -> int:
 
     phys_path = PRM_META[20, 'out'] / 'cclf5_partb_phys.sas7bdat'
     phys_df = read_sas_data(sparkapp.session, phys_path)
+
+    npi_df = sparkapp.load_df(PRM_META['path_product_ref'] / (PRM_META['filename_sas_npi'] + '.parquet'))
 
     next_gen_config_path = IndyPyPath(__file__).parent / 'next_gen_config.json'
     with next_gen_config_path.open() as json_file:
@@ -399,6 +595,23 @@ def main() -> int:
     mngreb_list = _REFERENCES.collect_files_regex('MNGREB')
     mngreb_df = _load_mngreb_files(sparkapp, mngreb_list, next_gen_config, possible_delimiters,
                                    xref_df)
+
+    client_member_list = _build_client_all_member(alignment_df, mngreb_df, phys_df, npi_df, next_gen_config)
+
+    member_df = _create_member_df(client_member_list)
+    member_time_df = _create_member_time_df(client_member_list)
+
+    prm.spark.io_sas.export_dataframe(
+        member_df,
+        PRM_META[(18, 'out')] / 'temp' / 'client_member.sas7bdat',
+    )
+    sparkapp.save_df(member_df, PRM_META[(18, 'out')] / 'client_member.parquet')
+
+    prm.spark.io_sas.export_dataframe(
+        member_time_df,
+        PRM_META[(18, 'out')] / 'temp' / 'client_member_time.sas7bdat',
+    )
+    sparkapp.save_df(member_time_df, PRM_META[(18, 'out')] / 'client_member_time.parquet')
 
     xref_df.unpersist()
     phys_df.unpersist()
