@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Jason Altieri, Matthew Hawthorne
+### CODE OWNERS: Jason Altieri, Matthew Hawthorne, Eric Hamilton
 
 ### OBJECTIVE:
   Create client_member and client_member_time for NextGen ACOs
@@ -21,10 +21,12 @@ from xlrd import XLRDError
 
 import pyspark.sql.functions as F
 from pyspark.sql import DataFrame, Row, Window
+from pyspark.sql.types import StructType
 
 import prm.meta.project
+from prm.meta.output_datamart import DataMart
 from prm.spark.app import SparkApp
-from prmclient.spark.spark_utils import append_df, convert_string_to_date, propercase, create_member_months
+from prmclient.spark.spark_utils import append_df, convert_string_to_date, propercase, create_member_months, remove_blank_field_labels
 from prmclient.client_functions import process_excel_sheet_to_pyspark
 
 from prm.spark.io_sas import read_sas_data
@@ -43,10 +45,30 @@ _FIELD_NAMES = ['hicno', 'not_applicable', 'first_name', 'last_name', 'address',
                 'zip_code', 'gender', 'birth_date', 'date_of_exclusion', 'exclusion_reason']
 _NG_YEAR = {'10': 1, '11': 1, '12': 1, '01': 0, '02': 0, '03': 0}
 
+_NA_FILL = {
+    'mem_dependent_status': 'P',
+    'mem_prv_id_align': 'Unknown',
+    'mem_report_hier_1': 'All',
+    'mem_report_hier_3': 'Not Implemented',
+    'assignment_indicator': 'N'
+}
+
+_MEMBER_METADATA = {
+                        'mem_prv_id_align': {'label':'Assigned Physician'},
+                        'mem_report_hier_1': {'label':'All members (Hier)'},
+                        'mem_report_hier_2': {'label':'Assigned Physician (Hier)'},
+                        'mem_report_hier_3': {'label':'Not Implemented (Hier)'},
+                        'assignment_indicator': {'label':'Assigned Patient'}
+                    }
+
+_MEMBER_TIME_METADATA = {
+                            'mem_prv_id_align': {'label': 'Assigned Physician'},
+                            'mem_report_hier_1': {'label': 'Assigned'}
+                        }
+
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
-
 
 def _find_delimiter(path: IndyPyPath, delim_list: list) -> str:
     """
@@ -499,7 +521,7 @@ def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
         F.col('assignment_indicator'),
         F.col('date_start'),
         F.col('date_end'),
-        F.col('member_name'),
+        F.col('member_name').alias('mem_name'),
         F.col('mem_dependent_status'),
         F.col('mem_addr_street'),
         F.col('mem_addr_city'),
@@ -526,7 +548,7 @@ def _create_member_df(client_member_list: DataFrame)-> DataFrame:
 
     return client_member_list.select(
         F.col('member_id'),
-        F.col('member_name'),
+        F.col('mem_name'),
         F.col('mem_dependent_status'),
         F.col('mem_prv_id_align'),
         F.col('mem_addr_street'),
@@ -570,6 +592,21 @@ def _create_member_time_df(client_member_list: DataFrame)-> DataFrame:
         F.col('date_end')
     )
 
+def _update_metadata(struct: StructType, metadata_dict: dict) -> StructType:
+    """
+    Update metadata based on member metadata dictionary
+    Args:
+        struct: StructType from DataMart
+        metadata_dict: Dictionary with Member Report Hierarchies and Eligibility Splits
+    Returns:
+        StructType with metadata updated with member labels
+    """
+
+    for field in struct:
+        if metadata_dict.get(field.name):
+            struct[field.name].metadata.update(metadata_dict[field.name])
+    return struct
+
 def main() -> int:
     """A function to enclose the execution of business logic."""
     LOGGER.info('Preparing to create client member and client member time')
@@ -601,17 +638,44 @@ def main() -> int:
     member_df = _create_member_df(client_member_list)
     member_time_df = _create_member_time_df(client_member_list)
 
-    prm.spark.io_sas.export_dataframe(
-        member_df,
-        PRM_META[(18, 'out')] / 'temp' / 'client_member.sas7bdat',
-    )
-    sparkapp.save_df(member_df, PRM_META[(18, 'out')] / 'client_member.parquet')
+    LOGGER.info('Loading metadata')
+
+    client_refereces = DataMart('References_Client')
+
+    member_time_structs = client_refereces.generate_structtypes()['client_member_time']
+    member_structs = client_refereces.generate_structtypes()['client_member']
+
+    member_time_updated_metadata = _update_metadata(member_time_structs, _MEMBER_TIME_METADATA)
+    member_updated_metadata = _update_metadata(member_structs, _MEMBER_METADATA)
+
+    remove_blank_field_labels(member_time_updated_metadata)
+    remove_blank_field_labels(member_updated_metadata)
+
+    member_all_fill_df = member_df.na.fill(_NA_FILL)
+
+    member_time_fill_df = member_time_df.select(
+        [F.col(field.name).cast(field.dataType).aliasWithMetadata(field.name,
+                                                                  metadata=field.metadata)
+         for field in member_time_updated_metadata]
+    ).orderBy(F.col('member_id'), F.col('date_start'))
+
+    member_fill_df = member_all_fill_df.select(
+        [F.col(field.name).cast(field.dataType).aliasWithMetadata(field.name,
+                                                                  metadata=field.metadata)
+         for field in member_updated_metadata]
+    ).orderBy(F.col('member_id'))
 
     prm.spark.io_sas.export_dataframe(
-        member_time_df,
-        PRM_META[(18, 'out')] / 'temp' / 'client_member_time.sas7bdat',
+        member_fill_df,
+        PRM_META[(18, 'out')] / 'client_member.sas7bdat',
     )
-    sparkapp.save_df(member_time_df, PRM_META[(18, 'out')] / 'client_member_time.parquet')
+    sparkapp.save_df(member_fill_df, PRM_META[(18, 'out')] / 'client_member.parquet')
+
+    prm.spark.io_sas.export_dataframe(
+        member_time_fill_df,
+        PRM_META[(18, 'out')] / 'client_member_time.sas7bdat',
+    )
+    sparkapp.save_df(member_time_fill_df, PRM_META[(18, 'out')] / 'client_member_time.parquet')
 
     xref_df.unpersist()
     phys_df.unpersist()
