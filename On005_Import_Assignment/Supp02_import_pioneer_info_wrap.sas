@@ -476,7 +476,7 @@ proc sql;
 		,max(min(elig.date_end, all.Date_LatestPaid), calculated date_start) as date_end format YYMMDD10.
 	from members_all as all
 	left join elig_by_year as elig
-	on all.member_ID = elig.member_ID and year(all.Date_LatestPaid) = elig.year
+	on all.member_ID = elig.member_ID
 	left join client_member_pre as mem
 	on all.member_id = mem.member_id
 	order by all.member_id, calculated date_start, calculated date_end
