@@ -1,5 +1,16 @@
 #Release Notes
 
+## v6.5.1
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - Create client member time entries for each year claims are observed.
+
+### Lower Level Changes
+ - *none*
+
 ## v6.5.0
 
 ### Client Visible Changes
