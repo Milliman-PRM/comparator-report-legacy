@@ -134,6 +134,7 @@ def _load_ngalign_files(sparkapp: SparkApp, file_list: list, delim_list: list,
     """
     ngalign_df = None
     for file in file_list:
+        LOGGER.info("Processing {}".format(file))
         date = re.findall(r'D\d{6}', str(file))[0][1:]
         month = date[2:4]
         year = '20' + str(int(date[0:2]) + _NG_YEAR[month])
@@ -306,7 +307,7 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
     """
     mngreb_df = None
     for file in file_list:
-        print(file)
+        LOGGER.info("Processing {}".format(file))
         if file.suffix == '.csv':
             pd_df = _process_csv_mngreb_files(sparkapp, file, file_config['csv_mngreb'], poss_delim)
         else:
