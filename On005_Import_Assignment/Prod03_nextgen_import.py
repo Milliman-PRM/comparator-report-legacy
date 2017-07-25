@@ -18,6 +18,7 @@ from collections import namedtuple
 from operator import attrgetter
 from bs4 import BeautifulSoup
 from xlrd import XLRDError
+from datetime import datetime
 
 import pyspark.sql.functions as F
 from pyspark.sql import DataFrame, Row, Window
@@ -35,7 +36,6 @@ from indypy.file_utils import IndyPyPath
 
 LOGGER = logging.getLogger(__name__)
 PRM_META = prm.meta.project.parse_project_metadata()
-_DATE_LATEST_PAID = PRM_META['date_latestpaid']
 
 _REFERENCES = PRM_META['path_project_received_ref']
 _HEADER_LIST = ['HICNO', 'First Name',
@@ -69,6 +69,32 @@ _MEMBER_TIME_METADATA = {
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
+
+
+def derive_date_latestpaid(df_claims: DataFrame) -> datetime:
+    """
+    Use the CCLF1 Part A Header Claims to find the maximum paid date.
+    Args:
+        df_claims: CCLF1 Part A DataFrame
+
+    Returns:
+        datetime object of the date latest paid
+
+    """
+    data_thru_string = PRM_META['deliverable_name']
+    data_thru_date_string = re.search("\d{6}", data_thru_string).group()
+    data_thru_date = datetime.strptime(data_thru_date_string, "%Y%m")
+    max_paiddate_df = df_claims.select(
+        F.last_day(F.max(F.col('clm_idr_ld_dt'))).alias('max_paiddate')
+    )
+    data_thru_df = max_paiddate_df.withColumn(
+        "data_thru_date",
+        F.last_day(F.lit(data_thru_date))
+    )
+    return data_thru_df.select(
+        F.least(F.col('max_paiddate'), F.col('data_thru_date'))
+    ).collect()[0][0]
+
 
 def _find_delimiter(path: IndyPyPath, delim_list: list) -> str:
     """
@@ -537,6 +563,7 @@ def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
         F.col('riskscr_client'),
     )
 
+
 def _create_member_df(client_member_list: DataFrame)-> DataFrame:
     """
     Args:
@@ -566,17 +593,19 @@ def _create_member_df(client_member_list: DataFrame)-> DataFrame:
         F.col('assignment_indicator')
     )
 
-def _create_member_time_df(client_member_list: DataFrame)-> DataFrame:
+
+def _create_member_time_df(client_member_list: DataFrame, date_latestpaid: datetime)-> DataFrame:
     """
     Args:
-        client_member_list:    DataFrame returned from _build_client_all_member
+        client_member_list: DataFrame returned from _build_client_all_member
+        date_latestpaid: Derived date_latestpaid datetime
 
     Returns:
        DataFrame ready for exporting to a client_member_time table.
     """
 
     exploded_df = create_member_months(client_member_list, 'hicno', 'date_start',
-                                       'date_end', _DATE_LATEST_PAID).drop(
+                                       'date_end', date_latestpaid).drop(
         'global_start'
     ).drop(
         'global_end'
@@ -591,6 +620,7 @@ def _create_member_time_df(client_member_list: DataFrame)-> DataFrame:
         F.col('date_start'),
         F.col('date_end')
     )
+
 
 def _update_metadata(struct: StructType, metadata_dict: dict) -> StructType:
     """
@@ -607,15 +637,30 @@ def _update_metadata(struct: StructType, metadata_dict: dict) -> StructType:
             struct[field.name].metadata.update(metadata_dict[field.name])
     return struct
 
+
 def main() -> int:
     """A function to enclose the execution of business logic."""
     LOGGER.info('Preparing to create client member and client member time')
+
+    LOGGER.info("Collecting NGALIGN Files and MNGREB Files")
+    ngalign_list = _REFERENCES.collect_files_regex('NGALIGN')
+    mngreb_list = _REFERENCES.collect_files_regex('MNGREB')
+
+    ngalign_file_count = len(ngalign_list) + len(mngreb_list)
+    if ngalign_file_count == 0:
+        LOGGER.info("There were no NGALIGN or MNGREB files found. Moving on to the next program.")
+        return 0
+
     sparkapp = SparkApp(PRM_META['pipeline_signature'])
     xref_path = PRM_META[20, 'out'] / 'cclf9_bene_xref.sas7bdat'
     xref_df = read_sas_data(sparkapp.session, xref_path)
 
     phys_path = PRM_META[20, 'out'] / 'cclf5_partb_phys.sas7bdat'
     phys_df = read_sas_data(sparkapp.session, phys_path)
+
+    claim_header_path = PRM_META[20, 'out'] / 'cclf1_parta_header.sas7bdat'
+    claim_header_df = read_sas_data(sparkapp.session, claim_header_path)
+    derived_date_latestpaid = derive_date_latestpaid(claim_header_df)
 
     npi_df = sparkapp.load_df(PRM_META['path_product_ref'] / (PRM_META['filename_sas_npi'] + '.parquet'))
 
@@ -625,18 +670,16 @@ def main() -> int:
     possible_delimiters = ['\t', ',', '|']
 
     LOGGER.info('Loading NGALIGN files')
-    ngalign_list = _REFERENCES.collect_files_regex('NGALIGN')
     alignment_df = _load_ngalign_files(sparkapp, ngalign_list, possible_delimiters, xref_df)
 
     LOGGER.info('Loading MNGREB files')
-    mngreb_list = _REFERENCES.collect_files_regex('MNGREB')
     mngreb_df = _load_mngreb_files(sparkapp, mngreb_list, next_gen_config, possible_delimiters,
                                    xref_df)
 
     client_member_list = _build_client_all_member(alignment_df, mngreb_df, phys_df, npi_df, next_gen_config)
 
     member_df = _create_member_df(client_member_list)
-    member_time_df = _create_member_time_df(client_member_list)
+    member_time_df = _create_member_time_df(client_member_list, derived_date_latestpaid)
 
     LOGGER.info('Loading metadata')
 
@@ -679,6 +722,7 @@ def main() -> int:
 
     xref_df.unpersist()
     phys_df.unpersist()
+    claim_header_df.unpersist()
 
     return 0
 
