@@ -12,22 +12,6 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 %include "%sysget(PRMCLIENT_LIBRARY_HOME)sas\mssp\shortcircuit-cclf-import.sas" / source2;
 %include "%sysget(PRMCLIENT_LIBRARY_HOME)sas\mssp\import_mssp_assignment_wrap.sas" / source2;
 
-%AssertThat(
-	%bquote(%upcase(&name_client.))
-	,ne
-	,PIONEER VALLEY ACCOUNTABLE CARE
-	,ReturnMessage=NextGen has different assignment files.
-	,FailAction=EndActiveSASSession
-	)
-
-%AssertThat(
-	%bquote(%upcase(&name_client.))
-	,ne
-	,CONE HEALTH
-	,ReturnMessage=NextGen has different assignment files.
-	,FailAction=EndActiveSASSession
-	)
-
 %let name_datamart_src = references_client;
 
 /* Libnames */
@@ -40,6 +24,21 @@ libname M018_Out "&M018_Out.";
 
 /*Run the 020 import programs*/
 %shortcircuit_cclf_import()
+
+/*Check for NextGen assignment files*/
+%GetFileNamesFromDir(
+    Directory = &Path_Project_Received_Ref.
+    ,Output = nextgenfiles
+    ,KeepStrings = mngreb ngalign
+	)
+
+%AssertThat(
+	%GetRecordCount(nextgenfiles)
+	,eq
+	,0
+	,ReturnMessage=NextGen has different assignment files.
+	,FailAction=EndActiveSASSession
+    )
 
 /*Run the assignment functions*/
 %import_mssp_assignment_wrap()
