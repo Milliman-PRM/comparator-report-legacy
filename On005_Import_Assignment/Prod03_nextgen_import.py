@@ -31,6 +31,7 @@ from prmclient.spark.spark_utils import append_df, convert_string_to_date, prope
 from prmclient.client_functions import process_excel_sheet_to_pyspark
 
 from prm.spark.io_sas import read_sas_data
+from prm.spark.spark_mocks import mock_dataframe
 
 from indypy.file_utils import IndyPyPath
 
@@ -684,10 +685,30 @@ def main() -> int:
 
     LOGGER.info('Loading metadata')
 
-    client_refereces = DataMart('References_Client')
+    client_references = DataMart('References_Client')
+    
+    structtypes = client_references.generate_structtypes()
 
-    member_time_structs = client_refereces.generate_structtypes()['client_member_time']
-    member_structs = client_refereces.generate_structtypes()['client_member']
+    facility_structs = structtypes['client_facility']
+    provider_structs = structtypes['client_provider']
+    
+    mock_facility = mock_dataframe(sparkapp, facility_structs)
+    mock_provider = mock_dataframe(sparkapp, provider_structs)
+    
+    prm.spark.io_sas.export_dataframe(
+        mock_facility,
+        PRM_META[(18, 'out')] / 'client_facility.sas7bdat',
+    )
+    sparkapp.save_df(mock_facility, PRM_META[(18, 'out')] / 'client_facility.parquet')
+    
+    prm.spark.io_sas.export_dataframe(
+        mock_provider,
+        PRM_META[(18, 'out')] / 'client_provider.sas7bdat',
+    )
+    sparkapp.save_df(mock_provider, PRM_META[(18, 'out')] / 'client_provider.parquet')
+
+    member_time_structs = structtypes['client_member_time']
+    member_structs = structtypes['client_member']
 
     member_time_updated_metadata = _update_metadata(member_time_structs, _MEMBER_TIME_METADATA)
     member_updated_metadata = _update_metadata(member_structs, _MEMBER_METADATA)
