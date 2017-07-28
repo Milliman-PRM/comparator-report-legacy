@@ -524,10 +524,15 @@ def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
         F.lit(None).cast('string')
     )
 
+    if base_member_assign_df.count() != base_member_phys_df.count():
+        raise AssertionError("The count of members does not equal the count of members after "
+                             "assigning physicians. Please check that the physician table "
+                             "does not have duplication.")
+
     reduced_npi_df = npi_df.select(
         F.col('npi_npi'),
         F.col('npi_prv_name_npi_prop')
-    )
+    ).distinct()
 
     npi_join_df = base_member_phys_df.join(
         reduced_npi_df,
@@ -574,8 +579,15 @@ def _create_member_df(client_member_list: DataFrame)-> DataFrame:
     Returns:
         DataFrame ready for exporting to a client_member table.
     """
+    window_member = Window.partitionBy(F.col('member_id')).orderBy(F.col('member_id'), F.col('date_start').desc())
+    df_latest_member_id = client_member_list.select(
+        '*',
+        F.row_number().over(window_member).alias('mem_order')
+    ).where(
+        F.col('mem_order') == 1
+    )
 
-    return client_member_list.select(
+    return df_latest_member_id.select(
         F.col('member_id'),
         F.col('mem_name'),
         F.col('mem_dependent_status'),
@@ -682,6 +694,8 @@ def main() -> int:
 
     member_df = _create_member_df(client_member_list)
     member_time_df = _create_member_time_df(client_member_list, derived_date_latestpaid)
+
+    member_df.validate.assert_unique("member_id")
 
     LOGGER.info('Loading metadata')
 
