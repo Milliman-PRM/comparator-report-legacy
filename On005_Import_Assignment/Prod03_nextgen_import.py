@@ -64,7 +64,7 @@ _MEMBER_METADATA = {
 
 _MEMBER_TIME_METADATA = {
                             'mem_prv_id_align': {'label': 'Assigned Physician'},
-                            'mem_report_hier_1': {'label': 'Assigned'}
+                            'assignment_indicator': {'label': 'Assigned Patient'}
                         }
 
 # =============================================================================
