@@ -67,9 +67,27 @@ _MEMBER_TIME_METADATA = {
                             'assignment_indicator': {'label': 'Assigned Patient'}
                         }
 
+_PROVIDER_METADATA = {
+                        ''
+}
+
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
+
+
+def derive_performance_year(df_ngalign: DataFrame) -> str:
+    """
+    Derive the performance year from the ngalign files
+    Args:
+        df_ngalign: NGALIGN DataFrame
+
+    Returns: String value for the performance year from the ngalign files
+
+    """
+    return df_ngalign.select(
+        F.max(F.col('filedate')).alias('file_date')
+    ).collect()[0]['file_date']
 
 
 def derive_date_latestpaid(df_claims: DataFrame) -> datetime:
@@ -275,7 +293,7 @@ def _process_xml_mngreb_files(sparkapp: SparkApp, file_path: IndyPyPath,
         soup = BeautifulSoup(xml_path, "lxml")
     header_row, headers = _sniff_xml_header(parsed_xml=soup, header_hints=header_hints)
 
-    #HICNO, First name, Last name, Addr, Date of Exclusion, Reason for Exclusion
+    # HICNO, First name, Last name, Addr, Date of Exclusion, Reason for Exclusion
     reduced_headers = headers[:4] + headers[8:10]
     rdd_list = []
 
@@ -362,6 +380,18 @@ def _load_mngreb_files(sparkapp: SparkApp, file_list: list, file_config: dict,
     ).where(
         F.col('reason_order') == 1
     )
+
+
+def build_providers(phys_df: DataFrame, npi_df: DataFrame) -> DataFrame:
+    """
+
+    Args:
+        phys_df:
+        npi_df:
+
+    Returns:
+
+    """
 
 
 def _build_client_all_member(ngalign_df: DataFrame, mngreb_df: DataFrame,
@@ -661,7 +691,7 @@ def main() -> int:
     mngreb_list = _REFERENCES.collect_files_regex('MNGREB')
 
     ngalign_file_count = len(ngalign_list) + len(mngreb_list)
-    if ngalign_file_count == 0:
+    if not ngalign_file_count:
         LOGGER.info("There were no NGALIGN or MNGREB files found. Moving on to the next program.")
         return 0
 
