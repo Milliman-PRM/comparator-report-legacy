@@ -466,7 +466,7 @@ def build_providers(phys_df: DataFrame, npi_df: DataFrame, ref_taxonomy_df: Data
         'left_outer'
     ).select(
         F.col('bene_hic_num').alias('hicno'),
-        F.col('rndrg_prv_dr_npi_num').alias('prv_id'),
+        F.col('rndrg_prvdr_npi_num').alias('prv_id'),
         F.lit('NPI').alias('prv_id_name'),
         F.lit(None).alias('prv_id_alt'),
         F.lit(None).alias('prv_id_alt_name'),
