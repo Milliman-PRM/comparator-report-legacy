@@ -446,7 +446,7 @@ def build_providers(phys_df: DataFrame, npi_df: DataFrame, ref_taxonomy_df: Data
         F.split(F.col('npi_prv_addr_city_st_zip'), ',')[0].alias('prv_addr_city'),
         F.col('npi_prv_addr_state').alias('prv_addr_state'),
         F.col('npi_prv_addr_zip').alias('prv_addr_zip'),
-        F.col('npi_prv_specialty').alias('prv_specialty'),
+        F.col('npi_prv_specialty').alias('prv_specialty_cd'),
         F.col('npi_primary_taxonomy_cd').alias('prv_taxonomy_cd')
     )
     update_spec_df = reduce_npi_df.join(
