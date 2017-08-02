@@ -485,6 +485,8 @@ def build_providers(phys_df: DataFrame, npi_df: DataFrame, ref_taxonomy_df: Data
         F.lit(None).alias('prv_net_hier_2'),
         F.lit(None).alias('prv_net_hier_3'),
         F.lit('Y').alias('prv_net_aco_yn')
+    ).where(
+        F.col('prv_id').isNotNull()
     )
 
 
@@ -805,7 +807,7 @@ def main() -> int:
         [F.col(field.name).cast(field.dataType).aliasWithMetadata(
             field.name, metadata=field.metadata)
          for field in provider_updated_metadata]
-    )
+    ).distinct()
 
     prm.spark.io_sas.export_dataframe(
         member_fill_df,
