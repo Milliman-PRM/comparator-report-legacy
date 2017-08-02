@@ -462,7 +462,7 @@ def build_providers(phys_df: DataFrame, npi_df: DataFrame, ref_taxonomy_df: Data
     ).drop('prv_taxonomy_cd')
     return assign_phys_df.join(
         update_spec_df,
-        assign_phys_df.rndrg_prv_dr_npi_num == update_spec_df.npi_npi,
+        assign_phys_df.rndrg_prvdr_npi_num == update_spec_df.npi_npi,
         'left_outer'
     ).select(
         F.col('bene_hic_num').alias('hicno'),
