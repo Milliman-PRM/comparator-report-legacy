@@ -9,6 +9,7 @@
 """
 # pylint: disable=no-member
 import logging
+import datetime
 import subprocess
 
 import pyspark.sql.functions as F
@@ -32,6 +33,34 @@ REF_CLIENT = DataMart("references_client")
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
 
+def _build_logfile_name(path_program, path_log):
+    """Create a timestamped log filename"""
+    _datetime_start = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    assert path_log.is_dir(), "Log directory {} not found.".format(path_log)
+    return path_log / "{}_{}.log".format(path_program.stem, _datetime_start)
+
+
+def _run_sas_subprocess(path_program):
+    """Subprocess call to run sas program"""
+    log_path = _build_logfile_name(
+        path_program,
+        PRM_META['path_project_logs'] / '_Onboarding' / path_program.parent.stem
+    )
+    program_return = subprocess.run(
+        ['sas',
+         '-SYSIN',
+         str(path_program),
+         '-log',
+         str(log_path),
+         '-print',
+         str(log_path.with_suffix('.lst')),
+         '-icon',
+         '-nosplash',
+         '-rsasuser'
+        ]
+    )
+    return program_return.returncode
+
 
 def collect_nextgen_reference_files(ref_path: IndyPyPath) -> dict:
     """
@@ -54,7 +83,7 @@ def process_mssp_assignments(sparkapp: SparkApp) -> int:
         sparkapp: SparkApp instance for loading sas tables
     """
     mssp_assignment_path = IndyPyPath(__file__).parent / 'supp02_run_mssp_assignment.sas'
-    mssp_return = subprocess.run(['sas', 'SYSIN', str(mssp_assignment_path)])
+    mssp_return = _run_sas_subprocess(mssp_assignment_path)
     if mssp_return:
         raise AssertionError('MSSP Assignment failure. Please check SAS logs.')
     bene_excl_path = PRM_META[17, 'out'] / 'bene_exclusion.sas7bdat'
@@ -98,14 +127,13 @@ def process_nextgen_assignments(sparkapp: SparkApp, ngalign_files: list, mngreb_
     return 0
 
 
-
 def main() -> int:
     """A function to enclose the execution of business logic."""
     LOGGER.info('Generating MSSP Assignments')
     sparkapp = SparkApp(PRM_META['pipeline_signature'])
     LOGGER.info('Running ShortCircuit program to load CCLF files')
     shortcircuit_path = IndyPyPath(__file__).parent / 'supp01_shortcircuit_cclf_import.sas'
-    shortcircuit_return = subprocess.run(['sas', 'SYSIN', str(shortcircuit_path)])
+    shortcircuit_return = _run_sas_subprocess(shortcircuit_path)
     if shortcircuit_return:
         raise AssertionError('ShortCircuit program failure. Please check SAS logs.')
     LOGGER.info('Checking to determine correct assignment logic')
