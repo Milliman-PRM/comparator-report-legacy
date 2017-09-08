@@ -92,12 +92,12 @@ def process_mssp_assignments(sparkapp: SparkApp) -> int:
         df_bene_excl = read_sas_data(sparkapp, bene_excl_path)
         df_updated_client_member = df_client_member.join(
             df_bene_excl,
-            df_client_member.member_id == df_bene_excl.HICN,
+            df_client_member.member_id == df_bene_excl.hicn,
             'left_outer'
         ).withColumn(
             'mem_excluded_reason',
-            F.coalesce(F.col('BeneExcReason'), F.lit(None))
-        ).drop('HICN').drop('BeneExcReason')
+            F.coalesce(F.col('beneexcreason'), F.lit(None))
+        ).drop('hicn').drop('beneexcreason')
         write_sas_data(df_updated_client_member, PRM_META[18, 'out'] / 'client_member.sas7bdat')
         df_client_member.unpersist()
         df_bene_excl.unpersist()
