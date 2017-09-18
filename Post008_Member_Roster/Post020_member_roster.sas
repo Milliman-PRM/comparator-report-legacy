@@ -72,7 +72,7 @@ quit;
 data member_roster;
 	format time_period $16.;
 	set memtime_w_riskscr_type;
-	where upcase(assignment_indicator) eq "Y" /*Limit to windows where members were assigned.*/
+	where upcase(assignment_indicator) eq "Y" and upcase(cover_medical) eq "Y" /*Limit to windows where members were assigned.*/
 		;
 	/* DEVELOPMENT CODE:
 		Used to shuffle risk score types so we can test pathing into risk
