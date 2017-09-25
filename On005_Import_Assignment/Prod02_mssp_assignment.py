@@ -99,7 +99,6 @@ def process_mssp_assignments(sparkapp: SparkApp) -> int:
             F.coalesce(F.col('beneexcreason'), F.lit(None))
         ).drop('hicn').drop('beneexcreason')
         write_sas_data(df_updated_client_member, PRM_META[18, 'out'] / 'client_member.sas7bdat')
-        df_client_member.unpersist()
         df_bene_excl.unpersist()
     LOGGER.info('Converting client reference tables to parquets')
     REF_CLIENT.ensure_parquet(sparkapp, PRM_META[18, 'out'])
