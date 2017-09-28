@@ -1,5 +1,5 @@
 """
-### CODE OWNERS: Matthew Hawthorne
+### CODE OWNERS: Matthew Hawthorne, Jason Altieri
 
 ### OBJECTIVE:
   Run assignment logic for MSSP and NextGen clients
