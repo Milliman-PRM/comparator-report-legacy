@@ -1,5 +1,18 @@
 #Release Notes
 
+## v6.6.0
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Updated next gen assignment imports to use the prmclient-library `run_next_gen_assignment` function
+ - Removed CaroMont specific member level reports since they are no longer delivered
+
+
 ## v6.5.0
 
 ### Client Visible Changes
