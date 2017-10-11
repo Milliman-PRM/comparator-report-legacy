@@ -52,6 +52,18 @@ libname Post070 "&Post070.";
 %CodeGen_Wrapper(outpharmacy);
 %CodeGen_Wrapper(ref_prm_line);
 
+proc sql noprint;
+	select
+		name
+	into 
+		:type_cds separated by ", "
+	from dictionary.columns
+	where libname = "NPI" and lowcase(memname) = "&Filename_SAS_NPI." and name like "other_prvdr_id_type_cd_%"
+	;
+quit;
+
+%put &=type_cds.;
+
 proc sql;
 	create table npi_limit as
 	select
@@ -105,7 +117,8 @@ proc sql;
 			when other_prvdr_id_type_cd_48 = '06' then other_prvdr_id_48
 			else ''
 		end as OSCAR,
-		prvdr_org_name
+		prvdr_org_name, 
+		&type_cds.
 	from NPI.&Filename_SAS_NPI. as npi
 	where calculated OSCAR is not null
 	order by OSCAR, prvdr_org_name
