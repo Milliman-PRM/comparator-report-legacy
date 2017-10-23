@@ -1,5 +1,17 @@
 #Release Notes
 
+## v6.6.1
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Fixes issue with dataframes not unpersisting as expected when exiting `mssp_assignment.py`
+
+
 ## v6.6.0
 
 ### Client Visible Changes
