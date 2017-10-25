@@ -100,6 +100,8 @@ def process_mssp_assignments(sparkapp: SparkApp) -> int:
         ).drop('hicn').drop('beneexcreason')
         write_sas_data(df_updated_client_member, PRM_META[18, 'out'] / 'client_member.sas7bdat')
         df_bene_excl.unpersist()
+        df_client_member.unpersist()
+        df_updated_client_member.unpersist()
     LOGGER.info('Converting client reference tables to parquets')
     REF_CLIENT.ensure_parquet(sparkapp, PRM_META[18, 'out'])
     return 0
