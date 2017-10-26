@@ -1,5 +1,17 @@
 #Release Notes
 
+## v6.6.2
+
+### Client Visible Changes
+ - *none*
+
+### Logic Changes
+ - *none*
+
+### Lower Level Changes
+ - Fixes issue with supplemental data mart field lengths
+ - Brings provider type codes along for use in selecting providers
+
 ## v6.6.1
 
 ### Client Visible Changes
