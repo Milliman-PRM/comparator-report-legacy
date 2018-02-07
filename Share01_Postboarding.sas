@@ -28,7 +28,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 
 /**** AGG_CLAIMS PARMATERS ****/
 
-%let Post_Ongoing_Util_Basis = Discharge;
+%let Post_Ongoing_Util_Basis = Admit;
 %let Post_Force_Util = N;
 
 %Macro store_time_vectors(input_table= temp008.time_windows);
