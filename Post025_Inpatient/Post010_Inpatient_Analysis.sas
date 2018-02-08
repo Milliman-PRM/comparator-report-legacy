@@ -36,6 +36,18 @@ libname post025 "&post025.";
 		,suffix_output = inpatient
 		)
 
+%agg_claims(
+		IncStart=&list_inc_start.
+		,IncEnd=&list_inc_end.
+		,PaidThru=&list_paid_thru.
+		,Ongoing_Util_Basis=Discharge
+		,Force_Util=&post_force_util.
+		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_potential_yn~prm_readmit_all_cause_yn~prm_ahrq_pqi
+		,Time_Slice=&list_time_period.
+		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
+		,suffix_output = inpatient_disc
+		)
+
 proc sql noprint;
 	select
 		count(*)
@@ -66,6 +78,24 @@ data disch_xwalk;
 		;
 run;
 
+/* Create claims table with discharges */
+proc sql;
+	create table Claims_w_Discharges as
+		select claims.*,
+			   disc.Discharges
+		from Agg_claims_med_inpatient as claims left join agg_claims_med_inpatient_disc as disc on
+			claims.time_period = disc.time_period and
+			claims.prm_line = disc.prm_line and
+			claims.caseadmitid = disc.caseadmitid and
+			claims.member_id = disc.member_id and
+			claims.dischargestatus = disc.dischargestatus and
+			claims.providerID = disc.providerID and
+			claims.prm_readmit_potential_yn = disc.prm_readmit_potential_yn and
+			claims.prm_readmit_all_cause_yn = disc.prm_readmit_all_cause_yn and
+			claims.prm_ahrq_pqi = disc.prm_ahrq_pqi
+	;
+quit;
+
 /*Generate member-level unaggregated Congestive Heart Failure metrics before Rollup*/
 proc sql;
 	create table Heart_failure_by_member as
@@ -77,18 +107,19 @@ proc sql;
 		,pqi_full_desc
 		,sum(discharges) as case_count
 	from
-		Agg_claims_med_inpatient as claims
+		Claims_w_Discharges as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join M015_out.prm_ahrq_pqi as legend
 			on claims.prm_ahrq_pqi = legend.prm_ahrq_pqi
+
 	where
 		upcase(claims.prm_ahrq_pqi) = 'PQI08'
 			and
 		claims.time_slice in
 			(
 			select max(time_slice)
-			from Agg_claims_med_inpatient
+			from Claims_w_Discharges
 			)
 	group by
 		claims.time_slice
@@ -162,7 +193,7 @@ proc sql;
 		,sum(claims.discharges) as cnt_discharges_inpatient
 		,sum(claims.prm_util) as sum_days_inpatient
 		,sum(claims.prm_costs) as sum_costs_inpatient
-	from agg_claims_med_inpatient as claims
+	from Claims_w_Discharges as claims
 		inner join post008.members as mems
 			on claims.Member_ID = mems.Member_ID and claims.time_slice = mems.time_period /*Limit to members in the roster*/
 		left join disch_xwalk on
