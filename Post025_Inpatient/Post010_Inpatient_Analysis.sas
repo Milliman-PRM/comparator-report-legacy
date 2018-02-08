@@ -84,7 +84,7 @@ proc sql;
 		select claims.*,
 			   disc.Discharges
 		from Agg_claims_med_inpatient as claims left join agg_claims_med_inpatient_disc as disc on
-			claims.time_period = disc.time_period and
+			claims.time_slice = disc.time_slice and
 			claims.prm_line = disc.prm_line and
 			claims.caseadmitid = disc.caseadmitid and
 			claims.member_id = disc.member_id and

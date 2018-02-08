@@ -83,7 +83,7 @@ proc sql;
 			and active.elig_status_1 eq risk.elig_status_1
 			and mr_to_mcrm.mcrm_line eq risk.mcrm_line
 	left join agg_claims_med_snf_disc as disc on
-		all_snf.time_period = disc.time_period and
+		all_snf.time_slice = disc.time_slice and
 		all_snf.providerid = disc.providerid and
 		all_snf.member_id = disc.member_id and
 		all_snf.prm_line = disc.prm_line and
