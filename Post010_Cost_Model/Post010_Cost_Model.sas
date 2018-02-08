@@ -127,7 +127,7 @@ proc sql;
 		src.prv_net_aco_yn = disc.prv_net_aco_yn and
 		src.providerid = disc.providerid and
 		src.HCPCS = disc.HCPCS and
-		src.Time_Slice = disc.time_Slice
+		src.Time_period = disc.time_Slice
 	;
 quit;
 
