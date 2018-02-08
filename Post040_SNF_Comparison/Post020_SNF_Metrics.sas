@@ -37,6 +37,18 @@ libname post040 "&post040.";
 	,suffix_output = snf
     );
 
+%Agg_Claims(
+	IncStart=&list_inc_start.
+	,IncEnd=&list_inc_end.
+	,PaidThru=&list_paid_thru.
+	,Time_Slice=&list_time_period.
+	,Ongoing_Util_Basis=Discharge
+	,Dimensions=providerID~member_ID~prm_line~caseadmitid
+	,Force_Util=&post_force_util.
+	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
+	,suffix_output = snf_disc
+    );
+
 
 proc sql;
 	create table details_SNF as
@@ -50,10 +62,10 @@ proc sql;
 			else 'Y'
 			end as snf_readmit_yn
 		,all_snf.PRM_Util as los_snf
-		,sum(all_snf.Discharges) as cnt_discharges_snf
+		,sum(disc.Discharges) as cnt_discharges_snf
 		,sum(all_snf.PRM_Util) as sum_days_snf
 		,sum(all_snf.PRM_Costs) as sum_costs_snf
-		,sum(all_snf.discharges / risk.riskscr_1_util_avg) as _cnt_discharges_snf_riskadj
+		,sum(disc.Discharges / risk.riskscr_1_util_avg) as _cnt_discharges_snf_riskadj
 		,sum(all_snf.prm_util / risk.riskscr_1_util_avg) as _sum_days_snf_riskadj
 		,sum(all_snf.prm_costs / risk.riskscr_1_cost_avg) as _sum_costs_snf_riskadj
 	from agg_claims_med_snf as all_snf
@@ -70,6 +82,12 @@ proc sql;
 		on all_snf.time_slice eq risk.time_period
 			and active.elig_status_1 eq risk.elig_status_1
 			and mr_to_mcrm.mcrm_line eq risk.mcrm_line
+	left join agg_claims_med_snf_disc as disc on
+		all_snf.time_period = disc.time_period and
+		all_snf.providerid = disc.providerid and
+		all_snf.member_id = disc.member_id and
+		all_snf.prm_line = disc.prm_line and
+		all_snf.caseadmitid = disc.caseadmitid
 	group by
 		all_snf.time_slice
 		,active.elig_status_1
