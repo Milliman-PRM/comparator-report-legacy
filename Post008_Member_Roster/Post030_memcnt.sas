@@ -90,10 +90,18 @@ quit;
 	,PaidThru=&eol_paid_thru.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Force_Util=&post_force_util.
-	,Dimensions=member_id~dischargestatus~prm_todate~prm_line
+	,Dimensions=member_id~dischargestatus~prm_todate~prm_line~had_elig
 	,Time_Slice=&eol_time_period.
 	,suffix_output = wide
 	)
+
+data agg_claims_med_wide;
+	set agg_claims_med_wide;
+
+	where had_elig = 'Y';
+
+	drop had_elig;
+run;
 
 proc sql;
 	create table decedents_agg_recent as

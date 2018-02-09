@@ -29,11 +29,19 @@ libname post045 "&post045.";
 	,Time_Slice=&list_time_period.
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=member_ID~caseadmitid~prm_line
+	,Dimensions=member_ID~caseadmitid~prm_line~had_elig
 	,Force_Util=&post_force_util.
 	,Where_Claims = %str(lowcase(outclaims_prm.prm_line) eqt "o11")
 	,Suffix_Output = nyu
 	);
+
+data agg_claims_med_nyu;
+	set agg_claims_med_nyu;
+
+	where had_elig = 'Y';
+
+	drop had_elig;
+run;
 
 /*Limit to relevant members.*/
 proc sql;

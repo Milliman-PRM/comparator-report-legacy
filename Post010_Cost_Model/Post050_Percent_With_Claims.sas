@@ -29,7 +29,7 @@ libname post010 "&post010.";
 	,IncEnd=&list_inc_end.
 	,PaidThru=&list_paid_thru.
 	,Med_Rx=Med
-	,Dimensions=member_id
+	,Dimensions=member_id~had_elig
 	,Time_Slice=&list_time_period.
 	/*No member limits applied because outputs are merged against official roster below.*/
 	,Suffix_Output=member
@@ -62,6 +62,13 @@ libname post010 "&post010.";
 %conditional_rx;
 
 
+data agg_claims_med_member;
+	set agg_claims_med_member;
+
+	where had_elig = 'Y';
+	
+	drop had_elig;
+run;
 
 /*Calculate % of members with claims.*/
 
