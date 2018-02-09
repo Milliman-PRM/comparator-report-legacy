@@ -38,7 +38,7 @@ libname post010 "&post010.";
 	,Med_Rx=Med
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Force_Util=&post_force_util.
-	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn~providerid~HCPCS~had_elig
+	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn~providerid~HCPCS
 	,Time_Slice=&list_time_period.
 	,Suffix_Output=member
 	)
@@ -64,9 +64,6 @@ libname post010 "&post010.";
 data agg_claims_med_member;
 	set agg_claims_med_member;
 
-	where had_elig = 'Y';
-
-	drop had_elig;
 	rename Admits = Discharges;
 run;
 

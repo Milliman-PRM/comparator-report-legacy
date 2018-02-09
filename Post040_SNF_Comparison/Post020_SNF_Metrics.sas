@@ -31,7 +31,7 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~caseadmitid~had_elig
+	,Dimensions=providerID~member_ID~prm_line~caseadmitid
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
 	,suffix_output = snf
@@ -39,10 +39,7 @@ libname post040 "&post040.";
 
 data agg_claims_med_snf;
 	set agg_claims_med_snf;
-	
-	where had_elig = 'Y';
 
-	drop had_elig;
 	rename Admits = Discharges;
 run;
 

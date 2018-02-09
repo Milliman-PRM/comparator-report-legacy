@@ -30,7 +30,7 @@ libname post025 "&post025.";
 		,PaidThru=&list_paid_thru.
 		,Ongoing_Util_Basis=&post_ongoing_util_basis.
 		,Force_Util=&post_force_util.
-		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_potential_yn~prm_readmit_all_cause_yn~prm_ahrq_pqi~had_elig
+		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_potential_yn~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&list_time_period.
 		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
 		,suffix_output = inpatient
@@ -38,10 +38,7 @@ libname post025 "&post025.";
 
 data agg_claims_med_inpatient;
 	set agg_claims_med_inpatient;
-	
-	where had_elig = 'Y';
 
-	drop had_elig;
 	rename Admits = Discharges;
 run;
 
