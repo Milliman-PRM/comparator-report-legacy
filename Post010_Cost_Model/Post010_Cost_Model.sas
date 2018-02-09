@@ -43,18 +43,6 @@ libname post010 "&post010.";
 	,Suffix_Output=member
 	)
 
-%agg_claims(
-	IncStart=&list_inc_start.
-	,IncEnd=&list_inc_end.
-	,PaidThru=&list_paid_thru.
-	,Med_Rx=Med
-	,Ongoing_Util_Basis=Discharge
-	,Force_Util=&post_force_util.
-	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn~providerid~HCPCS
-	,Time_Slice=&list_time_period.
-	,Suffix_Output=discharge
-	)
-
 %macro conditional_rx;
 	%if %upcase(&rx_claims_exist.) eq YES %then %do;
 		%agg_claims(
@@ -111,7 +99,6 @@ proc sql;
 	create table agg_claims_limited as
 	select
 		src.*
-		,disc.Discharges
 		,link_mr_mcrm_line.mcrm_line
 
 	from agg_claims_coalesce as src
@@ -120,14 +107,6 @@ proc sql;
 			and src.time_period eq limit.time_period
 	left join M015_Out.link_mr_mcrm_line (where = (&limit_lob.)) as link_mr_mcrm_line on
 		src.prm_line = link_mr_mcrm_line.mr_line
-	left join agg_claims_med_discharge as disc on
-		src.member_id = disc.member_id and
-		src.prm_line = disc.prm_line and
-		src.elig_status_1 = disc.elig_status_1 and
-		src.prv_net_aco_yn = disc.prv_net_aco_yn and
-		src.providerid = disc.providerid and
-		src.HCPCS = disc.HCPCS and
-		src.Time_period = disc.time_period
 	;
 quit;
 
