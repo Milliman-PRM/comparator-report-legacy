@@ -33,6 +33,7 @@ libname post025 "&post025.";
 		,Dimensions=prm_line~caseadmitid~member_id~dischargestatus~providerID~prm_readmit_potential_yn~prm_readmit_all_cause_yn~prm_ahrq_pqi
 		,Time_Slice=&list_time_period.
 		,Where_Claims=%str(upcase(outclaims_prm.prm_line) eqt "I" and lowcase(outclaims_prm.prm_line) ne "i31")
+		,Where_Elig=%str(member.assignment_indicator eq "Y")
 		,suffix_output = inpatient
 		)
 
