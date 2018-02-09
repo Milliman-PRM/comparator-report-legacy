@@ -93,6 +93,13 @@ data post008.time_windows;
 	keep &time_windows_cgflds.;
 
 run;
+
+data post008.time_windows;
+	set post008.time_windows;
+
+	where time_period = '2016Q4_2017Q3';
+run;
+
 %LabelDataSet(post008.time_windows)
 
 %AssertDataSetPopulated(post008.time_windows,ReturnMessage=Not enough data was likely provided to compute meaningful metrics for any time period.)
