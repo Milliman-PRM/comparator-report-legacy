@@ -31,7 +31,7 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=caseadmitid~member_ID
+	,Dimensions=caseadmitid~member_ID~had_elig
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
 	,suffix_output = snf_facility
@@ -43,11 +43,27 @@ libname post040 "&post040.";
 	,PaidThru=&list_paid_thru.
 	,Time_Slice=&list_time_period.
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
-	,Dimensions=providerID~member_ID~prm_line~facilitycaseid
+	,Dimensions=providerID~member_ID~prm_line~facilitycaseid~had_elig
 	,Force_Util=&post_force_util.
 	,where_claims= %str(substr(lowcase(outclaims_prm.prm_line),1,1) eq "p")
 	,suffix_output = prof_claims
     );
+
+data agg_claims_med_snf_facility;
+	set agg_claims_med_snf_facility;
+
+	where had_elig = 'Y';
+
+	drop had_elig;
+run;
+
+data agg_claims_med_prof_claims;
+	set agg_claims_med_prof_claims;
+
+	where had_elig = 'Y';
+
+	drop had_elig;
+run;
 
 proc sql;
 	create table snf_professional as
