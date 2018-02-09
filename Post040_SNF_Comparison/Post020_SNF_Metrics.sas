@@ -34,6 +34,7 @@ libname post040 "&post040.";
 	,Dimensions=providerID~member_ID~prm_line~caseadmitid
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eq "i31")
+	,Where_Elig=%str(member.assignment_indicator eq "Y")
 	,suffix_output = snf
     );
 

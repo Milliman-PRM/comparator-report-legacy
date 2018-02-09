@@ -32,6 +32,7 @@ libname post045 "&post045.";
 	,Dimensions=member_ID~caseadmitid~prm_line
 	,Force_Util=&post_force_util.
 	,Where_Claims = %str(lowcase(outclaims_prm.prm_line) eqt "o11")
+	,Where_Elig=%str(member.assignment_indicator eq "Y")
 	,Suffix_Output = nyu
 	);
 

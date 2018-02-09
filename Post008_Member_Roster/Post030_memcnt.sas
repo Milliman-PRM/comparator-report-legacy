@@ -91,6 +91,7 @@ quit;
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~dischargestatus~prm_todate~prm_line
+	,Where_Elig=%str(member.assignment_indicator eq "Y")
 	,Time_Slice=&eol_time_period.
 	,suffix_output = wide
 	)
