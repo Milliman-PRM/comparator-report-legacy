@@ -36,7 +36,6 @@ libname post040 "&post040.";
 	,Dimensions=member_ID~prm_line~caseadmitid~PRM_Readmit_All_Cause_YN~PRM_Readmit_All_Cause_CaseID
 	,Force_Util=&post_force_util.
 	,where_claims= %str(lowcase(outclaims_prm.prm_line) eqt "i")
-	,Where_Elig=%str(member.assignment_indicator eq "Y")
 	,suffix_output = inpatient
     );
 

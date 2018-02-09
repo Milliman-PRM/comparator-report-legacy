@@ -39,7 +39,6 @@ libname post010 "&post010.";
 	,Ongoing_Util_Basis=&post_ongoing_util_basis.
 	,Force_Util=&post_force_util.
 	,Dimensions=member_id~prm_line~elig_status_1~prv_net_aco_yn~providerid~HCPCS
-	,Where_Elig=%str(member.assignment_indicator eq "Y")
 	,Time_Slice=&list_time_period.
 	,Suffix_Output=member
 	)
