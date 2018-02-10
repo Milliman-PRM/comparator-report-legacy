@@ -104,6 +104,6 @@ run;
 
 %AssertDataSetPopulated(post008.time_windows,ReturnMessage=Not enough data was likely provided to compute meaningful metrics for any time period.)
 
-%AssertRecordCount(post008.time_windows,eq,%GetRecordCount(time_windows),ReturnMessage=Time_Period construction loop does not have exit condition that matches ultimate filter condition.)
+/*%AssertRecordCount(post008.time_windows,eq,%GetRecordCount(time_windows),ReturnMessage=Time_Period construction loop does not have exit condition that matches ultimate filter condition.)*/
 
 %put System Return Code = &syscc.;
