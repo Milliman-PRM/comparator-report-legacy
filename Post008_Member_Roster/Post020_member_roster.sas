@@ -18,6 +18,7 @@ options sasautos = ("S:\Misc\_IndyMacros\Code\General Routines" sasautos) compre
 /* Libnames */
 libname M035_Out "&M035_Out." access = readonly;
 libname post008 "&post008.";
+libname sdw "&path_project_data.\nyhealth_shared\riskscores";
 
 /**** LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE ****/
 
@@ -221,7 +222,7 @@ run;
 %Calc_Risk_Scores()
 
 data post008.member_hcc_flags;
-	set riskscr.hcc_results;
+	set sdw.hcc_results;
 run;
 
 data post008.MARA_scores_limited;
@@ -279,8 +280,8 @@ proc sql;
 		on roster.member_id eq member.member_id
 	left join post008.time_windows as time_windows
 		on upcase(roster.time_period) eq upcase(time_windows.time_period)
-	left join riskscr.hcc_results as hcc_rs
-		on upcase(roster.time_period) eq upcase(hcc_rs.time_slice) and roster.member_id eq hcc_rs.hicno
+	left join sdw.hcc_results as hcc_rs
+		on hcc_rs.time_slice = '201709' and roster.member_id eq hcc_rs.hicno
 	left join riskscr.mara_scores_limited as mara_rs
 		on upcase(roster.time_period) eq upcase(mara_rs.time_slice) and roster.member_id eq mara_rs.member_id
 	left join agg_memmos_roster as memmos
