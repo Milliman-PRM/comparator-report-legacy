@@ -35,28 +35,10 @@ proc sql;
 		,members.riskscr_1_type
 		,ref_mr_line.mr_line
 		,ref_mr_line.MARA_riskscr_component
-		,case
-			when upcase(mcrm_line) = "X99" then scores.riskscr_other /*If MCRM_line is x99, then use the "other" MARA component risk score.*/
-			when upcase(MARA_riskscr_component) = "RISKSCR_IP" and upcase(mcrm_line) ne "X99" then scores.riskscr_ip
-			when upcase(MARA_riskscr_component) = "RISKSCR_ER" and upcase(mcrm_line) ne "X99" then scores.riskscr_er
-			when upcase(MARA_riskscr_component) = "RISKSCR_OP" and upcase(mcrm_line) ne "X99" then scores.riskscr_op
-			when upcase(MARA_riskscr_component) = "RISKSCR_PHY" and upcase(mcrm_line) ne "X99" then scores.riskscr_phy
-			when upcase(MARA_riskscr_component) = "RISKSCR_RX" and upcase(mcrm_line) ne "X99" then scores.riskscr_rx
-			else scores.riskscr_other
-			end as factor_util_mara
-		,case
-			when upcase(mcrm_line) = "X99" then scores.riskscr_other
-			when upcase(MARA_riskscr_component) = "RISKSCR_IP" and upcase(mcrm_line) ne "X99" then scores.riskscr_ip
-			when upcase(MARA_riskscr_component) = "RISKSCR_ER" and upcase(mcrm_line) ne "X99" then scores.riskscr_er
-			when upcase(MARA_riskscr_component) = "RISKSCR_OP" and upcase(mcrm_line) ne "X99" then scores.riskscr_op
-			when upcase(MARA_riskscr_component) = "RISKSCR_PHY" and upcase(mcrm_line) ne "X99" then scores.riskscr_phy
-			when upcase(MARA_riskscr_component) = "RISKSCR_RX" and upcase(mcrm_line) ne "X99" then scores.riskscr_rx
-			else scores.riskscr_other
-			end as factor_cost_mara
+		,'' as factor_util_mara
+		,'' as factor_cost_mara
 		,mcrm_mapping.mcrm_line
 	from post008.members as members
-	left join post008.mara_scores_limited as scores on
-		members.member_id = scores.member_id and members.time_period = scores.time_slice
 	cross join M015_out.mr_line_info as ref_mr_line
 	inner join M015_out.link_mr_mcrm_line (where = (upcase(lob) eq "%upcase(&type_benchmark_hcg.)")) as mcrm_mapping on 
 		ref_mr_line.mr_line = mcrm_mapping.mr_line
