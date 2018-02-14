@@ -131,6 +131,7 @@ proc sql;
 		,case
 			when upcase(claims.prm_ahrq_pqi) in(
 				'PQI01'
+				,'PQI02'
 				,'PQI03'
 				,'PQI05'
 				,'PQI07'
