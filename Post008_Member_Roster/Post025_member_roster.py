@@ -82,6 +82,8 @@ def main() -> int:
             spark_funcs.col('memmos_rolling').alias('memmos'),       
             spark_funcs.col('risk_score_rolling').alias('riskscr_1'),       
             spark_funcs.col('memmos_rolling').alias('riskscr_memmos'),   
+        ).filter(
+            'memmos != 0'
         )
     
     write_sas_data(
