@@ -61,6 +61,12 @@ libname post010 "&post010.";
 
 %conditional_rx
 
+data agg_claims_med_member;
+	set agg_claims_med_member;
+
+	rename Admits = Discharges;
+run;
+
 data agg_claims_coalesce;
 	set agg_claims_med_member (
 		in = med

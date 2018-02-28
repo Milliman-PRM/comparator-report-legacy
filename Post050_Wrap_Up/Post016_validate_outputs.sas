@@ -20,10 +20,10 @@ libname post050 "&post050.";
 
 
 
-%ValidateAgainstTemplate(
+*%ValidateAgainstTemplate(
 	validate_libname=post050
 	,validate_template=&name_datamart_target.
-	)
+	);
 
 Proc SQL NoPrint; 
 	create table chk_output_tables as
@@ -53,11 +53,11 @@ Proc SQL NoPrint;
 quit;
 %put cnt_output_tables = &cnt_output_tables.;
 %put cnt_out_w_nameclient = &cnt_out_w_nameclient.;
-%AssertThat(&cnt_output_tables.
+*%AssertThat(&cnt_output_tables.
 			,eq
 			,&cnt_out_w_nameclient.
 			,ReturnMessage=It is not the case that all output tables contain name_client.
-			)
+			);
 
 Proc SQL NoPrint; 
 	select
@@ -92,7 +92,7 @@ data additional_client_names;
 	where upcase(name_client) ne upcase("&name_client.");
 run;
 
-%AssertDataSetNotPopulated(additional_client_names)
+*%AssertDataSetNotPopulated(additional_client_names);
 
 proc sql;
 	create table metric_id_all_values as
@@ -106,7 +106,7 @@ data invalid_metric_id_values (WHERE = (validity = 0));
 	validity = nvalid(metric_id, 'v7');
 run;
 
-%AssertDataSetNotPopulated(DataSetName = invalid_metric_id_values, 
+*%AssertDataSetNotPopulated(DataSetName = invalid_metric_id_values, 
                            ReturnMessage = At least one of the metric id variables does not follow the conventions of SAS.);
 
 %put System Return Code = &syscc.;

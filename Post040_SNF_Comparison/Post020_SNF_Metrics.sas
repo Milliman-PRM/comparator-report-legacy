@@ -37,6 +37,11 @@ libname post040 "&post040.";
 	,suffix_output = snf
     );
 
+data agg_claims_med_snf;
+	set agg_claims_med_snf;
+
+	rename Admits = Discharges;
+run;
 
 proc sql;
 	create table details_SNF as

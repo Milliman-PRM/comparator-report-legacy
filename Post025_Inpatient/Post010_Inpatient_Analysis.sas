@@ -36,6 +36,12 @@ libname post025 "&post025.";
 		,suffix_output = inpatient
 		)
 
+data agg_claims_med_inpatient;
+	set agg_claims_med_inpatient;
+
+	rename Admits = Discharges;
+run;
+
 proc sql noprint;
 	select
 		count(*)
@@ -125,6 +131,7 @@ proc sql;
 		,case
 			when upcase(claims.prm_ahrq_pqi) in(
 				'PQI01'
+				,'PQI02'
 				,'PQI03'
 				,'PQI05'
 				,'PQI07'
